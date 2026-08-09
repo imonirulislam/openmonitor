@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest something OpenMonitor should do
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Some larger features are already known gaps and want a design discussion
+        before any code: multi-region probes, email/SMS/PagerDuty notifications,
+        subscriber email lists, public API tokens, and on-call schedules. Those are
+        listed under "What we deliberately don't have (yet)" in `CLAUDE.md`.
+        An issue is exactly the right place to start that conversation.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation, not the solution. This is the part that matters most.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you've already tried or considered?
+      description: Workarounds, other tools, or approaches you rejected and why.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part would this touch?
+      multiple: true
+      options:
+        - "apps/web (admin dashboard)"
+        - "apps/status-page (public page)"
+        - "apps/api"
+        - "apps/notifier (notifications)"
+        - "apps/checker (probes)"
+        - "packages/db (schema)"
+        - "Deployment / self-hosting"
+        - "Not sure"
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Would you be willing to work on this?
+      options:
+        - label: I'd be interested in opening a PR

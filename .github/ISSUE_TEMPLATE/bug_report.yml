@@ -1,0 +1,69 @@
+name: Bug report
+description: Something isn't working the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please don't use this form for security issues —
+        see [SECURITY.md](../blob/main/SECURITY.md) for private disclosure.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `docker compose up --build`
+        2. Go to ...
+        3. See error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part?
+      options:
+        - "apps/web (admin dashboard)"
+        - "apps/status-page (public page)"
+        - "apps/api"
+        - "apps/notifier (Slack / outbox)"
+        - "apps/checker (probes)"
+        - "packages/db (schema / migrations)"
+        - "Build, Docker, or deploy"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        Output from `docker compose logs <service>` or the dev server.
+        Redact secrets — `AUTH_SECRET`, `PROBE_API_KEY`, database URLs, Slack webhook URLs.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      description: "`git rev-parse --short HEAD`"
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, plus how you're running it and against which Postgres.
+      placeholder: |
+        OS: macOS 15.3 (arm64)
+        Running via: docker compose / bun run dev
+        Postgres: compose postgres:16-alpine / Neon / self-hosted 16.2

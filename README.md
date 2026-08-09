@@ -97,6 +97,17 @@ Per-app Dockerfiles in `deploy/docker/`. Images install dependencies with Bun an
 apps on Node. Skeleton manifests in `deploy/k8s/` with TODO markers for your registry,
 ingress hosts, and secrets. See `deploy/k8s/README.md`.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the conventions that matter, and what a
+good PR looks like. For security issues, see [SECURITY.md](SECURITY.md) — please don't
+open a public issue.
+
+## License
+
+[AGPL-3.0](LICENSE). If you run a modified version as a network service, the license
+requires you to publish your changes.
+
 ## For AI agents
 
 Read `CLAUDE.md` at the repo root before making changes. Each app and package also has its own
