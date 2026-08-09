@@ -24,7 +24,8 @@ Edit `packages/db/src/schema.ts`:
   ```
   (and update the `.$type<ChannelConfig>()` annotation on the column)
 
-Run `bun run db:generate`, review the migration, run `bun run db:migrate`.
+Hand-write the migration under `packages/db/drizzle/` with a `_journal.json` entry, then run
+`bun run db:migrate`. Don't run `db:generate` — see `packages/db/CLAUDE.md`.
 
 ## 2. Sender
 

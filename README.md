@@ -51,8 +51,7 @@ cp .env.example .env
 # 3. Start Postgres
 docker compose up -d postgres
 
-# 4. Generate the initial migration from the schema, apply it, and seed
-bun run db:generate
+# 4. Apply migrations and seed
 bun run db:migrate
 bun run db:seed
 
@@ -84,7 +83,6 @@ bun run lint         # biome + oxlint
 bun run format       # biome format + oxfmt
 bun run typecheck
 bun run knip         # find unused exports/files/deps
-bun run db:generate  # generate a new migration from schema changes
 bun run db:migrate
 bun run db:seed
 bun run db:studio    # drizzle-kit studio

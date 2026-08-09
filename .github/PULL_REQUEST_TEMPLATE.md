@@ -19,7 +19,9 @@ Closes #
 <!-- Delete this section if the schema didn't change. -->
 
 - [ ] Schema edited in `packages/db/src/schema.ts` (not in app code)
-- [ ] Migration generated with `bun run db:generate` and the SQL reviewed by hand
+- [ ] Migration hand-written under `packages/db/drizzle/` with a `_journal.json` entry
+      (not `db:generate` — see `packages/db/CLAUDE.md`)
+- [ ] Applied against an **empty** database as well as an existing one
 - [ ] Safe to run against a database that already has rows
 - [ ] No previously shipped migration was edited
 

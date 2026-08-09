@@ -85,8 +85,9 @@ These are the ones where a well-meaning change causes real damage:
 
 ## How a feature lands
 
-1. **Schema** — edit `packages/db/src/schema.ts`, run `bun run db:generate`, review the
-   generated SQL before committing it.
+1. **Schema** — edit `packages/db/src/schema.ts`, then hand-write the migration under
+   `packages/db/drizzle/` and add a `_journal.json` entry. Do **not** run `db:generate`
+   (see Migrations below).
 2. **Domain logic** — a server action in `apps/web/src/lib/actions/<feature>.ts`. Validate
    with Zod, wrap multi-row writes in a transaction, emit outbox events if needed.
 3. **Admin UI** — a page under `apps/web/src/app/dashboard/<feature>/`.
@@ -101,8 +102,29 @@ consistent without rederiving the conventions.
 
 ## Migrations
 
+**Write them by hand. Do not run `bun run db:generate`** — it emits destructive SQL.
+
+Drizzle diffs `schema.ts` against the newest snapshot in `packages/db/drizzle/meta/`, but
+that chain stops at `0008` while migrations run well past it; everything from `0009` on was
+hand-written without a snapshot. Drizzle therefore compares against a badly outdated picture
+and proposes undoing real changes — recreating tables `0009` dropped, reverting later
+columns — and prompts with bogus "is this table renamed from …?" questions.
+
+To add a migration:
+
+1. Create `packages/db/drizzle/NNNN_short_name.sql`, separating statements with
+   `--> statement-breakpoint`.
+2. Append an entry to `packages/db/drizzle/meta/_journal.json` — bump `idx` and give `when`
+   a value greater than the previous entry.
+3. `bun run db:migrate`.
+4. **Test from empty, not just against your existing database.** Ordering bugs only appear
+   on a fresh one: `docker compose down -v && bun run db:migrate && bun run db:seed`.
+
+Other rules:
+
 - Migrations are checked in under `packages/db/drizzle/` and must be reviewed by hand.
 - **Never edit a migration that has shipped.** Add a new one.
+- Prefer idempotent statements (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`).
 - `migrate.ts` installs the `notify_monitor_changed()` trigger function *before* running
   migrations, because `0013` and `0014` attach triggers that reference it. Keep that
   ordering if you touch the migration runner.

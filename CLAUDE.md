@@ -104,8 +104,9 @@ Add `requireAdmin()` only when there's an admin-only screen — don't pre-build 
 
 ## How features land
 
-1. **Schema** — add to `packages/db/src/schema.ts`, run `bun run db:generate`, review the
-   generated migration.
+1. **Schema** — add to `packages/db/src/schema.ts`, then hand-write the migration under
+   `packages/db/drizzle/` and add a `_journal.json` entry. Do **not** run `db:generate` —
+   the snapshot chain is stale and it emits destructive SQL. See `packages/db/CLAUDE.md`.
 2. **Domain logic** — server actions in `apps/web/src/lib/actions/<feature>.ts`. Validate
    with Zod, wrap multi-row writes in a transaction, emit events if needed.
 3. **Admin UI** — page under `apps/web/src/app/dashboard/<feature>/`.

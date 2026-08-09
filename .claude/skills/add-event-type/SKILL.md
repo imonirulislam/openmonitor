@@ -19,7 +19,9 @@ export const eventTypeEnum = pgEnum("event_type", [
 ]);
 ```
 
-Run `bun run db:generate`, review the migration (Postgres can ADD VALUE to an enum cleanly),
+Hand-write the migration (`ALTER TYPE "event_type" ADD VALUE '...';` — Postgres adds enum
+values cleanly) and add a `_journal.json` entry. Don't run `db:generate`; the snapshot chain
+is stale and it emits destructive SQL. Then
 run `bun run db:migrate`.
 
 ## 2. Renderer

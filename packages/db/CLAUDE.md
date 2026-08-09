@@ -18,19 +18,46 @@ Drizzle ORM + Postgres. Single source of truth for schema and types.
 1. Add the `pgTable` to `src/schema.ts` near related tables.
 2. Add `relations(...)` if it has FKs.
 3. Add inferred types to `src/types.ts`.
-4. Run `bun run db:generate` from the root — Drizzle writes a new file under `drizzle/`.
-5. Review the generated SQL. Hand-edit if needed (e.g., partial indexes, custom defaults).
-6. Run `bun run db:migrate` to apply.
+4. **Write the migration by hand** under `drizzle/` — see below for why.
+5. Add a matching entry to `drizzle/meta/_journal.json`.
+6. Run `bun run db:migrate` to apply, and verify against an empty database too.
 
 ## Adding a new enum value
 
-Postgres can't drop or reorder enum values. To add: edit the `pgEnum(...)` array in `schema.ts`, generate, migrate. To remove a value: write a manual migration that recreates the type.
+Postgres can't drop or reorder enum values. To add: edit the `pgEnum(...)` array in `schema.ts`, then hand-write `ALTER TYPE "x" ADD VALUE 'y';`. To remove a value: write a migration that recreates the type.
 
 ## Migrations
 
+**Do not run `bun run db:generate`.** It will produce a destructive migration.
+
+Drizzle diffs `schema.ts` against the newest snapshot in `drizzle/meta/`, but that
+chain stops at `0008_snapshot.json` while migrations run well past it — everything from
+`0009` on was hand-written without a snapshot. So drizzle compares against a picture of
+the schema that is many migrations out of date and proposes "fixes" that undo real
+changes: recreating `status_page_monitors` (dropped in `0009`), dropping `page_components`,
+reverting the monitor-kind and assertion columns. It will also prompt with bogus
+"is this table renamed from …?" questions, because it sees tables it thinks vanished.
+
+Until someone rebuilds the snapshot chain, hand-write migrations:
+
+1. Create `drizzle/NNNN_short_name.sql`. Separate statements with `--> statement-breakpoint`.
+2. Append to `drizzle/meta/_journal.json`: bump `idx`, keep `version`/`breakpoints`, and give
+   `when` a value greater than the previous entry (the hand-written ones step by 1000000).
+3. Apply with `bun run db:migrate`.
+4. **Test against an empty database**, not just your existing one — ordering bugs only show
+   up from scratch. `docker compose down -v && bun run db:migrate && bun run db:seed`.
+
+Other rules:
+
 - Migrations are checked in under `drizzle/`.
 - Never edit a migration that has shipped to any environment. Add a new one.
-- For data migrations, write a `.sql` file by hand inside `drizzle/` and add it to `_journal.json`, OR write a one-shot tsx script under `scripts/` and run it manually after deploy.
+- Prefer idempotent statements (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`) so a partially
+  applied migration can be re-run.
+- For data migrations, either a hand-written `.sql` as above, or a one-shot tsx script under
+  `scripts/` run manually after deploy.
+
+`migrate.ts` installs the `notify_monitor_changed()` trigger function *before* running
+migrations, because `0013` and `0014` attach triggers that call it. Keep that ordering.
 
 ## Events outbox
 
