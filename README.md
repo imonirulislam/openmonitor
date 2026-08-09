@@ -29,6 +29,16 @@ packages/
 - Go >= 1.22 (for `apps/checker`)
 - Docker + Docker Compose (for local Postgres / full stack)
 
+## Quickstart (everything in Docker)
+
+```bash
+docker compose up --build                  # migrations run automatically
+docker compose --profile seed up seed      # optional demo data + admin user
+```
+
+Then open http://localhost:5001 (admin) or http://localhost:5003 (public status page).
+Seeded login: `admin@openmonitor.local` / `changeme`.
+
 ## Local development
 
 ```bash

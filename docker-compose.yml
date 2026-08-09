@@ -17,6 +17,44 @@ services:
       timeout: 5s
       retries: 10
 
+  # Applies migrations and installs the notify_monitor_changed() trigger function,
+  # then exits. Every service that reads the schema waits for this to complete, so
+  # `docker compose up` works on an empty volume with no manual step. Reuses the
+  # api image because it already carries packages/db, its migrations, and tsx.
+  migrate:
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+    container_name: open-monitor-migrate
+    restart: "no"
+    environment:
+      DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    working_dir: /repo/packages/db
+    command: ["node_modules/.bin/tsx", "src/migrate.ts"]
+
+  # Demo data — opt in with: docker compose --profile seed up seed
+  # Kept out of the default `up` so a real deployment never gets a known-password
+  # admin user or example monitors.
+  seed:
+    profiles: ["seed"]
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+    container_name: open-monitor-seed
+    restart: "no"
+    environment:
+      DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      NODE_ENV: production
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    working_dir: /repo/packages/db
+    command: ["node_modules/.bin/tsx", "src/seed.ts"]
+
   api:
     build:
       context: .
@@ -31,6 +69,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "5002:5002"
 
@@ -47,6 +87,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   web:
     build:
@@ -66,6 +108,8 @@ services:
         condition: service_healthy
       api:
         condition: service_started
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "5001:5001"
 
@@ -104,6 +148,8 @@ services:
         condition: service_healthy
       api:
         condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:

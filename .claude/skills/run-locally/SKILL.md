@@ -68,11 +68,17 @@ to `change-me-probe-key`; keep it consistent.
 ## Full stack via Docker
 
 ```bash
-docker compose up --build
+docker compose up --build                  # everything, migrations included
+docker compose --profile seed up seed      # optional: demo monitors + admin user
 ```
 
-This builds and runs all five apps + Postgres. Slower iteration than `bun run dev` for
-TS apps, but useful for verifying the production build path.
+This builds and runs all five apps + Postgres. A one-shot `migrate` service applies
+migrations before any schema-reading service starts, so this works on an empty volume
+with no manual step. Seeding is behind a profile so a real deployment never gets the
+known-password admin user.
+
+Slower iteration than `bun run dev` for TS apps, but useful for verifying the
+production build path.
 
 ## Tearing down
 
