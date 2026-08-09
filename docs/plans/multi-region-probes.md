@@ -171,38 +171,38 @@ transfer — they push results to Tinybird because they run 28 regions; we don't
 
 ## Rollout
 
-Additive and reversible. Each PR ships independently.
+Additive and reversible. Each step ships independently.
 
-**PR-1 — schema.** Add all three tables plus the `region_policy` column and enum. Backfill
+**Step 1 — schema.** Add all three tables plus the `region_policy` column and enum. Backfill
 `monitor_region_status` from `monitors.currentStatus` as region `local` so nothing reads empty.
 No behavior change.
 
-**PR-2 — reduction logic.** Move ingest to per-region upsert + derived global status + gated
-events. With one region and policy `any`, output is byte-identical to today. **This is the PR
+**Step 2 — reduction logic.** Move ingest to per-region upsert + derived global status + gated
+events. With one region and policy `any`, output is byte-identical to today. **This is the step
 that needs the most test coverage** — it's where alert-storm regressions would hide.
 
-**PR-3 — per-location auth.** Add `probe_locations` and the resolve-token middleware.
+**Step 3 — per-location auth.** Add `probe_locations` and the resolve-token middleware.
 Accept *either* a location token *or* the legacy `PROBE_API_KEY` (legacy maps to region
 `local`, all monitors). Nothing breaks mid-deploy.
 
-**PR-4 — admin UI.** CRUD for probe locations under `apps/web/src/app/dashboard/settings/`,
+**Step 4 — admin UI.** CRUD for probe locations under `apps/web/src/app/dashboard/settings/`,
 token shown once on creation, `last_seen_at` surfaced, monitor assignment. Region policy
 picker on the monitor form.
 
-**PR-5 — checker.** Swap `PROBE_API_KEY` for a location token; stop sending `region` in the
+**Step 5 — checker.** Swap `PROBE_API_KEY` for a location token; stop sending `region` in the
 body. Document deploying one checker per region.
 
-**PR-6 — public surface.** Per-region breakdown in `/v1/status` and the status page. Decide
+**Step 6 — public surface.** Per-region breakdown in `/v1/status` and the status page. Decide
 then whether the public page shows per-region detail or only the rollup — the data supports
 both.
 
-**PR-7 — remove the legacy path.** Drop `PROBE_API_KEY` and the body `region` field. Breaking
+**Step 7 — remove the legacy path.** Drop `PROBE_API_KEY` and the body `region` field. Breaking
 change; needs a release note.
 
 ## Open questions
 
 - **Should a silent location alert?** It needs a new event type (`location.silent`) and a
-  sweeper — `apps/notifier/src/heartbeat-sweeper.ts` is the obvious model. Probably PR-4.5.
+  sweeper — `apps/notifier/src/heartbeat-sweeper.ts` is the obvious model. Probably alongside the admin UI step.
 - **Per-monitor region assignment, or per-workspace?** openstatus does per-monitor via the
   join table. Per-monitor is more flexible; a workspace-wide default with per-monitor
   override may be friendlier. Leaning per-monitor with "assign all" as the UI default.

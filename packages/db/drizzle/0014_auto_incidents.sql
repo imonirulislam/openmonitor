@@ -1,4 +1,4 @@
--- PR-7: auto-incident on N consecutive `down` probes.
+-- Auto-incident on N consecutive `down` probes.
 --
 -- Adds:
 --   * monitors.auto_incident_threshold — null/0 = disabled. When the

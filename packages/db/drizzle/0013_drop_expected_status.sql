@@ -1,9 +1,9 @@
--- PR-5 cleanup: drop the legacy `expected_status` column. The pre-PR-3
--- checker was the only remaining reader; PR-3 swapped it for the
+-- Cleanup: drop the legacy `expected_status` column. The older
+-- checker was the only remaining reader; it was swapped for the
 -- assertion-based reduction. The column was kept one release for back-compat;
 -- this migration removes it. Also refreshes the `monitors_changed_upd`
 -- trigger's WHEN clause to drop expected_status and pick up the new
--- per-kind / assertions / response-time columns added in PR-1.
+-- per-kind / assertions / response-time columns.
 
 -- Drop the trigger first; its WHEN clause references expected_status so the
 -- column drop would otherwise fail with a dependency error.

@@ -5,9 +5,12 @@ import type {
   incidents,
   incidentUpdates,
   maintenances,
+  monitorRegionStatus,
   monitorRuns,
   monitors,
   notificationChannels,
+  probeLocationMonitors,
+  probeLocations,
   statusPages,
   users,
   workspaceMembers,
@@ -31,6 +34,15 @@ export type NewMonitor = InferInsertModel<typeof monitors>;
 
 export type MonitorRun = InferSelectModel<typeof monitorRuns>;
 export type NewMonitorRun = InferInsertModel<typeof monitorRuns>;
+
+export type MonitorRegionStatus = InferSelectModel<typeof monitorRegionStatus>;
+export type NewMonitorRegionStatus = InferInsertModel<typeof monitorRegionStatus>;
+
+export type ProbeLocation = InferSelectModel<typeof probeLocations>;
+export type NewProbeLocation = InferInsertModel<typeof probeLocations>;
+
+export type ProbeLocationMonitor = InferSelectModel<typeof probeLocationMonitors>;
+export type NewProbeLocationMonitor = InferInsertModel<typeof probeLocationMonitors>;
 
 export type Incident = InferSelectModel<typeof incidents>;
 export type NewIncident = InferInsertModel<typeof incidents>;

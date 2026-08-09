@@ -17,7 +17,8 @@ import (
 const maxAssertionBodyBytes = 1 << 20
 
 // dispatchProbe routes a monitor to the appropriate per-kind prober. Empty
-// kinds default to HTTP for back-compat with rows written before PR-1.
+// kinds default to HTTP for back-compat with rows written before monitor kinds
+// were introduced.
 func dispatchProbe(ctx context.Context, m Monitor, defaultTimeout time.Duration) ProbeOutcome {
 	switch m.Kind {
 	case "tcp":

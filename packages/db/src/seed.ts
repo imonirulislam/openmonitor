@@ -9,6 +9,7 @@ import {
   incidentUpdates,
   maintenanceMonitors,
   maintenances,
+  monitorRegionStatus,
   monitorRuns,
   monitors,
   pageComponents,
@@ -344,12 +345,38 @@ async function main() {
     await db.insert(monitorRuns).values(runs.slice(i, i + BATCH));
   }
 
-  // Update each monitor's currentStatus + lastCheckedAt from its latest run.
+  // Update each monitor's currentStatus + lastCheckedAt from its latest run, and
+  // mirror it into monitor_region_status for the region these synthetic runs were
+  // written under. Without the region row, a reduction over "all regions" sees
+  // nothing to reduce and would read as `unknown` despite current_status being set.
   for (const [monitorId, last] of lastRunPerMonitor) {
     await db
       .update(monitors)
       .set({ currentStatus: last.status!, lastCheckedAt: last.checkedAt })
       .where(eq(monitors.id, monitorId));
+
+    // Deliberately "local", not the "seed" label the synthetic runs carry: the
+    // real checker defaults to CHECKER_REGION=local, so it overwrites this exact
+    // row on its first probe. Writing "seed" here would strand a region that
+    // nothing ever updates, and it would skew the reduction forever.
+    await db
+      .insert(monitorRegionStatus)
+      .values({
+        monitorId,
+        region: "local",
+        status: last.status!,
+        consecutiveFailures: 0,
+        lastCheckedAt: last.checkedAt,
+      })
+      .onConflictDoUpdate({
+        target: [monitorRegionStatus.monitorId, monitorRegionStatus.region],
+        set: {
+          status: last.status!,
+          lastCheckedAt: last.checkedAt,
+          consecutiveFailures: 0,
+          updatedAt: new Date(),
+        },
+      });
   }
 
   // ---------- Past incidents (resolved, with timeline updates) ----------

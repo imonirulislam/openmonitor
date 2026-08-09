@@ -21,6 +21,15 @@ import type { Assertion, HeaderEntry } from "./assertions";
 export const userRoleEnum = pgEnum("user_role", ["admin", "editor", "viewer"]);
 export const monitorStatusEnum = pgEnum("monitor_status", ["up", "down", "degraded", "unknown"]);
 export const monitorKindEnum = pgEnum("monitor_kind", ["http", "tcp", "dns"]);
+/**
+ * How per-region results reduce to one global status for a monitor.
+ *   any      — down if ≥1 region says down (default; matches single-region behavior)
+ *   majority — down if more than half of reporting regions say down
+ *   all      — down only if every reporting region says down
+ * Regions sitting at `unknown` are excluded from the denominator, so adding a
+ * region doesn't drag existing monitors toward `unknown`.
+ */
+export const monitorRegionPolicyEnum = pgEnum("monitor_region_policy", ["any", "majority", "all"]);
 export const incidentStatusEnum = pgEnum("incident_status", [
   "investigating",
   "identified",
@@ -323,7 +332,13 @@ export const monitors = pgTable(
      */
     consecutiveFailures: integer("consecutive_failures").notNull().default(0),
     enabled: boolean("enabled").notNull().default(true),
+    /**
+     * Cache of the reduction over `monitor_region_status`, not the source of
+     * truth. Kept so existing read paths don't need to aggregate on every
+     * query. Written by the probe ingest route after recomputing.
+     */
     currentStatus: monitorStatusEnum("current_status").notNull().default("unknown"),
+    regionPolicy: monitorRegionPolicyEnum("region_policy").notNull().default("any"),
     lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -385,6 +400,97 @@ export const monitorRuns = pgTable(
     index("monitor_runs_monitor_checked_idx").on(t.monitorId, t.checkedAt),
     index("monitor_runs_workspace_checked_idx").on(t.workspaceId, t.checkedAt),
     index("monitor_runs_checked_idx").on(t.checkedAt),
+  ],
+);
+
+/**
+ * Latest known status of one monitor as seen from one region.
+ *
+ * `monitors.current_status` is a single scalar, so with more than one probe
+ * location every region overwrites it — status flaps, `consecutive_failures`
+ * counts interleaved regions, and transition events fire per probe instead of
+ * per real change. This table holds the per-region truth; the global status is
+ * reduced from it using `monitors.region_policy`.
+ *
+ * One row per (monitor, region). Upserted on every probe ingest.
+ */
+export const monitorRegionStatus = pgTable(
+  "monitor_region_status",
+  {
+    monitorId: uuid("monitor_id")
+      .notNull()
+      .references(() => monitors.id, { onDelete: "cascade" }),
+    region: varchar("region", { length: 50 }).notNull(),
+    status: monitorStatusEnum("status").notNull().default("unknown"),
+    // Per-region, so auto-incident thresholds count sustained failure in one
+    // place rather than interleaved reports from several.
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.monitorId, t.region] }),
+    index("monitor_region_status_monitor_idx").on(t.monitorId),
+  ],
+);
+
+// ---------- Probe locations ----------
+
+/**
+ * A place probes run from. The token both authenticates the checker and
+ * identifies which region it is — `region` is never taken from the request
+ * body, so a checker cannot claim to be somewhere it isn't.
+ *
+ * Only the hash is stored; the plaintext token is shown once at creation.
+ */
+export const probeLocations = pgTable(
+  "probe_locations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    // Human label, e.g. "EU West (Frankfurt)".
+    name: varchar("name", { length: 100 }).notNull(),
+    // Stored on every monitor_runs row; unique per workspace.
+    region: varchar("region", { length: 50 }).notNull(),
+    // Same scrypt format as packages/auth/src/password.ts.
+    tokenHash: varchar("token_hash", { length: 255 }).notNull(),
+    /**
+     * Bumped on every successful ingest. Lets the dashboard tell "this region
+     * is not reporting" apart from "this service has no probes", and is the
+     * hook for a future `location.silent` event.
+     */
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("probe_locations_workspace_region_unique").on(t.workspaceId, t.region),
+    uniqueIndex("probe_locations_token_hash_unique").on(t.tokenHash),
+    index("probe_locations_workspace_idx").on(t.workspaceId),
+  ],
+);
+
+/**
+ * Which monitors a location is allowed to probe and report on. The join is the
+ * authorization check: probe ingest resolves the location from its token, then
+ * requires a row here for the monitor being reported.
+ */
+export const probeLocationMonitors = pgTable(
+  "probe_location_monitors",
+  {
+    probeLocationId: uuid("probe_location_id")
+      .notNull()
+      .references(() => probeLocations.id, { onDelete: "cascade" }),
+    monitorId: uuid("monitor_id")
+      .notNull()
+      .references(() => monitors.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.probeLocationId, t.monitorId] }),
+    index("probe_location_monitors_monitor_idx").on(t.monitorId),
   ],
 );
 
@@ -687,6 +793,34 @@ export const monitorsRelations = relations(monitors, ({ many, one }) => ({
   incidents: many(incidentMonitors),
   channels: many(monitorChannels),
   pageComponents: many(pageComponents),
+  regionStatus: many(monitorRegionStatus),
+  probeLocations: many(probeLocationMonitors),
+}));
+
+export const monitorRegionStatusRelations = relations(monitorRegionStatus, ({ one }) => ({
+  monitor: one(monitors, {
+    fields: [monitorRegionStatus.monitorId],
+    references: [monitors.id],
+  }),
+}));
+
+export const probeLocationsRelations = relations(probeLocations, ({ many, one }) => ({
+  workspace: one(workspaces, {
+    fields: [probeLocations.workspaceId],
+    references: [workspaces.id],
+  }),
+  monitors: many(probeLocationMonitors),
+}));
+
+export const probeLocationMonitorsRelations = relations(probeLocationMonitors, ({ one }) => ({
+  probeLocation: one(probeLocations, {
+    fields: [probeLocationMonitors.probeLocationId],
+    references: [probeLocations.id],
+  }),
+  monitor: one(monitors, {
+    fields: [probeLocationMonitors.monitorId],
+    references: [monitors.id],
+  }),
 }));
 
 export const monitorRunsRelations = relations(monitorRuns, ({ one }) => ({

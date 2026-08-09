@@ -157,7 +157,7 @@ Mirror openstatus's layout, slimmed:
 
 ## PR slicing & checklist
 
-### PR-1 — Schema + shared assertions module ✅
+### Step 1 — Schema + shared assertions module ✅
 
 - [x] `packages/db/src/schema.ts`: add `monitor_kind` enum, columns (`kind`, `headers` array, `assertions`, `degraded_after_ms`, `follow_redirects`, `host`, `port`), `monitor.degraded` event type, per-kind CHECK.
 - [x] `packages/db/drizzle/0012_monitor_kinds_assertions.sql` (hand-written): enum, columns, header-shape conversion, assertions backfill from `expected_status`, CHECK constraint.
@@ -166,10 +166,10 @@ Mirror openstatus's layout, slimmed:
 - [x] Re-export from `packages/db/src/index.ts` and `package.json` exports.
 - [x] All 9 packages typecheck.
 - [x] Migration applied; existing rows backfilled. CHECK constraint verified end-to-end.
-- [x] `apps/api/src/routes/probes.ts`: temporary array→map shim for the live Go checker until PR-3.
+- [x] `apps/api/src/routes/probes.ts`: temporary array→map shim for the live Go checker until step 3.
 - [x] `apps/web` consumers updated for nullable `url`/`method` and array-shape `headers`.
 
-### PR-2 — Admin form rework ✅
+### Step 2 — Admin form rework ✅
 
 - [x] Add deps: `react-hook-form`, `@hookform/resolvers` (web), `@radix-ui/react-switch`, `@radix-ui/react-label` (ui).
 - [x] New UI primitives: `Switch`, `Tooltip`, `Form` RHF wrappers (shadcn-style).
@@ -180,29 +180,29 @@ Mirror openstatus's layout, slimmed:
 - [x] Removed obsolete `MonitorForm` + `updateMonitorGeneral` + `parseHeadersText`.
 - [x] Build succeeds; typecheck clean across all 9 packages.
 
-### PR-3 — HTTP checker assertions + degraded transitions ✅
+### Step 3 — HTTP checker assertions + degraded transitions ✅
 
 - [x] `apps/checker/assertions.go`: port of openstatus's `pkg/assertions` (status / header / textBody / dnsRecord evaluators; jsonBody fails loudly until JSONPath lands).
 - [x] `apps/checker/api.go`: extended `Monitor` struct with `Kind`, `Host`, `Port`, `Headers []HeaderEntry`, `Assertions json.RawMessage`, `DegradedAfterMs`, `FollowRedirects`.
 - [x] `apps/checker/prober.go`: assertion-driven reduction — fail any assertion → down; all pass + latency > degradedAfterMs → degraded; else up. Body read only when ≥1 body assertion configured (1 MB cap). Honors `follow_redirects`. New header-array iteration. `configHash` updated.
 - [x] `apps/api/src/routes/probes.ts`: `GET /v1/probes/monitors` returns the full new shape; back-compat shim removed. `POST /v1/probes/results` transition logic now emits `monitor.degraded` (when going to degraded from up/unknown) and `monitor.recovered` from either `down` or `degraded` with a `fromStatus` payload field.
-- [x] `packages/db/src/types.ts` + schema: `monitor.degraded` already in `eventTypeEnum` (PR-1); TS `EventType` updated to match.
+- [x] `packages/db/src/types.ts` + schema: `monitor.degraded` already in `eventTypeEnum` (step 1); TS `EventType` updated to match.
 - [x] `packages/notifications/src/templates.ts`: new `MonitorDegradedPayload` and Slack render (`:warning:` orange `#fb923c`); recovery message switches between "down" and "degraded" wording.
 - [x] All packages typecheck. Go vet clean. Checker rebuilt + restarted.
 - [x] **End-to-end verified**: setting `degraded_after_ms=10` on a live monitor → next probe lands `status=degraded`, `monitor.degraded` event emitted with latency + threshold. Setting `degraded_after_ms=10000` → next probe lands `status=up`, `monitor.recovered` event emitted with `fromStatus=degraded, downForMs=120000`. Monitor's `current_status` tracks correctly.
 
-### PR-4 — TCP + DNS ✅
+### Step 4 — TCP + DNS ✅
 
 - [x] `apps/checker/prober_tcp.go`: `net.Dialer.DialContext("tcp", host:port)`. Latency = dial time, surfaced as `latency_connect_ms`. Friendlier error messages ("timeout after N ms", "connection refused"). Latency-degradation honored.
 - [x] `apps/checker/prober_dns.go`: parallel-ish `LookupIPAddr / LookupCNAME / LookupMX / LookupNS / LookupTXT` (stdlib only). Builds `dnsProbe{A,AAAA,CNAME,MX,NS,TXT}` and runs `dnsRecord` assertions. Trailing dots stripped from CNAME/MX/NS for assertion-friendliness. Latency surfaced as `latency_dns_ms`.
 - [x] `apps/checker/prober.go` `dispatchProbe()`: routes by `m.Kind` (`http` / `tcp` / `dns`). Empty `kind` defaults to HTTP for back-compat. `runner.go` calls dispatch instead of probe directly.
-- [x] `apps/web/src/components/monitor-config-form.tsx`: TCP and DNS radio cards now `enabled: true`; per-kind sections (Host:Port + IPv4/IPv6 examples for TCP, URI + DNS Record assertions for DNS) already wired in PR-2 light up.
+- [x] `apps/web/src/components/monitor-config-form.tsx`: TCP and DNS radio cards now `enabled: true`; per-kind sections (Host:Port + IPv4/IPv6 examples for TCP, URI + DNS Record assertions for DNS) already wired in step 2 light up.
 - [x] **End-to-end verified** with Cloudflare:
   - TCP `1.1.1.1:443` → `up` in 8 ms; flipped host to `127.0.0.1:65111` → `down` with error `"connection refused"` and `monitor.down` event.
   - DNS `one.one.one.one` with A-record `contains 1.1.1.1` assertion → `up` in 514 ms; flipped target to `9.9.9.9` → `down` with error `'DNS A: expected contains "9.9.9.9", got [1.0.0.1 1.1.1.1]'` and `monitor.down` event.
   - Transition events on both reduce paths fired correctly.
 
-### PR-5 — Cleanup ✅
+### Step 5 — Cleanup ✅
 
 - [x] Migration `0013_drop_expected_status.sql`: drops the `expected_status` column. Recreates the `monitors_changed_upd` trigger (had to drop it first because its WHEN clause referenced the column) — and updates the WHEN clause to add `kind`, `host`, `port`, `assertions`, `degraded_after_ms`, `follow_redirects`, `retry_count`, `retry_delay_seconds` (those weren't firing pg_notify before, so config changes only propagated on the 30s refresh tick).
 - [x] `packages/db/src/schema.ts`: column removed.
@@ -213,7 +213,7 @@ Mirror openstatus's layout, slimmed:
 - [x] `packages/db/src/seed.ts`: dropped `expectedStatus: 200` from the four seed inserts.
 - [x] Migration applied; checker rebuilt + restarted; pg_notify-driven config change verified end-to-end.
 
-### PR-6 — Proportional bar tracker ✅
+### Step 6 — Proportional bar tracker ✅
 
 Followup tweak after first review: replaced the wrapper's `flex flex-col` + `rounded-full` with `block` + `rounded-sm`, dropped `transition-all` on segments. The pill-cap shape clipped tiny segments (e.g. a 4% degraded sliver = ~2 px) inside the curved cap region, making the boundary with the next segment land at less-than-full bar width — visually a "lean" between adjacent colors. With small-radius rounding the cap is ~2 px, so even a 2-pixel segment exits the cap immediately and adjacent segments meet flush at full width.
 
@@ -235,5 +235,5 @@ Out of scope (deliberately deferred):
 
 1. **`jsonBody` UI button** — I'll keep schema, no button. Revisit when JSONPath lands.
 2. **Headers shape** — converting `Record<string,string>` → `Array<{key,value}>`. One-line migration.
-3. **JSONPath in Go** — defer until PR-3+; for now `jsonBody` evaluator returns `false`.
+3. **JSONPath in Go** — defer until step 3+; for now `jsonBody` evaluator returns `false`.
 4. **TCP examples** — copy openstatus's three (Domain, IPv4, IPv6) verbatim.
