@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { and, db, eq, ne, schema } from "@openmonitor/db";
+import { and, db, eq, ne, reduceRegionStatuses, schema, sql } from "@openmonitor/db";
 import { Hono } from "hono";
 import { z } from "zod";
 import { env } from "../env";
@@ -52,41 +52,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
 
   const checkedAt = body.checkedAt ? new Date(body.checkedAt) : new Date();
   const previousStatus = monitor.currentStatus;
-  // Auto-incident bookkeeping: bump on `down`, reset on anything else.
-  const newConsecutiveFailures = body.status === "down" ? monitor.consecutiveFailures + 1 : 0;
   const threshold = monitor.autoIncidentThreshold ?? 0;
-
-  // Only auto-create a public incident if (a) threshold is enabled, (b) this
-  // probe was down, (c) the counter has reached the threshold, and (d)
-  // there isn't already an open auto-incident for this monitor. Condition
-  // (d) is what enforces "exactly one incident per outage" without
-  // requiring an exact-crossing comparison — that way enabling the
-  // threshold mid-outage (counter already past threshold) correctly fires
-  // on the next failed probe.
-  const couldOpenAutoIncident =
-    threshold > 0 && body.status === "down" && newConsecutiveFailures >= threshold;
-  let shouldOpenAutoIncident = false;
-  if (couldOpenAutoIncident) {
-    const open = await conn
-      .select({ id: schema.incidents.id })
-      .from(schema.incidents)
-      .innerJoin(
-        schema.incidentMonitors,
-        eq(schema.incidentMonitors.incidentId, schema.incidents.id),
-      )
-      .where(
-        and(
-          eq(schema.incidents.workspaceId, monitor.workspaceId),
-          eq(schema.incidentMonitors.monitorId, monitor.id),
-          eq(schema.incidents.autoCreated, true),
-          ne(schema.incidents.status, "resolved"),
-        ),
-      )
-      .limit(1);
-    shouldOpenAutoIncident = open.length === 0;
-  }
-  const shouldResolveAutoIncident =
-    body.status === "up" && (previousStatus === "down" || previousStatus === "degraded");
 
   await conn.transaction(async (tx) => {
     await tx.insert(schema.monitorRuns).values({
@@ -105,27 +71,105 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
       checkedAt,
     });
 
+    // Record what THIS region saw. Its failure counter is per-region, so a
+    // sustained outage in one location isn't masked by healthy probes elsewhere
+    // interleaving and resetting a shared counter.
+    await tx
+      .insert(schema.monitorRegionStatus)
+      .values({
+        monitorId: body.monitorId,
+        region: body.region,
+        status: body.status,
+        consecutiveFailures: body.status === "down" ? 1 : 0,
+        lastCheckedAt: checkedAt,
+      })
+      .onConflictDoUpdate({
+        target: [schema.monitorRegionStatus.monitorId, schema.monitorRegionStatus.region],
+        set: {
+          status: body.status,
+          consecutiveFailures:
+            body.status === "down"
+              ? sql`${schema.monitorRegionStatus.consecutiveFailures} + 1`
+              : sql`0`,
+          lastCheckedAt: checkedAt,
+          updatedAt: new Date(),
+        },
+      });
+
+    // Derive the monitor's global status from every reporting region rather
+    // than from this single probe. With one region this equals `body.status`
+    // under all policies, so single-region behavior is unchanged.
+    const regionRows = await tx
+      .select({
+        region: schema.monitorRegionStatus.region,
+        status: schema.monitorRegionStatus.status,
+      })
+      .from(schema.monitorRegionStatus)
+      .where(eq(schema.monitorRegionStatus.monitorId, body.monitorId));
+
+    const derivedStatus = reduceRegionStatuses(regionRows, monitor.regionPolicy);
+    // Global counter tracks sustained *derived* down-ness, which is what the
+    // auto-incident threshold is meant to measure.
+    const newConsecutiveFailures = derivedStatus === "down" ? monitor.consecutiveFailures + 1 : 0;
+
+    // Only auto-create a public incident if (a) threshold is enabled, (b) the
+    // monitor is globally down, (c) the counter has reached the threshold, and
+    // (d) there isn't already an open auto-incident for this monitor. Condition
+    // (d) is what enforces "exactly one incident per outage" without requiring
+    // an exact-crossing comparison — that way enabling the threshold mid-outage
+    // (counter already past threshold) correctly fires on the next failed probe.
+    const couldOpenAutoIncident =
+      threshold > 0 && derivedStatus === "down" && newConsecutiveFailures >= threshold;
+    let shouldOpenAutoIncident = false;
+    if (couldOpenAutoIncident) {
+      const open = await tx
+        .select({ id: schema.incidents.id })
+        .from(schema.incidents)
+        .innerJoin(
+          schema.incidentMonitors,
+          eq(schema.incidentMonitors.incidentId, schema.incidents.id),
+        )
+        .where(
+          and(
+            eq(schema.incidents.workspaceId, monitor.workspaceId),
+            eq(schema.incidentMonitors.monitorId, monitor.id),
+            eq(schema.incidents.autoCreated, true),
+            ne(schema.incidents.status, "resolved"),
+          ),
+        )
+        .limit(1);
+      shouldOpenAutoIncident = open.length === 0;
+    }
+    const shouldResolveAutoIncident =
+      derivedStatus === "up" && (previousStatus === "down" || previousStatus === "degraded");
+
     await tx
       .update(schema.monitors)
       .set({
-        currentStatus: body.status,
+        currentStatus: derivedStatus,
         lastCheckedAt: checkedAt,
         consecutiveFailures: newConsecutiveFailures,
         updatedAt: new Date(),
       })
       .where(eq(schema.monitors.id, body.monitorId));
 
-    // Status-transition events. Reduction matches openstatus's pattern:
+    // Status-transition events, gated on the DERIVED status:
     //   prev != down                  && next == down     → monitor.down
     //   prev != degraded && prev != down && next == degraded → monitor.degraded
     //   prev ∈ {down, degraded}       && next == up       → monitor.recovered
+    //
+    // Comparing against the derived value rather than this probe's result is
+    // what stops alert storms once several regions report: otherwise one region
+    // going down and another reporting up would emit down/recovered on every
+    // probe cycle. `region` stays in the payload so the Slack message can still
+    // say where it was observed.
     const monitorPayload = {
       id: monitor.id,
       slug: monitor.slug,
       name: monitor.name,
       url: monitor.url,
     };
-    if (previousStatus !== "down" && body.status === "down") {
+    if (previousStatus !== "down" && derivedStatus === "down") {
       await tx.insert(schema.events).values({
         workspaceId: monitor.workspaceId,
         type: "monitor.down",
@@ -140,7 +184,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
     } else if (
       previousStatus !== "degraded" &&
       previousStatus !== "down" &&
-      body.status === "degraded"
+      derivedStatus === "degraded"
     ) {
       await tx.insert(schema.events).values({
         workspaceId: monitor.workspaceId,
@@ -155,7 +199,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
       });
     } else if (
       (previousStatus === "down" || previousStatus === "degraded") &&
-      body.status === "up"
+      derivedStatus === "up"
     ) {
       const downForMs = monitor.lastCheckedAt
         ? checkedAt.getTime() - monitor.lastCheckedAt.getTime()

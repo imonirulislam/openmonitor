@@ -1,7 +1,11 @@
 {
   "extends": "@openmonitor/tsconfig/node.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    // The node preset pins `types` to ["node"], which excludes @types/bun and
+    // breaks `import ... from "bun:test"`. Only this package has tests, so widen
+    // it here rather than in the shared preset.
+    "types": ["node", "bun"]
   },
   "include": ["src/**/*.ts", "drizzle.config.ts"],
   "exclude": ["dist", "drizzle"]

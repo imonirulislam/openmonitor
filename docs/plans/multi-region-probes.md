@@ -1,6 +1,7 @@
 # Multi-region probes: per-location auth + per-region status
 
-Status: **proposed** — no code written yet. Per root `CLAUDE.md`, multi-region probe
+Status: **steps 1–2 landed.** Schema and the reduction are in; per-location auth (step 3)
+and everything after it are still proposed. Per root `CLAUDE.md`, multi-region probe
 aggregation is on the "propose the design before scaffolding" list.
 
 ## What already works
@@ -155,6 +156,19 @@ with `pgEnum("monitor_region_policy", ["any", "majority", "all"])`:
 or location disabled) are **excluded from the denominator** — otherwise adding a new region
 instantly drags every monitor toward `unknown`.
 
+### Settling
+
+Because only *reporting* regions count, the derived status legitimately moves while a new
+set of regions reports in for the first time. Bring up three regions under `majority` and
+the first probe arrives when that region is the only one reporting, so it briefly decides
+the outcome on its own; the value settles once its peers report.
+
+This is not the alert storm — it happens once, on the way in, and then stops. Verified
+end-to-end: after all regions have reported, six further probes with one region flapping
+produce **zero** events under both `all` and `majority`. Worth knowing when adding a region
+to a live workspace, and an argument for adding a location in a disabled state and enabling
+it once it has reported.
+
 Default `any` preserves today's single-region behavior exactly, which makes the migration a
 no-op for existing users.
 
@@ -173,11 +187,11 @@ transfer — they push results to Tinybird because they run 28 regions; we don't
 
 Additive and reversible. Each step ships independently.
 
-**Step 1 — schema.** Add all three tables plus the `region_policy` column and enum. Backfill
+**Step 1 — schema. ✅ Landed.** Add all three tables plus the `region_policy` column and enum. Backfill
 `monitor_region_status` from `monitors.currentStatus` as region `local` so nothing reads empty.
 No behavior change.
 
-**Step 2 — reduction logic.** Move ingest to per-region upsert + derived global status + gated
+**Step 2 — reduction logic. ✅ Landed.** Move ingest to per-region upsert + derived global status + gated
 events. With one region and policy `any`, output is byte-identical to today. **This is the step
 that needs the most test coverage** — it's where alert-storm regressions would hide.
 

@@ -22,6 +22,7 @@
     "lint:types": "tsgolint",
     "format": "biome format --write . && oxfmt .",
     "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
     "knip": "knip",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "db:generate": "bun run --filter @openmonitor/db generate",
