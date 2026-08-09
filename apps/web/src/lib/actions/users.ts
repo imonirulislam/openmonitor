@@ -1,11 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { z } from "zod";
 import { hashPassword, verifyPassword } from "@openmonitor/auth/password";
 import { and, db, eq, schema } from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
 import { auth } from "~/auth";
 import { logAudit } from "~/lib/audit";
 import { getCurrentWorkspace } from "~/lib/workspace";
@@ -162,9 +162,7 @@ export async function inviteMember(formData: FormData) {
     redirect(
       withToastRedirect(
         `/dashboard/settings/members?invited=${userId}&token=${token}`,
-        existing
-          ? `Added ${email} to the workspace`
-          : `Invited ${email} — share the link below`,
+        existing ? `Added ${email} to the workspace` : `Invited ${email} — share the link below`,
       ),
     );
   });
@@ -218,9 +216,7 @@ export async function removeMember(userId: string): Promise<void> {
   });
 
   revalidatePath("/dashboard/settings/members");
-  redirect(
-    withToastRedirect("/dashboard/settings/members", "Member removed", "info"),
-  );
+  redirect(withToastRedirect("/dashboard/settings/members", "Member removed", "info"));
 }
 
 export async function setUserActive(userId: string, active: boolean): Promise<void> {
@@ -261,11 +257,7 @@ const acceptInviteSchema = z
   });
 
 export async function acceptInvite(token: string, formData: FormData) {
-  const parsed = parseOrFlash(
-    acceptInviteSchema,
-    Object.fromEntries(formData),
-    `/invite/${token}`,
-  );
+  const parsed = parseOrFlash(acceptInviteSchema, Object.fromEntries(formData), `/invite/${token}`);
 
   // Look up the verification token. Identifier format:
   // invite:<workspace_id>:<user_id>:<role>
@@ -310,9 +302,7 @@ export async function acceptInvite(token: string, formData: FormData) {
   // Send the user to /login with a toast prompting them to sign in. We don't
   // auto-sign-in because Auth.js's signIn() can't easily be invoked from a
   // server action without a request body in the right shape.
-  redirect(
-    withToastRedirect("/login", "Account ready — sign in with your new password"),
-  );
+  redirect(withToastRedirect("/login", "Account ready — sign in with your new password"));
 }
 
 function generateToken(): string {

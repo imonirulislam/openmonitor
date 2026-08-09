@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -17,7 +17,7 @@
       "!**/coverage",
       "!**/drizzle/meta",
       "!**/*.gen.ts",
-      "!apps/checker/**"
+      "!apps/checker"
     ]
   },
   "formatter": {
@@ -30,14 +30,41 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "style": {
         "useImportType": "error",
-        "useNodejsImportProtocol": "error"
+        "useNodejsImportProtocol": "error",
+        "noNonNullAssertion": "warn"
       },
       "suspicious": {
-        "noExplicitAny": "warn"
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn",
+        "noImplicitAnyLet": "warn",
+        "noDocumentCookie": "warn",
+        "noShadowRestrictedNames": "warn"
+      },
+      "complexity": {
+        "useOptionalChain": "warn"
+      },
+      "performance": {
+        "noImgElement": "warn"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      },
+      "a11y": {
+        "noLabelWithoutControl": "warn",
+        "useAriaPropsSupportedByRole": "warn",
+        "useSemanticElements": "warn",
+        "useFocusableInteractive": "warn",
+        "useAriaPropsForRole": "warn",
+        "noSvgWithoutTitle": "warn"
       }
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "javascript": {

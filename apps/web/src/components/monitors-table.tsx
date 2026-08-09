@@ -1,16 +1,11 @@
 "use client";
 
+import { cn, LocalTime } from "@openmonitor/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { LocalTime, cn } from "@openmonitor/ui";
 import { deleteMonitor, toggleMonitorEnabled } from "~/lib/actions/monitors";
 import { DataTable } from "./data-table";
-import {
-  RowAction,
-  RowActionAction,
-  RowActionSeparator,
-  RowActions,
-} from "./row-actions";
+import { RowAction, RowActionAction, RowActionSeparator, RowActions } from "./row-actions";
 
 type Row = {
   id: string;
@@ -44,10 +39,7 @@ const columns: ColumnDef<Row>[] = [
     accessorKey: "name",
     header: "Name",
     cell: ({ row }) => (
-      <Link
-        href={`/dashboard/monitors/${row.original.id}`}
-        className="font-medium hover:underline"
-      >
+      <Link href={`/dashboard/monitors/${row.original.id}`} className="font-medium hover:underline">
         {row.original.name}
       </Link>
     ),
@@ -144,9 +136,7 @@ const columns: ColumnDef<Row>[] = [
               <Link href={`/dashboard/monitors/${m.id}/logs`}>View logs</Link>
             </RowAction>
             <RowActionSeparator />
-            <RowActionAction
-              action={toggleMonitorEnabled.bind(null, m.id, !m.enabled)}
-            >
+            <RowActionAction action={toggleMonitorEnabled.bind(null, m.id, !m.enabled)}>
               {m.enabled ? "Disable" : "Enable"}
             </RowActionAction>
             <RowActionSeparator />

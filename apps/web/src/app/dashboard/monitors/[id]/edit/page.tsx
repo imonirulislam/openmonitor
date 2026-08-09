@@ -1,5 +1,4 @@
-import { notFound } from "next/navigation";
-import { db, eq, schema, type Assertion } from "@openmonitor/db";
+import { type Assertion, db, eq, schema } from "@openmonitor/db";
 import {
   Button,
   FormCard,
@@ -12,6 +11,7 @@ import {
   Input,
   Label,
 } from "@openmonitor/ui";
+import { notFound } from "next/navigation";
 import { MonitorConfigForm } from "~/components/monitor-config-form";
 import { MonitorResponseTimeForm } from "~/components/monitor-response-time-form";
 import {
@@ -21,11 +21,7 @@ import {
   updateMonitorSchedule,
 } from "~/lib/actions/monitors";
 
-export default async function EditMonitorPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EditMonitorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [monitor] = await db()
     .select()
@@ -108,24 +104,21 @@ export default async function EditMonitorPage({
               name="autoIncidentThreshold"
               type="number"
               defaultValue={
-                monitor.autoIncidentThreshold != null
-                  ? String(monitor.autoIncidentThreshold)
-                  : ""
+                monitor.autoIncidentThreshold != null ? String(monitor.autoIncidentThreshold) : ""
               }
               min={0}
               max={50}
             />
           </div>
           <p className="text-muted-foreground text-xs">
-            With <span className="font-mono">retry count = N</span>, a monitor only flips
-            to <span className="font-mono">down</span> after the initial probe + N
-            retries fail in a row. Useful for cutting transient-network false positives.
+            With <span className="font-mono">retry count = N</span>, a monitor only flips to{" "}
+            <span className="font-mono">down</span> after the initial probe + N retries fail in a
+            row. Useful for cutting transient-network false positives.
           </p>
           <p className="text-muted-foreground text-xs">
-            <span className="font-mono">Auto-incident threshold</span>: after this many
-            consecutive <span className="font-mono">down</span> probes the API
-            auto-opens a public incident; recovery auto-resolves it. Leave blank or 0 to
-            disable.
+            <span className="font-mono">Auto-incident threshold</span>: after this many consecutive{" "}
+            <span className="font-mono">down</span> probes the API auto-opens a public incident;
+            recovery auto-resolves it. Leave blank or 0 to disable.
           </p>
           <label className="flex items-center gap-2 text-sm">
             <input

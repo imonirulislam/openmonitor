@@ -2,13 +2,13 @@
 
 import {
   Button,
+  cn,
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  cn,
 } from "@openmonitor/ui";
 import { ChevronDownIcon, XIcon } from "lucide-react";
 import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
@@ -151,10 +151,7 @@ function FilterMenu({
         <Button
           variant="outline"
           size="sm"
-          className={cn(
-            "h-8 text-xs",
-            activeCount > 0 && "border-primary/50",
-          )}
+          className={cn("h-8 text-xs", activeCount > 0 && "border-primary/50")}
         >
           {label}
           {activeCount > 0 ? (

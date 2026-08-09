@@ -1,17 +1,17 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { z } from "zod";
 import { and, db, eq, schema } from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { z } from "zod";
 import { auth } from "~/auth";
 import { logAudit } from "~/lib/audit";
 import {
+  getCurrentWorkspace,
   WORKSPACE_COOKIE_MAX_AGE,
   WORKSPACE_COOKIE_NAME,
-  getCurrentWorkspace,
 } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
 
@@ -136,9 +136,7 @@ export async function renameWorkspace(formData: FormData) {
   });
 
   revalidatePath("/dashboard/settings/workspace");
-  redirect(
-    withToastRedirect("/dashboard/settings/workspace", "Workspace updated"),
-  );
+  redirect(withToastRedirect("/dashboard/settings/workspace", "Workspace updated"));
 }
 
 export async function deleteWorkspace(): Promise<void> {

@@ -1,6 +1,5 @@
 "use client";
 
-import { PlusIcon } from "lucide-react";
 import {
   Button,
   Input,
@@ -14,6 +13,7 @@ import {
   SheetTrigger,
   Textarea,
 } from "@openmonitor/ui";
+import { PlusIcon } from "lucide-react";
 import { MonitorMultiSelect } from "./monitor-multi-select";
 
 /**
@@ -73,8 +73,7 @@ export function IncidentSheet({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="message">
-              Initial update{" "}
-              <span className="font-normal text-muted-foreground">(markdown)</span>
+              Initial update <span className="font-normal text-muted-foreground">(markdown)</span>
             </Label>
             <Textarea id="message" name="message" rows={4} required maxLength={5000} />
           </div>

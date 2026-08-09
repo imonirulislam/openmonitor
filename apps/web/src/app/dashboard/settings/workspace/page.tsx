@@ -11,11 +11,7 @@ import {
   Input,
   Label,
 } from "@openmonitor/ui";
-import {
-  createWorkspace,
-  deleteWorkspace,
-  renameWorkspace,
-} from "~/lib/actions/workspace";
+import { createWorkspace, deleteWorkspace, renameWorkspace } from "~/lib/actions/workspace";
 import { getCurrentWorkspace } from "~/lib/workspace";
 
 export default async function WorkspaceSettingsPage({
@@ -45,7 +41,13 @@ export default async function WorkspaceSettingsPage({
         <FormCardContent>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" name="name" defaultValue={workspace.name} required disabled={!isAdmin} />
+            <Input
+              id="name"
+              name="name"
+              defaultValue={workspace.name}
+              required
+              disabled={!isAdmin}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="slug">Slug</Label>
@@ -111,8 +113,8 @@ export default async function WorkspaceSettingsPage({
           <FormCardHeader>
             <FormCardTitle className="text-destructive">Danger zone</FormCardTitle>
             <FormCardDescription>
-              Deletes this workspace and all its monitors, incidents, channels, and audit logs.
-              You can't undo this. Refused if it's your only workspace.
+              Deletes this workspace and all its monitors, incidents, channels, and audit logs. You
+              can't undo this. Refused if it's your only workspace.
             </FormCardDescription>
           </FormCardHeader>
           <FormCardFooter className="bg-destructive/5">

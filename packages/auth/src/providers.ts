@@ -1,7 +1,7 @@
+import { db, eq, schema } from "@openmonitor/db";
 import type { Provider } from "next-auth/providers";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
-import { db, eq, schema } from "@openmonitor/db";
 import { verifyPassword } from "./password";
 
 const credentialsSchema = z.object({

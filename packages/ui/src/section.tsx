@@ -24,10 +24,7 @@ export function SectionHeader({ className, ...props }: ComponentProps<"div">) {
 export function SectionHeaderRow({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
-      className={cn(
-        "flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between",
-        className,
-      )}
+      className={cn("flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between", className)}
       {...props}
     />
   );
@@ -47,12 +44,7 @@ export function SectionDescription({ className, ...props }: ComponentProps<"p">)
 }
 
 export function SectionGroup({ className, ...props }: ComponentProps<"div">) {
-  return (
-    <div
-      className={cn("flex w-full flex-col gap-8", className)}
-      {...props}
-    />
-  );
+  return <div className={cn("flex w-full flex-col gap-8", className)} {...props} />;
 }
 
 export function SectionGroupHeader({ className, ...props }: ComponentProps<"div">) {

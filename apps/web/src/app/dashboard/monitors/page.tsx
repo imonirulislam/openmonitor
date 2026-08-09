@@ -1,5 +1,3 @@
-import { ArrowDownIcon, CheckCircle2Icon, ListFilterIcon, PlusIcon } from "lucide-react";
-import Link from "next/link";
 import { and, db, desc, eq, gte, inArray, schema, sql } from "@openmonitor/db";
 import {
   Button,
@@ -16,6 +14,8 @@ import {
   SectionHeaderRow,
   SectionTitle,
 } from "@openmonitor/ui";
+import { ArrowDownIcon, CheckCircle2Icon, ListFilterIcon, PlusIcon } from "lucide-react";
+import Link from "next/link";
 import { MonitorsTable } from "~/components/monitors-table";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
@@ -72,10 +72,7 @@ export default async function MonitorsPage({
             startedAt: sql<Date>`max(${schema.incidents.startedAt})`,
           })
           .from(schema.incidentMonitors)
-          .innerJoin(
-            schema.incidents,
-            eq(schema.incidents.id, schema.incidentMonitors.incidentId),
-          )
+          .innerJoin(schema.incidents, eq(schema.incidents.id, schema.incidentMonitors.incidentId))
           .where(inArray(schema.incidentMonitors.monitorId, monitorIds))
           .groupBy(schema.incidentMonitors.monitorId)
       : [];
@@ -92,7 +89,9 @@ export default async function MonitorsPage({
       ? await conn
           .select({
             monitorId: schema.monitorRuns.monitorId,
-            p95: sql<number | null>`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
+            p95: sql<
+              number | null
+            >`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
           })
           .from(schema.monitorRuns)
           .where(
@@ -111,13 +110,12 @@ export default async function MonitorsPage({
     monitorIds.length > 0
       ? await conn
           .select({
-            p95: sql<number | null>`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
+            p95: sql<
+              number | null
+            >`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
           })
           .from(schema.monitorRuns)
-          .innerJoin(
-            schema.monitors,
-            eq(schema.monitors.id, schema.monitorRuns.monitorId),
-          )
+          .innerJoin(schema.monitors, eq(schema.monitors.id, schema.monitorRuns.monitorId))
           .where(
             and(
               eq(schema.monitors.workspaceId, workspaceId),
@@ -209,9 +207,7 @@ export default async function MonitorsPage({
                     <MetricCardTitle>p95 (24h)</MetricCardTitle>
                     <Icon className="size-4" />
                   </MetricCardHeader>
-                  <MetricCardValue>
-                    {globalP95 != null ? `${globalP95} ms` : "—"}
-                  </MetricCardValue>
+                  <MetricCardValue>{globalP95 != null ? `${globalP95} ms` : "—"}</MetricCardValue>
                 </MetricCardButton>
               </Link>
             );

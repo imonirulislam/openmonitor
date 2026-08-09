@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { PlusIcon } from "lucide-react";
 import { db, desc, eq, schema } from "@openmonitor/db";
 import { Badge, Button, Card, LocalTime, Separator } from "@openmonitor/ui";
+import { PlusIcon } from "lucide-react";
+import Link from "next/link";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function HeartbeatsIndex() {

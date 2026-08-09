@@ -206,9 +206,12 @@ export class ApiClient {
    * store as a cookie, or `null` on bad password. Status-page server actions
    * call this; visitors don't hit the API directly.
    */
-  async unlockPage(
-    options: { workspace?: string; page?: string; host?: string; password: string },
-  ): Promise<{ token: string } | null> {
+  async unlockPage(options: {
+    workspace?: string;
+    page?: string;
+    host?: string;
+    password: string;
+  }): Promise<{ token: string } | null> {
     const res = await this.fetchFn(`${this.baseUrl}/v1/pages/unlock`, {
       method: "POST",
       headers: { "content-type": "application/json", ...this.headers },

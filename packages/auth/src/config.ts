@@ -1,6 +1,6 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import type { NextAuthConfig } from "next-auth";
 import { db, schema } from "@openmonitor/db";
+import type { NextAuthConfig } from "next-auth";
 import { edgeAuthConfig } from "./edge-config";
 import { buildProviders } from "./providers";
 

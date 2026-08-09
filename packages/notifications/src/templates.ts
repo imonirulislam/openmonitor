@@ -208,11 +208,7 @@ function monitorRecovered(p: MonitorRecoveredPayload): SlackMessage {
 function incidentMessage(type: EventType, p: IncidentPayload): SlackMessage {
   const emoji = STATUS_EMOJI[p.incident.status] ?? ":bell:";
   const verb =
-    type === "incident.created"
-      ? "opened"
-      : type === "incident.resolved"
-        ? "resolved"
-        : "updated";
+    type === "incident.created" ? "opened" : type === "incident.resolved" ? "resolved" : "updated";
   const text = `${emoji} Incident ${verb}: ${p.incident.title}`;
   const fields: Array<{ type: "mrkdwn"; text: string }> = [
     { type: "mrkdwn", text: `*Status*\n${p.incident.status}` },

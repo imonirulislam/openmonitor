@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
+import { cn, ThemeProvider } from "@openmonitor/ui";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
-import { ThemeProvider, cn } from "@openmonitor/ui";
+import type { ReactNode } from "react";
 import { SiteFooter, SiteHeader } from "~/components/site-header";
 import "./globals.css";
 

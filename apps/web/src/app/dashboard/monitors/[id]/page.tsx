@@ -1,5 +1,3 @@
-import { formatDistanceToNowStrict } from "date-fns";
-import { notFound } from "next/navigation";
 import { and, db, eq, gte, schema, sql } from "@openmonitor/db";
 import {
   Card,
@@ -11,12 +9,14 @@ import {
   type MetricCardVariant,
   TimingPhasesChart,
 } from "@openmonitor/ui";
+import { formatDistanceToNowStrict } from "date-fns";
+import { notFound } from "next/navigation";
 import { LatencyChart } from "~/components/latency-chart";
 import { LatencyChartControls } from "~/components/latency-chart-controls";
 import {
   QUANTILES,
-  RESOLUTIONS,
   type Quantile,
+  RESOLUTIONS,
   type Resolution,
 } from "~/components/latency-chart-options";
 import { MonitorRegions } from "~/components/monitor-regions";
@@ -42,10 +42,8 @@ export default async function OverviewPage({
   const sp = await searchParams;
   // Pin URL params to the allowlists so a tampered query doesn't leak into
   // the SQL — defaults match openstatus's chart (P50 / 30 minutes).
-  const quantile: Quantile =
-    QUANTILES.find((q) => q.value === sp.q)?.value ?? "p50";
-  const resolution: Resolution =
-    RESOLUTIONS.find((r) => r.value === sp.r)?.value ?? "30";
+  const quantile: Quantile = QUANTILES.find((q) => q.value === sp.q)?.value ?? "p50";
+  const resolution: Resolution = RESOLUTIONS.find((r) => r.value === sp.r)?.value ?? "30";
   const quantileNumber = QUANTILE_TO_NUMBER[quantile];
   const bucketMinutes = Number.parseInt(resolution, 10);
   const workspaceId = await getCurrentWorkspaceId();
@@ -67,16 +65,24 @@ export default async function OverviewPage({
       ok: sql<number>`sum(case when ${schema.monitorRuns.status} = 'up' then 1 else 0 end)::int`,
       degraded: sql<number>`sum(case when ${schema.monitorRuns.status} = 'degraded' then 1 else 0 end)::int`,
       failing: sql<number>`sum(case when ${schema.monitorRuns.status} = 'down' then 1 else 0 end)::int`,
-      p50: sql<number | null>`(percentile_cont(0.5) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-      p75: sql<number | null>`(percentile_cont(0.75) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-      p90: sql<number | null>`(percentile_cont(0.9) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-      p95: sql<number | null>`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-      p99: sql<number | null>`(percentile_cont(0.99) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
+      p50: sql<
+        number | null
+      >`(percentile_cont(0.5) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
+      p75: sql<
+        number | null
+      >`(percentile_cont(0.75) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
+      p90: sql<
+        number | null
+      >`(percentile_cont(0.9) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
+      p95: sql<
+        number | null
+      >`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
+      p99: sql<
+        number | null
+      >`(percentile_cont(0.99) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
     })
     .from(schema.monitorRuns)
-    .where(
-      and(eq(schema.monitorRuns.monitorId, id), gte(schema.monitorRuns.checkedAt, since)),
-    );
+    .where(and(eq(schema.monitorRuns.monitorId, id), gte(schema.monitorRuns.checkedAt, since)));
 
   const total = stats?.total ?? 0;
   const ok = stats?.ok ?? 0;
@@ -105,9 +111,7 @@ export default async function OverviewPage({
       phaseSamples: sql<number>`count(latency_ttfb_ms)::int`,
     })
     .from(schema.monitorRuns)
-    .where(
-      and(eq(schema.monitorRuns.monitorId, id), gte(schema.monitorRuns.checkedAt, since)),
-    )
+    .where(and(eq(schema.monitorRuns.monitorId, id), gte(schema.monitorRuns.checkedAt, since)))
     .groupBy(sql`1`)
     .orderBy(sql`1`);
 
@@ -182,15 +186,10 @@ export default async function OverviewPage({
             Response time across all the regions
           </p>
         </div>
-        {hasPhaseData ? (
-          <LatencyChartControls quantile={quantile} resolution={resolution} />
-        ) : null}
+        {hasPhaseData ? <LatencyChartControls quantile={quantile} resolution={resolution} /> : null}
         <Card className="p-5">
           {hasPhaseData ? (
-            <TimingPhasesChart
-              data={phaseBuckets}
-              resolutionMinutes={bucketMinutes}
-            />
+            <TimingPhasesChart data={phaseBuckets} resolutionMinutes={bucketMinutes} />
           ) : (
             <LatencyChart data={buckets} />
           )}
@@ -224,9 +223,7 @@ function BigMetric({
   return (
     <MetricCard variant={variant}>
       <MetricCardHeader>
-        <MetricCardTitle className="text-[10px] uppercase tracking-wide">
-          {label}
-        </MetricCardTitle>
+        <MetricCardTitle className="text-[10px] uppercase tracking-wide">{label}</MetricCardTitle>
       </MetricCardHeader>
       <MetricCardValue className={big ? "text-2xl" : "text-base font-medium"}>
         {value}

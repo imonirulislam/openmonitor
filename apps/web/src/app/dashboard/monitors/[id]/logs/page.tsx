@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
 import { db, desc, eq, schema, sql } from "@openmonitor/db";
+import { notFound } from "next/navigation";
 import { MonitorLogsTable } from "~/components/monitor-logs-table";
 
 // How many probes to ship to the client. Sized to comfortably hold ~24h of
@@ -7,11 +7,7 @@ import { MonitorLogsTable } from "~/components/monitor-logs-table";
 // move to server-side pagination — see CLAUDE.md note.
 const ROW_LIMIT = 2000;
 
-export default async function MonitorLogsPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function MonitorLogsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const conn = db();
   const [monitor] = await conn

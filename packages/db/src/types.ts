@@ -2,8 +2,8 @@ import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type {
   auditLogs,
   events,
-  incidentUpdates,
   incidents,
+  incidentUpdates,
   maintenances,
   monitorRuns,
   monitors,

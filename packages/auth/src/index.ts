@@ -1,5 +1,5 @@
 export { authConfig } from "./config";
-export { edgeAuthConfig } from "./edge-config";
 export type { UserRole } from "./edge-config";
-export { buildProviders } from "./providers";
+export { edgeAuthConfig } from "./edge-config";
 export { hashPassword, verifyPassword } from "./password";
+export { buildProviders } from "./providers";

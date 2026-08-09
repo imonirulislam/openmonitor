@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { api } from "~/lib/api";
 import { StatusPageView } from "~/components/status-page-view";
+import { api } from "~/lib/api";
 
 export const revalidate = 30;
 

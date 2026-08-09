@@ -1,28 +1,28 @@
 "use client";
 
+import { Button, Card, cn, Input, Select } from "@openmonitor/ui";
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type SortingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ChevronUpIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
   ChevronsUpDownIcon,
+  ChevronUpIcon,
 } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
-import { Button, Card, Input, Select, cn } from "@openmonitor/ui";
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -83,8 +83,7 @@ export function DataTable<TData, TValue>({
     parseAsInteger.withOptions({ history: "replace", shallow: true }),
   );
   const pageIndex = pageParam && pageParam > 0 ? pageParam - 1 : 0;
-  const pageSize =
-    pageSizeParam && pageSizeParam > 0 ? pageSizeParam : initialPageSize;
+  const pageSize = pageSizeParam && pageSizeParam > 0 ? pageSizeParam : initialPageSize;
 
   const filteredData = useMemo(() => {
     if (!searchFields || !globalQuery.trim()) return data;
@@ -109,17 +108,12 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onPaginationChange: (updater) => {
-      const next =
-        typeof updater === "function"
-          ? updater({ pageIndex, pageSize })
-          : updater;
+      const next = typeof updater === "function" ? updater({ pageIndex, pageSize }) : updater;
       // Keep ?page out of the URL when it's page 1; pageSize is omitted
       // when it equals the component default. Keeps URLs short for the
       // common case.
       void setPageParam(next.pageIndex === 0 ? null : next.pageIndex + 1);
-      void setPageSizeParam(
-        next.pageSize === initialPageSize ? null : next.pageSize,
-      );
+      void setPageSizeParam(next.pageSize === initialPageSize ? null : next.pageSize);
     },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

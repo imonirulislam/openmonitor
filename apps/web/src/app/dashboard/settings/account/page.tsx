@@ -38,9 +38,7 @@ export default async function AccountSettingsPage() {
             <Detail label="Role here" value={ws.role} mono />
             <Detail
               label="Last login"
-              value={
-                user.lastLoginAt ? <LocalTime date={user.lastLoginAt.toISOString()} /> : "—"
-              }
+              value={user.lastLoginAt ? <LocalTime date={user.lastLoginAt.toISOString()} /> : "—"}
               mono
             />
             <Detail
@@ -104,15 +102,7 @@ export default async function AccountSettingsPage() {
   );
 }
 
-function Detail({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
+function Detail({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
     <>
       <dt className="col-span-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">

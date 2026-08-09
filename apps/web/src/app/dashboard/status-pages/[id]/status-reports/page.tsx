@@ -1,15 +1,11 @@
-import Link from "next/link";
 import { db, desc, eq, inArray, schema } from "@openmonitor/db";
 import { Card } from "@openmonitor/ui";
+import Link from "next/link";
 import { IncidentSheet } from "~/components/incident-sheet";
 import { StatusReportsTable } from "~/components/status-reports-table";
 import { createIncident } from "~/lib/actions/incidents";
 
-export default async function StatusReportsTab({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function StatusReportsTab({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const conn = db();
 
@@ -26,10 +22,7 @@ export default async function StatusReportsTab({
   const linkedMonitors = await conn
     .select({ id: schema.monitors.id })
     .from(schema.pageComponents)
-    .innerJoin(
-      schema.monitors,
-      eq(schema.monitors.id, schema.pageComponents.monitorId),
-    )
+    .innerJoin(schema.monitors, eq(schema.monitors.id, schema.pageComponents.monitorId))
     .where(eq(schema.pageComponents.statusPageId, id));
   const monitorIds = linkedMonitors.map((l) => l.id);
 
@@ -61,10 +54,7 @@ export default async function StatusReportsTab({
           <h2 className="font-semibold text-lg">Status reports</h2>
           <p className="mt-0.5 text-muted-foreground text-sm">
             Incidents affecting components on this page. Looking for{" "}
-            <Link
-              href={`/dashboard/status-pages/${id}/maintenances`}
-              className="underline"
-            >
+            <Link href={`/dashboard/status-pages/${id}/maintenances`} className="underline">
               maintenances
             </Link>
             ?

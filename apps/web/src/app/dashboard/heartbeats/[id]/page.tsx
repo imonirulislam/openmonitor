@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { and, db, eq, schema } from "@openmonitor/db";
 import {
   Badge,
@@ -15,19 +14,12 @@ import {
   LocalTime,
   Textarea,
 } from "@openmonitor/ui";
+import { notFound } from "next/navigation";
 import { CopyButton } from "~/components/copy-button";
-import {
-  deleteHeartbeat,
-  rotateHeartbeatToken,
-  updateHeartbeat,
-} from "~/lib/actions/heartbeats";
+import { deleteHeartbeat, rotateHeartbeatToken, updateHeartbeat } from "~/lib/actions/heartbeats";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
-export default async function HeartbeatEdit({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function HeartbeatEdit({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const workspaceId = await getCurrentWorkspaceId();
   const [hb] = await db()
@@ -166,7 +158,9 @@ export default async function HeartbeatEdit({
           </label>
         </FormCardContent>
         <FormCardFooter>
-          <FormCardFooterInfo>Saved settings take effect on the next sweep tick.</FormCardFooterInfo>
+          <FormCardFooterInfo>
+            Saved settings take effect on the next sweep tick.
+          </FormCardFooterInfo>
           <Button type="submit">Save</Button>
         </FormCardFooter>
       </FormCard>

@@ -1,9 +1,9 @@
-import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { z } from "zod";
 import { and, db, eq, ne, schema } from "@openmonitor/db";
-import { apiKeyAuth } from "../middleware/api-key";
+import { Hono } from "hono";
+import { z } from "zod";
 import { env } from "../env";
+import { apiKeyAuth } from "../middleware/api-key";
 
 const probeSchema = z.object({
   monitorId: z.string().uuid(),
@@ -53,8 +53,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
   const checkedAt = body.checkedAt ? new Date(body.checkedAt) : new Date();
   const previousStatus = monitor.currentStatus;
   // Auto-incident bookkeeping: bump on `down`, reset on anything else.
-  const newConsecutiveFailures =
-    body.status === "down" ? monitor.consecutiveFailures + 1 : 0;
+  const newConsecutiveFailures = body.status === "down" ? monitor.consecutiveFailures + 1 : 0;
   const threshold = monitor.autoIncidentThreshold ?? 0;
 
   // Only auto-create a public incident if (a) threshold is enabled, (b) this
@@ -87,8 +86,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
     shouldOpenAutoIncident = open.length === 0;
   }
   const shouldResolveAutoIncident =
-    body.status === "up" &&
-    (previousStatus === "down" || previousStatus === "degraded");
+    body.status === "up" && (previousStatus === "down" || previousStatus === "degraded");
 
   await conn.transaction(async (tx) => {
     await tx.insert(schema.monitorRuns).values({

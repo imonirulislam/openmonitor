@@ -2,7 +2,9 @@ import { type Context, Hono } from "hono";
 // rrule's main entry is a UMD bundle; named ESM imports fail at runtime.
 // Default-import then destructure to get the actual exports.
 import rrulePkg from "rrule";
+
 const { rrulestr } = rrulePkg as unknown as typeof import("rrule");
+
 import { and, asc, db, desc, eq, gte, inArray, schema, sql } from "@openmonitor/db";
 import { resolveStatusPage } from "../lib/resolve-page";
 import { verifyUnlockToken } from "../lib/unlock-token";
@@ -76,10 +78,7 @@ statusRoutes.get("/v1/status", async (c) => {
         eq(schema.pageComponents.workspaceId, ws),
       ),
     )
-    .orderBy(
-      asc(schema.pageComponents.position),
-      asc(schema.pageComponents.groupPosition),
-    );
+    .orderBy(asc(schema.pageComponents.position), asc(schema.pageComponents.groupPosition));
 
   // Hide monitor-typed components whose underlying monitor has been disabled.
   // Static components always surface.
@@ -111,10 +110,7 @@ statusRoutes.get("/v1/status", async (c) => {
           .select({ id: schema.monitors.id })
           .from(schema.monitors)
           .where(
-            and(
-              eq(schema.monitors.workspaceId, ws),
-              inArray(schema.monitors.slug, pageMonitorIds),
-            ),
+            and(eq(schema.monitors.workspaceId, ws), inArray(schema.monitors.slug, pageMonitorIds)),
           )
       : [];
   const pageMonitorIdSet = new Set(pageMonitorIdRows.map((r) => r.id));
@@ -337,10 +333,7 @@ statusRoutes.get("/v1/status", async (c) => {
       monitorSlug: c.monitorSlug,
       name: c.name,
       description: c.description,
-      status:
-        c.type === "monitor"
-          ? (c.monitorStatus ?? "unknown")
-          : (c.staticStatus ?? "unknown"),
+      status: c.type === "monitor" ? (c.monitorStatus ?? "unknown") : (c.staticStatus ?? "unknown"),
       lastCheckedAt: c.lastCheckedAt?.toISOString() ?? null,
       groupId: c.groupId,
     })),
@@ -352,9 +345,7 @@ statusRoutes.get("/v1/status", async (c) => {
     incidents: activeIncidents.map(buildIncident),
     maintenances: expanded.map(buildMaintenance),
     pastIncidents: pastIncidents.map(buildIncident),
-    pastMaintenances: pastMaintenance.map((m) =>
-      buildMaintenance({ ...m, occurrenceId: m.id }),
-    ),
+    pastMaintenances: pastMaintenance.map((m) => buildMaintenance({ ...m, occurrenceId: m.id })),
   });
 });
 
@@ -452,9 +443,7 @@ statusRoutes.get("/v1/monitors/:slug/history", async (c) => {
   // SQL stays simple. Recurring maintenances are kept as their base
   // window (RRULE expansion happens elsewhere); single occurrences cover
   // the common case.
-  const windowStartIso = new Date(
-    Date.now() - days * 24 * 60 * 60 * 1000,
-  ).toISOString();
+  const windowStartIso = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   const incidentRows = await conn
     .select({
       id: schema.incidents.id,
@@ -466,10 +455,7 @@ statusRoutes.get("/v1/monitors/:slug/history", async (c) => {
       autoCreated: schema.incidents.autoCreated,
     })
     .from(schema.incidents)
-    .innerJoin(
-      schema.incidentMonitors,
-      eq(schema.incidentMonitors.incidentId, schema.incidents.id),
-    )
+    .innerJoin(schema.incidentMonitors, eq(schema.incidentMonitors.incidentId, schema.incidents.id))
     .where(
       and(
         eq(schema.incidents.workspaceId, page.workspaceId),
@@ -635,10 +621,7 @@ statusRoutes.get("/v1/monitors/:slug/latency", async (c) => {
     })
     .from(schema.monitorRuns)
     .where(
-      and(
-        eq(schema.monitorRuns.monitorId, monitor.id),
-        gte(schema.monitorRuns.checkedAt, since),
-      ),
+      and(eq(schema.monitorRuns.monitorId, monitor.id), gte(schema.monitorRuns.checkedAt, since)),
     )
     .groupBy(sql`1`)
     .orderBy(sql`1`);
@@ -657,4 +640,3 @@ function isValidIanaTz(tz: string | undefined): boolean {
   // throw and the request 500s, which is fine.
   return /^[A-Za-z_]+(\/[A-Za-z_+-]+)*$/.test(tz);
 }
-

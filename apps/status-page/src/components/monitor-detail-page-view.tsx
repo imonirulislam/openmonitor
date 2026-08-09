@@ -1,7 +1,3 @@
-import { ArrowLeftIcon } from "lucide-react";
-import { cookies } from "next/headers";
-import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
 import { NotFoundError, RequiresPasswordError } from "@openmonitor/api-client";
 import {
   Card,
@@ -11,6 +7,10 @@ import {
   Separator,
   StatusEventFeed,
 } from "@openmonitor/ui";
+import { ArrowLeftIcon } from "lucide-react";
+import { cookies } from "next/headers";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { MonitorDetail } from "~/components/monitor-detail";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";

@@ -1,5 +1,4 @@
 import { db, desc, eq, schema } from "@openmonitor/db";
-import { getCurrentWorkspaceId } from "~/lib/workspace";
 import {
   Badge,
   Button,
@@ -14,17 +13,10 @@ import {
   Separator,
   Textarea,
 } from "@openmonitor/ui";
-import {
-  cancelMaintenance,
-  createMaintenance,
-  deleteMaintenance,
-} from "~/lib/actions/maintenance";
-import {
-  RowActionAction,
-  RowActionSeparator,
-  RowActions,
-} from "~/components/row-actions";
 import { MonitorMultiSelect } from "~/components/monitor-multi-select";
+import { RowActionAction, RowActionSeparator, RowActions } from "~/components/row-actions";
+import { cancelMaintenance, createMaintenance, deleteMaintenance } from "~/lib/actions/maintenance";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function MaintenancePage() {
   const workspaceId = await getCurrentWorkspaceId();
@@ -113,10 +105,7 @@ export default async function MaintenancePage() {
                             <RowActionSeparator />
                           </>
                         ) : null}
-                        <RowActionAction
-                          action={deleteMaintenance.bind(null, m.id)}
-                          destructive
-                        >
+                        <RowActionAction action={deleteMaintenance.bind(null, m.id)} destructive>
                           Delete
                         </RowActionAction>
                       </RowActions>

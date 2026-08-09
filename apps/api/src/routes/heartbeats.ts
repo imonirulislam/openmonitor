@@ -1,5 +1,5 @@
-import { Hono } from "hono";
 import { db, eq, schema } from "@openmonitor/db";
+import { Hono } from "hono";
 
 export const heartbeatRoutes = new Hono();
 

@@ -1,6 +1,6 @@
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "@openmonitor/ui";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "@openmonitor/ui";
 import { submitUnlock } from "./actions";
 
 export default async function UnlockPage({
@@ -27,9 +27,7 @@ export default async function UnlockPage({
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" autoFocus required />
             </div>
-            {sp.error ? (
-              <p className="text-destructive text-sm">{sp.error}</p>
-            ) : null}
+            {sp.error ? <p className="text-destructive text-sm">{sp.error}</p> : null}
             <Button type="submit">Unlock</Button>
           </form>
         </CardContent>

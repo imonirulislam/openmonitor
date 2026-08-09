@@ -106,9 +106,7 @@ export default async function MembersPage({
       ) : null}
 
       <div className="flex flex-col gap-3">
-        <h2 className="font-medium text-sm tracking-tight">
-          Members ({members.length})
-        </h2>
+        <h2 className="font-medium text-sm tracking-tight">Members ({members.length})</h2>
         <MembersTable
           rows={members.map((m) => ({
             userId: m.userId,

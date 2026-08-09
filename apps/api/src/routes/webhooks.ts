@@ -1,5 +1,5 @@
-import { Hono } from "hono";
 import { and, db, eq, schema } from "@openmonitor/db";
+import { Hono } from "hono";
 import { env } from "../env";
 import { verifySlackSignature } from "../lib/slack-signature";
 
@@ -85,9 +85,7 @@ async function renderStatusReply(arg: string) {
         lastCheckedAt: schema.monitors.lastCheckedAt,
       })
       .from(schema.monitors)
-      .where(
-        and(eq(schema.monitors.workspaceId, workspace.id), eq(schema.monitors.slug, arg)),
-      )
+      .where(and(eq(schema.monitors.workspaceId, workspace.id), eq(schema.monitors.slug, arg)))
       .limit(1);
     if (!m) {
       return {
@@ -108,12 +106,7 @@ async function renderStatusReply(arg: string) {
       currentStatus: schema.monitors.currentStatus,
     })
     .from(schema.monitors)
-    .where(
-      and(
-        eq(schema.monitors.workspaceId, workspace.id),
-        eq(schema.monitors.enabled, true),
-      ),
-    );
+    .where(and(eq(schema.monitors.workspaceId, workspace.id), eq(schema.monitors.enabled, true)));
 
   const lines = monitors.map(
     (m) => `${statusEmoji(m.currentStatus)} *${m.name}* — \`${m.currentStatus}\``,

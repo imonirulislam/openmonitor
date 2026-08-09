@@ -10,12 +10,7 @@ import {
 } from "@openmonitor/ui";
 import { CheckIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  QUANTILES,
-  RESOLUTIONS,
-  type Quantile,
-  type Resolution,
-} from "./latency-chart-options";
+import { QUANTILES, type Quantile, RESOLUTIONS, type Resolution } from "./latency-chart-options";
 
 /**
  * Inline pickers shown above the timing-phases chart. Mirrors openstatus's
@@ -49,8 +44,7 @@ export function LatencyChartControls({
   };
 
   const quantileLabel = QUANTILES.find((q) => q.value === quantile)?.label ?? "P50";
-  const resolutionLabel =
-    RESOLUTIONS.find((r) => r.value === resolution)?.label ?? "30 minutes";
+  const resolutionLabel = RESOLUTIONS.find((r) => r.value === resolution)?.label ?? "30 minutes";
 
   return (
     <p className="font-mono text-muted-foreground text-sm">

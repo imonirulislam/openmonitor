@@ -1,17 +1,17 @@
+export {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  lte,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
+export * from "./assertions";
 export * from "./client";
 export * as schema from "./schema";
 export * from "./types";
-export * from "./assertions";
-export {
-  eq,
-  ne,
-  and,
-  or,
-  gte,
-  lte,
-  desc,
-  asc,
-  sql,
-  inArray,
-  ilike,
-} from "drizzle-orm";

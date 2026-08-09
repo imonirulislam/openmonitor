@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
 import { db, desc, eq, schema } from "@openmonitor/db";
+import { notFound } from "next/navigation";
 import { IncidentsTable } from "~/components/incidents-table";
 
 export default async function MonitorIncidentsPage({
@@ -26,10 +26,7 @@ export default async function MonitorIncidentsPage({
       resolvedAt: schema.incidents.resolvedAt,
     })
     .from(schema.incidents)
-    .innerJoin(
-      schema.incidentMonitors,
-      eq(schema.incidentMonitors.incidentId, schema.incidents.id),
-    )
+    .innerJoin(schema.incidentMonitors, eq(schema.incidentMonitors.incidentId, schema.incidents.id))
     .where(eq(schema.incidentMonitors.monitorId, id))
     .orderBy(desc(schema.incidents.startedAt));
 

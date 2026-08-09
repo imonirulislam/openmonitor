@@ -1,8 +1,8 @@
 "use server";
 
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { withToastRedirect } from "@openmonitor/ui";
 import { auth } from "~/auth";
 
 const API_URL = process.env.API_URL ?? "http://localhost:5002";
@@ -18,13 +18,7 @@ export async function runRetentionAction() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "admin") {
-    redirect(
-      withToastRedirect(
-        "/dashboard/settings/system",
-        "Admin role required",
-        "error",
-      ),
-    );
+    redirect(withToastRedirect("/dashboard/settings/system", "Admin role required", "error"));
   }
   const res = await fetch(`${API_URL}/v1/system/scheduler/run`, {
     method: "POST",
@@ -33,11 +27,7 @@ export async function runRetentionAction() {
   });
   if (!res.ok) {
     redirect(
-      withToastRedirect(
-        "/dashboard/settings/system",
-        `Sweep failed: ${res.status}`,
-        "error",
-      ),
+      withToastRedirect("/dashboard/settings/system", `Sweep failed: ${res.status}`, "error"),
     );
   }
   const body = (await res.json()) as {
@@ -48,11 +38,7 @@ export async function runRetentionAction() {
   revalidatePath("/dashboard/settings/system");
   if (body.error) {
     redirect(
-      withToastRedirect(
-        "/dashboard/settings/system",
-        `Sweep error: ${body.error}`,
-        "error",
-      ),
+      withToastRedirect("/dashboard/settings/system", `Sweep error: ${body.error}`, "error"),
     );
   }
   redirect(

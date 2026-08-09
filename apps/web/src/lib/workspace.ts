@@ -1,7 +1,7 @@
+import type { UserRole } from "@openmonitor/db";
+import { and, db, eq, schema } from "@openmonitor/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, db, eq, schema } from "@openmonitor/db";
-import type { UserRole } from "@openmonitor/db";
 import { auth } from "~/auth";
 
 const COOKIE_NAME = "openmonitor_workspace_id";

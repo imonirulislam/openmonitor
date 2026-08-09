@@ -1,5 +1,5 @@
-import { ActivityIcon } from "lucide-react";
 import { Button, Card, CardContent, Input, Label } from "@openmonitor/ui";
+import { ActivityIcon } from "lucide-react";
 import { signIn } from "~/auth";
 
 export default function LoginPage({

@@ -19,12 +19,7 @@ import type { Assertion, HeaderEntry } from "./assertions";
 // ---------- Enums ----------
 
 export const userRoleEnum = pgEnum("user_role", ["admin", "editor", "viewer"]);
-export const monitorStatusEnum = pgEnum("monitor_status", [
-  "up",
-  "down",
-  "degraded",
-  "unknown",
-]);
+export const monitorStatusEnum = pgEnum("monitor_status", ["up", "down", "degraded", "unknown"]);
 export const monitorKindEnum = pgEnum("monitor_kind", ["http", "tcp", "dns"]);
 export const incidentStatusEnum = pgEnum("incident_status", [
   "investigating",
@@ -32,11 +27,7 @@ export const incidentStatusEnum = pgEnum("incident_status", [
   "monitoring",
   "resolved",
 ]);
-export const incidentSeverityEnum = pgEnum("incident_severity", [
-  "minor",
-  "major",
-  "critical",
-]);
+export const incidentSeverityEnum = pgEnum("incident_severity", ["minor", "major", "critical"]);
 export const maintenanceStatusEnum = pgEnum("maintenance_status", [
   "scheduled",
   "in_progress",
@@ -44,11 +35,7 @@ export const maintenanceStatusEnum = pgEnum("maintenance_status", [
   "cancelled",
 ]);
 export const channelTypeEnum = pgEnum("channel_type", ["slack"]);
-export const eventStatusEnum = pgEnum("event_status", [
-  "pending",
-  "sent",
-  "failed",
-]);
+export const eventStatusEnum = pgEnum("event_status", ["pending", "sent", "failed"]);
 export const eventTypeEnum = pgEnum("event_type", [
   "monitor.down",
   "monitor.recovered",
@@ -218,10 +205,7 @@ export const statusPages = pgTable(
 // Components can be ungrouped (rendered at the top) or sit inside a group
 // header. Replaces the original status_page_monitors join table.
 
-export const pageComponentTypeEnum = pgEnum("page_component_type", [
-  "monitor",
-  "static",
-]);
+export const pageComponentTypeEnum = pgEnum("page_component_type", ["monitor", "static"]);
 
 export const pageComponentGroups = pgTable(
   "page_component_groups",
@@ -671,16 +655,13 @@ export const statusPagesRelations = relations(statusPages, ({ many, one }) => ({
   componentGroups: many(pageComponentGroups),
 }));
 
-export const pageComponentGroupsRelations = relations(
-  pageComponentGroups,
-  ({ many, one }) => ({
-    statusPage: one(statusPages, {
-      fields: [pageComponentGroups.statusPageId],
-      references: [statusPages.id],
-    }),
-    components: many(pageComponents),
+export const pageComponentGroupsRelations = relations(pageComponentGroups, ({ many, one }) => ({
+  statusPage: one(statusPages, {
+    fields: [pageComponentGroups.statusPageId],
+    references: [statusPages.id],
   }),
-);
+  components: many(pageComponents),
+}));
 
 export const pageComponentsRelations = relations(pageComponents, ({ one }) => ({
   statusPage: one(statusPages, {

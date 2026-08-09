@@ -24,11 +24,7 @@ export function Status({
 
 export function StatusHeader({ children, className, ...props }: ComponentProps<"div">) {
   return (
-    <div
-      data-slot="status-header"
-      className={cn("flex items-center gap-3", className)}
-      {...props}
-    >
+    <div data-slot="status-header" className={cn("flex items-center gap-3", className)} {...props}>
       {children}
     </div>
   );
@@ -57,10 +53,7 @@ export function StatusIcon({ className, ...props }: ComponentProps<"div">) {
 
 export function StatusTitle({ children, className, ...props }: ComponentProps<"div">) {
   return (
-    <div
-      className={cn("font-semibold text-foreground text-lg leading-none", className)}
-      {...props}
-    >
+    <div className={cn("font-semibold text-foreground text-lg leading-none", className)} {...props}>
       {children}
     </div>
   );
@@ -96,11 +89,7 @@ export function StatusEmptyState({ children, className, ...props }: ComponentPro
   );
 }
 
-export function StatusEmptyStateTitle({
-  children,
-  className,
-  ...props
-}: ComponentProps<"div">) {
+export function StatusEmptyStateTitle({ children, className, ...props }: ComponentProps<"div">) {
   return (
     <div className={cn("font-medium", className)} {...props}>
       {children}

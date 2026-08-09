@@ -1,15 +1,15 @@
 "use client";
 
+import { Button, Card, cn, Input } from "@openmonitor/ui";
 import { Link2Icon, Link2OffIcon, Trash2Icon } from "lucide-react";
-import { Button, Card, Input, cn } from "@openmonitor/ui";
 import { AddComponentMenu } from "./page-component-add-menu";
-import { SortableItem, SortableItemHandle, Sortable } from "./sortable";
 import {
   type ComponentDraft,
   type GroupDraft,
   type Monitor,
   STATUS_DOT,
 } from "./page-components-tree";
+import { Sortable, SortableItem, SortableItemHandle } from "./sortable";
 
 /**
  * Single row inside the components list. Mirrors openstatus's ComponentRow:

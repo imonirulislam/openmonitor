@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { and, db, eq, schema } from "@openmonitor/db";
 import {
   Badge,
@@ -14,6 +13,7 @@ import {
   Label,
   Textarea,
 } from "@openmonitor/ui";
+import { notFound } from "next/navigation";
 import {
   deleteStatusPage,
   setStatusPagePassword,
@@ -23,26 +23,18 @@ import {
 } from "~/lib/actions/status-pages";
 import { getCurrentWorkspace } from "~/lib/workspace";
 
-export default async function StatusPageSettings({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function StatusPageSettings({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const ws = await getCurrentWorkspace();
   const [page] = await db()
     .select()
     .from(schema.statusPages)
-    .where(
-      and(eq(schema.statusPages.id, id), eq(schema.statusPages.workspaceId, ws.workspaceId)),
-    )
+    .where(and(eq(schema.statusPages.id, id), eq(schema.statusPages.workspaceId, ws.workspaceId)))
     .limit(1);
   if (!page) notFound();
 
   const baseUrl = process.env.NEXT_PUBLIC_STATUS_PAGE_URL ?? "http://localhost:5003";
-  const publicUrl = page.customDomain
-    ? `https://${page.customDomain}`
-    : `${baseUrl}/${page.slug}`;
+  const publicUrl = page.customDomain ? `https://${page.customDomain}` : `${baseUrl}/${page.slug}`;
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
@@ -192,9 +184,7 @@ export default async function StatusPageSettings({
       <FormCard asForm action={updateStatusPageLinks.bind(null, id)}>
         <FormCardHeader>
           <FormCardTitle>Links</FormCardTitle>
-          <FormCardDescription>
-            Configure the links for the status page.
-          </FormCardDescription>
+          <FormCardDescription>Configure the links for the status page.</FormCardDescription>
         </FormCardHeader>
         <FormCardContent>
           <div className="flex flex-col gap-1.5">
@@ -221,8 +211,8 @@ export default async function StatusPageSettings({
               maxLength={2000}
             />
             <p className="text-muted-foreground text-xs">
-              Page or <span className="font-mono">mailto:</span> URL for contact. Leave empty
-              to hide.
+              Page or <span className="font-mono">mailto:</span> URL for contact. Leave empty to
+              hide.
             </p>
           </div>
         </FormCardContent>
@@ -236,8 +226,8 @@ export default async function StatusPageSettings({
         <FormCardHeader>
           <FormCardTitle>Password protection</FormCardTitle>
           <FormCardDescription>
-            Optional. When set, visitors must enter the password before they see status data.
-            Submit a blank field to remove protection.
+            Optional. When set, visitors must enter the password before they see status data. Submit
+            a blank field to remove protection.
           </FormCardDescription>
         </FormCardHeader>
         <FormCardContent>

@@ -1,7 +1,7 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
 import { Badge, Button, LocalTime, Select } from "@openmonitor/ui";
+import type { ColumnDef } from "@tanstack/react-table";
 import { changeMemberRole, removeMember, setUserActive } from "~/lib/actions/users";
 import { DataTable } from "./data-table";
 
@@ -18,10 +18,7 @@ export type MemberRow = {
   canEdit: boolean;
 };
 
-const ROLE_VARIANT: Record<
-  MemberRow["role"],
-  "destructive" | "warning" | "default"
-> = {
+const ROLE_VARIANT: Record<MemberRow["role"], "destructive" | "warning" | "default"> = {
   admin: "destructive",
   editor: "warning",
   viewer: "default",

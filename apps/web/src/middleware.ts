@@ -1,5 +1,5 @@
-import NextAuth from "next-auth";
 import { edgeAuthConfig } from "@openmonitor/auth/edge";
+import NextAuth from "next-auth";
 
 // Middleware runs in the Edge runtime. We instantiate NextAuth here with the
 // Edge-safe config (no providers, no adapter) so we don't pull in argon2 or

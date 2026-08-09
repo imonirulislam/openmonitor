@@ -1,11 +1,11 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
+import { and, db, eq, schema } from "@openmonitor/db";
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, db, eq, schema } from "@openmonitor/db";
-import { withToastRedirect } from "@openmonitor/ui";
 import { logAudit } from "~/lib/audit";
 import { getCurrentWorkspace } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
@@ -42,11 +42,7 @@ function generateToken(): string {
 
 export async function createHeartbeat(formData: FormData) {
   const ws = await requireEditor();
-  const parsed = parseOrFlash(
-    writeSchema,
-    Object.fromEntries(formData),
-    "/dashboard/heartbeats",
-  );
+  const parsed = parseOrFlash(writeSchema, Object.fromEntries(formData), "/dashboard/heartbeats");
 
   const enabled = formData.get("enabled") === "true";
   const [created] = await db()
@@ -71,12 +67,7 @@ export async function createHeartbeat(formData: FormData) {
   });
 
   revalidatePath("/dashboard/heartbeats");
-  redirect(
-    withToastRedirect(
-      `/dashboard/heartbeats/${created?.id}`,
-      `Created “${parsed.name}”`,
-    ),
-  );
+  redirect(withToastRedirect(`/dashboard/heartbeats/${created?.id}`, `Created “${parsed.name}”`));
 }
 
 export async function updateHeartbeat(id: string, formData: FormData) {
@@ -125,9 +116,7 @@ export async function rotateHeartbeatToken(id: string) {
     targetId: id,
   });
   revalidatePath(`/dashboard/heartbeats/${id}`);
-  redirect(
-    withToastRedirect(`/dashboard/heartbeats/${id}`, "Token rotated", "info"),
-  );
+  redirect(withToastRedirect(`/dashboard/heartbeats/${id}`, "Token rotated", "info"));
 }
 
 export async function deleteHeartbeat(id: string) {

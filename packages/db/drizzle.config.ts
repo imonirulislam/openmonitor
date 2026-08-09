@@ -7,7 +7,6 @@ import { defineConfig } from "drizzle-kit";
 // is two levels up.
 config({ path: path.resolve(process.cwd(), "../../.env") });
 
-
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error("DATABASE_URL must be set for drizzle-kit");

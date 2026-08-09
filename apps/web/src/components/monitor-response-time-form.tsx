@@ -92,8 +92,8 @@ export function MonitorResponseTimeForm({
                     />
                   </FormControl>
                   <FormDescription>
-                    Time after which the endpoint is considered degraded. Leave blank to
-                    disable latency-based degradation.
+                    Time after which the endpoint is considered degraded. Leave blank to disable
+                    latency-based degradation.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -108,18 +108,14 @@ export function MonitorResponseTimeForm({
                   <FormControl>
                     <Input type="number" placeholder="10000" {...field} />
                   </FormControl>
-                  <FormDescription>
-                    Max time allowed for the request to complete.
-                  </FormDescription>
+                  <FormDescription>Max time allowed for the request to complete.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </FormCardContent>
           <FormCardFooter>
-            <FormCardFooterInfo>
-              Both apply to HTTP, TCP, and DNS probes.
-            </FormCardFooterInfo>
+            <FormCardFooterInfo>Both apply to HTTP, TCP, and DNS probes.</FormCardFooterInfo>
             <Button type="submit" disabled={pending}>
               {pending ? "Saving…" : "Save"}
             </Button>

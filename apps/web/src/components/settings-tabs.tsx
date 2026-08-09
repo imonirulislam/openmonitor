@@ -1,8 +1,8 @@
 "use client";
 
+import { cn } from "@openmonitor/ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@openmonitor/ui";
 
 const TABS = [
   { href: "/dashboard/settings/workspace", label: "Workspace" },

@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
-import { notFound, redirect } from "next/navigation";
 import { NotFoundError, RequiresPasswordError } from "@openmonitor/api-client";
 import { SectionMetaTitle, Separator } from "@openmonitor/ui";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import { MonitorListRow } from "~/components/monitor-list-row";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";

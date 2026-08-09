@@ -11,9 +11,9 @@
  * minutes — Postgres holds row locks for the duration of the DELETE.
  */
 import "./load-env";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { sql } from "drizzle-orm";
 import * as schema from "./schema";
 
 const BATCH_SIZE = 5000;
@@ -28,9 +28,7 @@ async function main() {
   const client = postgres(url, { max: 1 });
   const db = drizzle(client, { schema, casing: "snake_case" });
 
-  console.log(
-    `Retention sweep: monitor_runs > ${runDays}d, sent events > ${eventDays}d`,
-  );
+  console.log(`Retention sweep: monitor_runs > ${runDays}d, sent events > ${eventDays}d`);
 
   let totalRuns = 0;
   while (true) {

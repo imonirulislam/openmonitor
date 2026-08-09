@@ -1,8 +1,8 @@
 "use client";
 
+import { Button, Input } from "@openmonitor/ui";
 import { Loader2Icon, SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Button, Input } from "@openmonitor/ui";
 
 export type MonitorStatus = "up" | "down" | "degraded" | "unknown";
 
@@ -103,10 +103,7 @@ export function MonitorMultiSelect({
     };
   }, [debouncedQuery, offset, statusPageId]);
 
-  const selected = useMemo(
-    () => Array.from(selectedById.values()),
-    [selectedById],
-  );
+  const selected = useMemo(() => Array.from(selectedById.values()), [selectedById]);
 
   function toggle(m: MonitorOption) {
     setSelectedById((prev) => {
@@ -178,19 +175,13 @@ export function MonitorMultiSelect({
             ))}
           </ul>
         ) : state.error ? (
-          <p className="px-3 py-4 text-center text-destructive text-xs">
-            {state.error}
-          </p>
+          <p className="px-3 py-4 text-center text-destructive text-xs">{state.error}</p>
         ) : state.results.length === 0 ? (
           <p className="px-3 py-4 text-center text-muted-foreground text-xs">
             {debouncedQuery ? "No matches." : emptyText}
           </p>
         ) : (
-          <div
-            className={`transition-opacity ${
-              state.loading ? "opacity-60" : "opacity-100"
-            }`}
-          >
+          <div className={`transition-opacity ${state.loading ? "opacity-60" : "opacity-100"}`}>
             <ul>
               {state.results.map((m) => {
                 const isSelected = selectedById.has(m.id);
@@ -210,14 +201,10 @@ export function MonitorMultiSelect({
                         tabIndex={-1}
                         className="size-4 rounded border-border"
                       />
-                      <span
-                        className={`size-1.5 shrink-0 rounded-full ${STATUS_DOT[m.status]}`}
-                      />
+                      <span className={`size-1.5 shrink-0 rounded-full ${STATUS_DOT[m.status]}`} />
                       <span className="flex-1 truncate">{m.name}</span>
                       {m.status !== "up" ? (
-                        <span className="text-muted-foreground text-xs capitalize">
-                          {m.status}
-                        </span>
+                        <span className="text-muted-foreground text-xs capitalize">{m.status}</span>
                       ) : null}
                     </button>
                   </li>

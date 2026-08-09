@@ -20,8 +20,8 @@ export default function NewStatusPagePage() {
       <header>
         <h1 className="font-semibold text-2xl tracking-tight">New status page</h1>
         <p className="mt-1 text-muted-foreground text-sm">
-          A status page collects monitors into a public view. Pick which monitors appear on it
-          after creating.
+          A status page collects monitors into a public view. Pick which monitors appear on it after
+          creating.
         </p>
       </header>
       <Separator />
@@ -50,9 +50,7 @@ export default function NewStatusPagePage() {
               placeholder="public"
               title="Lowercase letters, numbers, and dashes only"
             />
-            <p className="font-mono text-[10px] text-muted-foreground">
-              lowercase, dashes only
-            </p>
+            <p className="font-mono text-[10px] text-muted-foreground">lowercase, dashes only</p>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="description">Description</Label>
@@ -88,9 +86,7 @@ export default function NewStatusPagePage() {
           </label>
         </FormCardContent>
         <FormCardFooter>
-          <FormCardFooterInfo>
-            You can change all of these later.
-          </FormCardFooterInfo>
+          <FormCardFooterInfo>You can change all of these later.</FormCardFooterInfo>
           <Button type="submit">Create</Button>
         </FormCardFooter>
       </FormCard>

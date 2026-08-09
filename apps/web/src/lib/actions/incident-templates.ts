@@ -1,10 +1,10 @@
 "use server";
 
+import { and, db, eq, schema } from "@openmonitor/db";
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, db, eq, schema } from "@openmonitor/db";
-import { withToastRedirect } from "@openmonitor/ui";
 import { logAudit } from "~/lib/audit";
 import { getCurrentWorkspace } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
@@ -52,9 +52,7 @@ export async function createIncidentTemplate(formData: FormData) {
   });
 
   revalidatePath("/dashboard/settings/templates");
-  redirect(
-    withToastRedirect("/dashboard/settings/templates", `Created “${parsed.name}”`),
-  );
+  redirect(withToastRedirect("/dashboard/settings/templates", `Created “${parsed.name}”`));
 }
 
 export async function updateIncidentTemplate(id: string, formData: FormData) {
@@ -95,7 +93,5 @@ export async function deleteIncidentTemplate(id: string) {
     targetId: null,
   });
   revalidatePath("/dashboard/settings/templates");
-  redirect(
-    withToastRedirect("/dashboard/settings/templates", "Template deleted", "info"),
-  );
+  redirect(withToastRedirect("/dashboard/settings/templates", "Template deleted", "info"));
 }

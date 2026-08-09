@@ -20,8 +20,8 @@ export default function NewHeartbeatPage() {
         <FormCardHeader>
           <FormCardTitle>New heartbeat</FormCardTitle>
           <FormCardDescription>
-            We'll generate a unique URL. Your cron / job hits it on each run; we alert when
-            the pings stop arriving.
+            We'll generate a unique URL. Your cron / job hits it on each run; we alert when the
+            pings stop arriving.
           </FormCardDescription>
         </FormCardHeader>
         <FormCardContent>

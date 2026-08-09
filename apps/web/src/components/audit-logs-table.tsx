@@ -1,8 +1,5 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
-import { useState } from "react";
 import {
   Badge,
   LocalTime,
@@ -12,6 +9,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@openmonitor/ui";
+import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
+import { useState } from "react";
 import { DataTable } from "./data-table";
 
 export type AuditRow = {
@@ -155,11 +155,7 @@ function AuditDetail({ row }: { row: AuditRow }) {
           <Badge variant={actionVariant(row.action)}>{row.action}</Badge>
         </SheetTitle>
         <SheetDescription>
-          <LocalTime
-            date={row.createdAt}
-            format="LLL dd, y · HH:mm:ss"
-            className="font-mono"
-          />
+          <LocalTime date={row.createdAt} format="LLL dd, y · HH:mm:ss" className="font-mono" />
         </SheetDescription>
       </SheetHeader>
 
@@ -178,12 +174,7 @@ function AuditDetail({ row }: { row: AuditRow }) {
             )
           }
         />
-        <Detail
-          label="Target ID"
-          value={row.targetId ?? "—"}
-          mono
-          className="break-all"
-        />
+        <Detail label="Target ID" value={row.targetId ?? "—"} mono className="break-all" />
         <Detail label="Audit ID" value={row.id} mono className="break-all" />
       </dl>
 

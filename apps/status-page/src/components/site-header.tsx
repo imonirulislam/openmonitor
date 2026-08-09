@@ -1,9 +1,9 @@
 "use client";
 
+import { cn, ThemeToggle } from "@openmonitor/ui";
 import { ActivityIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ThemeToggle, cn } from "@openmonitor/ui";
 
 // Top-level static routes that aren't slug-prefixed. When the first path
 // segment matches one of these, we treat the page as root-scoped.

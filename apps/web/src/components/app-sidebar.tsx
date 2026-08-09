@@ -1,6 +1,16 @@
 "use client";
 
 import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenuButton,
+  SidebarTrigger,
+  ThemeToggle,
+  useSidebar,
+} from "@openmonitor/ui";
+import {
   ActivityIcon,
   BellIcon,
   CogIcon,
@@ -13,21 +23,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenuButton,
-  SidebarTrigger,
-  ThemeToggle,
-  useSidebar,
-} from "@openmonitor/ui";
+import { type WorkspaceOption, WorkspaceSwitcher } from "~/components/workspace-switcher";
 import { signOutAction } from "~/lib/actions/auth";
-import {
-  WorkspaceSwitcher,
-  type WorkspaceOption,
-} from "~/components/workspace-switcher";
 
 const NAV = [
   { href: "/dashboard", label: "Overview", icon: GaugeIcon, exact: true },

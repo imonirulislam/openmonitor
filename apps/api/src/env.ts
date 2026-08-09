@@ -12,9 +12,7 @@ const schema = z.object({
   // Retention sweeper (internal scheduler). Disable by setting to "off" or 0.
   // Defaults match the standalone retention.ts script so behavior is the
   // same whether the cleanup runs from cron or the API process.
-  RETENTION_ENABLED: z
-    .union([z.literal("off"), z.literal("on")])
-    .default("on"),
+  RETENTION_ENABLED: z.union([z.literal("off"), z.literal("on")]).default("on"),
   RETENTION_RUN_DAYS: z.coerce.number().int().min(1).max(3650).default(180),
   RETENTION_EVENT_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
   /**

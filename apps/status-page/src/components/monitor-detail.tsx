@@ -68,9 +68,7 @@ export function MonitorDetail({
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <p className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
+      <p className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 font-semibold text-2xl tabular-nums">{value}</p>
     </div>
   );

@@ -1,8 +1,8 @@
 "use client";
 
+import { cn } from "@openmonitor/ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@openmonitor/ui";
 
 // "Settings" sits last after Logs so the configuration entry-point is
 // out of the way during day-to-day operations (operators usually want

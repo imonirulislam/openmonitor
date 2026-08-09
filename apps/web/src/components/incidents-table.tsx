@@ -1,10 +1,10 @@
 "use client";
 
+import { LocalTime } from "@openmonitor/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { LocalTime } from "@openmonitor/ui";
-import { IncidentSeverityBadge, IncidentStatusBadge } from "./incident-badges";
 import { DataTable } from "./data-table";
+import { IncidentSeverityBadge, IncidentStatusBadge } from "./incident-badges";
 
 type Row = {
   id: string;
@@ -20,7 +20,10 @@ const columns: ColumnDef<Row>[] = [
     accessorKey: "title",
     header: "Title",
     cell: ({ row }) => (
-      <Link href={`/dashboard/incidents/${row.original.id}`} className="font-medium hover:underline">
+      <Link
+        href={`/dashboard/incidents/${row.original.id}`}
+        className="font-medium hover:underline"
+      >
         {row.original.title}
       </Link>
     ),

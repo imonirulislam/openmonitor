@@ -1,10 +1,10 @@
 "use server";
 
+import { and, db, eq, schema } from "@openmonitor/db";
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, db, eq, schema } from "@openmonitor/db";
-import { withToastRedirect } from "@openmonitor/ui";
 import { auth } from "~/auth";
 import { parseOrFlash } from "~/lib/zod-flash";
 
@@ -29,13 +29,15 @@ export async function createSlackChannel(formData: FormData) {
     Object.fromEntries(formData),
     "/dashboard/channels",
   );
-  await db().insert(schema.notificationChannels).values({
-    workspaceId: session.user.workspaceId,
-    type: "slack",
-    name: parsed.name,
-    config: { webhookUrl: parsed.webhookUrl },
-    enabled: parsed.enabled,
-  });
+  await db()
+    .insert(schema.notificationChannels)
+    .values({
+      workspaceId: session.user.workspaceId,
+      type: "slack",
+      name: parsed.name,
+      config: { webhookUrl: parsed.webhookUrl },
+      enabled: parsed.enabled,
+    });
   revalidatePath("/dashboard/channels");
   redirect(withToastRedirect("/dashboard/channels", `Added channel “${parsed.name}”`));
 }
@@ -62,7 +64,10 @@ export async function linkMonitorToChannel(monitorId: string, channelId: string)
     .select({ id: schema.monitors.id })
     .from(schema.monitors)
     .where(
-      and(eq(schema.monitors.id, monitorId), eq(schema.monitors.workspaceId, session.user.workspaceId)),
+      and(
+        eq(schema.monitors.id, monitorId),
+        eq(schema.monitors.workspaceId, session.user.workspaceId),
+      ),
     )
     .limit(1);
   const [channel] = await db()
@@ -77,10 +82,7 @@ export async function linkMonitorToChannel(monitorId: string, channelId: string)
     .limit(1);
   if (!monitor || !channel) throw new Error("forbidden");
 
-  await db()
-    .insert(schema.monitorChannels)
-    .values({ monitorId, channelId })
-    .onConflictDoNothing();
+  await db().insert(schema.monitorChannels).values({ monitorId, channelId }).onConflictDoNothing();
   revalidatePath("/dashboard/channels");
   revalidatePath("/dashboard/monitors");
 }

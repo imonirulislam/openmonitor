@@ -14,13 +14,7 @@ import { cn } from "./cn";
  * Tone is intentionally compact: incident updates and status messages are
  * usually short paragraphs with the occasional list or link, not blog posts.
  */
-export function MarkdownView({
-  children,
-  className,
-}: {
-  children: string;
-  className?: string;
-}) {
+export function MarkdownView({ children, className }: { children: string; className?: string }) {
   return (
     <div className={cn("prose-openmonitor text-foreground text-sm", className)}>
       <ReactMarkdown
@@ -37,20 +31,13 @@ export function MarkdownView({
               {...props}
             />
           ),
-          ul: ({ node: _node, ...props }) => (
-            <ul className="mb-2 list-disc pl-5" {...props} />
-          ),
-          ol: ({ node: _node, ...props }) => (
-            <ol className="mb-2 list-decimal pl-5" {...props} />
-          ),
+          ul: ({ node: _node, ...props }) => <ul className="mb-2 list-disc pl-5" {...props} />,
+          ol: ({ node: _node, ...props }) => <ol className="mb-2 list-decimal pl-5" {...props} />,
           li: ({ node: _node, ...props }) => <li className="mb-0.5" {...props} />,
           code: ({ node: _node, className: cls, children, ...props }) => {
             const isInline = !cls?.includes("language-");
             return isInline ? (
-              <code
-                className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]"
-                {...props}
-              >
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]" {...props}>
                 {children}
               </code>
             ) : (
@@ -86,14 +73,15 @@ export function MarkdownView({
             </div>
           ),
           th: ({ node: _node, ...props }) => (
-            <th className="border-b border-border bg-muted/30 px-3 py-2 text-left font-medium" {...props} />
+            <th
+              className="border-b border-border bg-muted/30 px-3 py-2 text-left font-medium"
+              {...props}
+            />
           ),
           td: ({ node: _node, ...props }) => (
             <td className="border-b border-border px-3 py-2" {...props} />
           ),
-          hr: ({ node: _node, ...props }) => (
-            <hr className="my-3 border-border" {...props} />
-          ),
+          hr: ({ node: _node, ...props }) => <hr className="my-3 border-border" {...props} />,
         }}
       >
         {children}

@@ -1,10 +1,10 @@
 "use server";
 
+import { and, db, eq, inArray, schema } from "@openmonitor/db";
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, db, eq, inArray, schema } from "@openmonitor/db";
-import { withToastRedirect } from "@openmonitor/ui";
 import { auth } from "~/auth";
 import { logAudit } from "~/lib/audit";
 import { parseOrFlash } from "~/lib/zod-flash";
@@ -12,7 +12,9 @@ import { parseOrFlash } from "~/lib/zod-flash";
 const createIncidentSchema = z.object({
   title: z.string().min(1).max(300),
   severity: z.enum(["minor", "major", "critical"]).default("minor"),
-  status: z.enum(["investigating", "identified", "monitoring", "resolved"]).default("investigating"),
+  status: z
+    .enum(["investigating", "identified", "monitoring", "resolved"])
+    .default("investigating"),
   message: z.string().min(1).max(5000),
   monitorIds: z.array(z.string().uuid()).default([]),
 });
@@ -131,9 +133,7 @@ export async function createIncident(formData: FormData) {
     metadata: { severity: parsed.severity, status: parsed.status },
   });
   revalidatePath("/dashboard/incidents");
-  redirect(
-    withToastRedirect(`/dashboard/incidents/${incidentId}`, `Opened “${parsed.title}”`),
-  );
+  redirect(withToastRedirect(`/dashboard/incidents/${incidentId}`, `Opened “${parsed.title}”`));
 }
 
 export async function postIncidentUpdate(incidentId: string, formData: FormData) {
@@ -174,10 +174,7 @@ export async function postIncidentUpdate(incidentId: string, formData: FormData)
     };
     if (parsed.status === "resolved") updates.resolvedAt = new Date();
 
-    await tx
-      .update(schema.incidents)
-      .set(updates)
-      .where(eq(schema.incidents.id, incidentId));
+    await tx.update(schema.incidents).set(updates).where(eq(schema.incidents.id, incidentId));
 
     const linkedMonitors = await tx
       .select({ id: schema.monitors.id, name: schema.monitors.name })

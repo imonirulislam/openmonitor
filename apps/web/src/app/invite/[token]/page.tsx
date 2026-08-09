@@ -1,22 +1,10 @@
+import { db, eq, schema } from "@openmonitor/db";
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "@openmonitor/ui";
 import { ActivityIcon } from "lucide-react";
 import { notFound } from "next/navigation";
-import { db, eq, schema } from "@openmonitor/db";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-} from "@openmonitor/ui";
 import { acceptInvite } from "~/lib/actions/users";
 
-export default async function InvitePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
+export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
 
   const [row] = await db()

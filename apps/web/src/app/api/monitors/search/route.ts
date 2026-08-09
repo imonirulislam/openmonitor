@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { and, asc, db, eq, ilike, schema, sql } from "@openmonitor/db";
+import { type NextRequest, NextResponse } from "next/server";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 const MAX_LIMIT = 50;
@@ -37,10 +37,7 @@ export async function GET(req: NextRequest) {
     ? await conn
         .select(select)
         .from(schema.monitors)
-        .innerJoin(
-          schema.pageComponents,
-          eq(schema.pageComponents.monitorId, schema.monitors.id),
-        )
+        .innerJoin(schema.pageComponents, eq(schema.pageComponents.monitorId, schema.monitors.id))
         .where(and(...conditions, eq(schema.pageComponents.statusPageId, statusPageId)))
         .orderBy(statusPriority, asc(schema.monitors.name))
         .limit(limit + 1)

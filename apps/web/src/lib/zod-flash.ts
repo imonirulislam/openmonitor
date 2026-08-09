@@ -1,6 +1,6 @@
+import { withToastRedirect } from "@openmonitor/ui";
 import { redirect } from "next/navigation";
 import type { z } from "zod";
-import { withToastRedirect } from "@openmonitor/ui";
 
 /**
  * Run a Zod parser and, on failure, redirect with a flash toast carrying the

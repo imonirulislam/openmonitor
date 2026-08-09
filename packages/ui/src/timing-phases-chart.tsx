@@ -161,11 +161,7 @@ export function TimingPhasesChart({
       <div className="flex flex-wrap items-center justify-center gap-4 text-muted-foreground text-xs">
         {PHASES.map((p) => (
           <span key={p.key} className="inline-flex items-center gap-1.5">
-            <span
-              className="size-2 rounded-sm"
-              style={{ backgroundColor: p.color }}
-              aria-hidden
-            />
+            <span className="size-2 rounded-sm" style={{ backgroundColor: p.color }} aria-hidden />
             {p.label}
           </span>
         ))}
@@ -199,10 +195,7 @@ function PhaseTooltip({
       </div>
       <ul className="flex flex-col gap-1">
         {PHASES.map((p) => (
-          <li
-            key={p.key}
-            className="flex items-center justify-between gap-6 font-mono text-xs"
-          >
+          <li key={p.key} className="flex items-center justify-between gap-6 font-mono text-xs">
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="size-2 rounded-sm"

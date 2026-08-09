@@ -1,11 +1,8 @@
-import { ActivityIcon, HeartPulseIcon, PanelTopIcon, WrenchIcon, ZapIcon } from "lucide-react";
 import { and, db, desc, eq, gte, schema } from "@openmonitor/db";
 import { SectionMetaTitle, Separator } from "@openmonitor/ui";
+import { ActivityIcon, HeartPulseIcon, PanelTopIcon, WrenchIcon, ZapIcon } from "lucide-react";
 import { OverviewStatCard } from "~/components/overview-cards";
-import {
-  RecentIncidentsPanel,
-  RecentMaintenancePanel,
-} from "~/components/overview-panels";
+import { RecentIncidentsPanel, RecentMaintenancePanel } from "~/components/overview-panels";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function OverviewPage() {
@@ -47,10 +44,7 @@ export default async function OverviewPage() {
     .select()
     .from(schema.incidents)
     .where(
-      and(
-        eq(schema.incidents.workspaceId, workspaceId),
-        gte(schema.incidents.startedAt, since7d),
-      ),
+      and(eq(schema.incidents.workspaceId, workspaceId), gte(schema.incidents.startedAt, since7d)),
     )
     .orderBy(desc(schema.incidents.startedAt))
     .limit(10);

@@ -1,6 +1,5 @@
 "use client";
 
-import { CircleEllipsisIcon, Link2Icon, PlusIcon } from "lucide-react";
 import {
   Button,
   DropdownMenu,
@@ -12,6 +11,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@openmonitor/ui";
+import { CircleEllipsisIcon, Link2Icon, PlusIcon } from "lucide-react";
 import type { Monitor } from "./page-components-tree";
 
 /**

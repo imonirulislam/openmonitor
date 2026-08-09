@@ -1,11 +1,11 @@
 "use client";
 
 import {
+  cn,
   HoverCard,
   HoverCardContent,
   HoverCardPortal,
   HoverCardTrigger,
-  cn,
 } from "@openmonitor/ui";
 
 const PHASES = [
@@ -43,10 +43,7 @@ export function ProbeTimingBar({
     return (
       <span
         aria-label="no timing data"
-        className={cn(
-          "inline-block h-2.5 w-20 rounded-sm bg-muted/40",
-          className,
-        )}
+        className={cn("inline-block h-2.5 w-20 rounded-sm bg-muted/40", className)}
       />
     );
   }
@@ -85,23 +82,16 @@ export function ProbeTimingBar({
               const v = totals[i]!;
               const pct = sum > 0 ? (v / sum) * 100 : 0;
               return (
-                <div
-                  key={p.key}
-                  className="grid grid-cols-2 items-center gap-4 text-xs"
-                >
+                <div key={p.key} className="grid grid-cols-2 items-center gap-4 text-xs">
                   <div className="flex items-center gap-2">
                     <span
                       className="block size-2 shrink-0 rounded-full"
                       style={{ backgroundColor: p.color }}
                     />
-                    <span className="font-mono uppercase text-foreground">
-                      {p.label}
-                    </span>
+                    <span className="font-mono uppercase text-foreground">{p.label}</span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
-                    <span className="font-mono text-muted-foreground">
-                      {pct.toFixed(1)}%
-                    </span>
+                    <span className="font-mono text-muted-foreground">{pct.toFixed(1)}%</span>
                     <span className="font-mono text-foreground tabular-nums">
                       {v}
                       <span className="ml-0.5 text-muted-foreground">ms</span>

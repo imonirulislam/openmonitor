@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import {
   Button,
   Card,
@@ -9,6 +8,7 @@ import {
   Separator,
   withToastRedirect,
 } from "@openmonitor/ui";
+import { redirect } from "next/navigation";
 import { auth } from "~/auth";
 import { CheckerTelemetryTable } from "~/components/checker-telemetry-table";
 import { runRetentionAction } from "~/lib/actions/system";
@@ -79,11 +79,7 @@ export default async function SystemPage() {
   if (!session?.user) redirect("/login");
   if (session.user.role !== "admin") {
     redirect(
-      withToastRedirect(
-        "/dashboard/settings",
-        "Admin role required for System settings",
-        "error",
-      ),
+      withToastRedirect("/dashboard/settings", "Admin role required for System settings", "error"),
     );
   }
 
@@ -108,8 +104,8 @@ export default async function SystemPage() {
           <CardDescription>
             Daily cleanup of <span className="font-mono">monitor_runs</span> and{" "}
             <span className="font-mono">events</span>. Runs in-process when{" "}
-            <span className="font-mono">RETENTION_ENABLED=on</span>; you can also
-            invoke it manually from this page.
+            <span className="font-mono">RETENTION_ENABLED=on</span>; you can also invoke it manually
+            from this page.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -177,14 +173,8 @@ export default async function SystemPage() {
                       value={retention.counts.monitorRuns.toLocaleString()}
                     />
                     <Stat label="events" value={retention.counts.events.toLocaleString()} />
-                    <Stat
-                      label="pending"
-                      value={retention.counts.eventsPending.toLocaleString()}
-                    />
-                    <Stat
-                      label="failed"
-                      value={retention.counts.eventsFailed.toLocaleString()}
-                    />
+                    <Stat label="pending" value={retention.counts.eventsPending.toLocaleString()} />
+                    <Stat label="failed" value={retention.counts.eventsFailed.toLocaleString()} />
                   </dl>
                 ) : null}
               </div>
@@ -202,8 +192,7 @@ export default async function SystemPage() {
             </>
           ) : (
             <p className="text-muted-foreground text-sm">
-              Could not reach the API. Check that{" "}
-              <span className="font-mono">API_URL</span> and{" "}
+              Could not reach the API. Check that <span className="font-mono">API_URL</span> and{" "}
               <span className="font-mono">PROBE_API_KEY</span> are set in this app's env.
             </p>
           )}
@@ -228,10 +217,9 @@ export default async function SystemPage() {
             ) : null}
           </CardTitle>
           <CardDescription>
-            Inferred from the freshness of each monitor's most recent probe. A
-            monitor is "overdue" when its last probe is older than 3× its
-            configured interval — usually means the Go checker process is
-            stuck or disconnected.
+            Inferred from the freshness of each monitor's most recent probe. A monitor is "overdue"
+            when its last probe is older than 3× its configured interval — usually means the Go
+            checker process is stuck or disconnected.
           </CardDescription>
         </CardHeader>
         <CardContent>

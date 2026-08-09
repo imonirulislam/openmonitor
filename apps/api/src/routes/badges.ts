@@ -1,5 +1,5 @@
-import { type Context, Hono } from "hono";
 import { and, db, eq, gte, schema, sql } from "@openmonitor/db";
+import { type Context, Hono } from "hono";
 import { resolveStatusPage } from "../lib/resolve-page";
 
 export const badgeRoutes = new Hono();
@@ -36,10 +36,7 @@ badgeRoutes.get("/v1/monitors/:slug/badge.svg", async (c) => {
       currentStatus: schema.monitors.currentStatus,
     })
     .from(schema.monitors)
-    .innerJoin(
-      schema.pageComponents,
-      eq(schema.pageComponents.monitorId, schema.monitors.id),
-    )
+    .innerJoin(schema.pageComponents, eq(schema.pageComponents.monitorId, schema.monitors.id))
     .where(
       and(
         eq(schema.monitors.slug, slug),
@@ -65,10 +62,7 @@ badgeRoutes.get("/v1/monitors/:slug/badge.svg", async (c) => {
     })
     .from(schema.monitorRuns)
     .where(
-      and(
-        eq(schema.monitorRuns.monitorId, monitor.id),
-        gte(schema.monitorRuns.checkedAt, since),
-      ),
+      and(eq(schema.monitorRuns.monitorId, monitor.id), gte(schema.monitorRuns.checkedAt, since)),
     );
 
   const total = agg?.total ?? 0;
@@ -94,16 +88,8 @@ badgeRoutes.get("/v1/status-pages/:pageSlug/badge.svg", async (c) => {
   const monitors = await conn
     .select({ status: schema.monitors.currentStatus })
     .from(schema.pageComponents)
-    .innerJoin(
-      schema.monitors,
-      eq(schema.monitors.id, schema.pageComponents.monitorId),
-    )
-    .where(
-      and(
-        eq(schema.pageComponents.statusPageId, page.id),
-        eq(schema.monitors.enabled, true),
-      ),
-    );
+    .innerJoin(schema.monitors, eq(schema.monitors.id, schema.pageComponents.monitorId))
+    .where(and(eq(schema.pageComponents.statusPageId, page.id), eq(schema.monitors.enabled, true)));
 
   const overall = computeOverall(monitors.map((m) => m.status));
   return svg(c, badgeSvg("status", statusLabel(overall), statusToTone(overall)));
@@ -182,4 +168,3 @@ function svg(c: Context, body: string) {
   c.header("cache-control", "public, max-age=60, s-maxage=60");
   return c.body(body);
 }
-

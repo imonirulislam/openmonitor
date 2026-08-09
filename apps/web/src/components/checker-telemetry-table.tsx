@@ -1,7 +1,7 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@openmonitor/ui";
+import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
 
 export type CheckerRow = {
@@ -47,9 +47,7 @@ const columns: ColumnDef<CheckerRow>[] = [
   {
     accessorKey: "kind",
     header: "Kind",
-    cell: ({ row }) => (
-      <span className="font-mono text-xs uppercase">{row.original.kind}</span>
-    ),
+    cell: ({ row }) => <span className="font-mono text-xs uppercase">{row.original.kind}</span>,
     filterFn: (row, _id, value) =>
       !value || (Array.isArray(value) && value.length === 0)
         ? true
@@ -78,9 +76,7 @@ const columns: ColumnDef<CheckerRow>[] = [
     accessorKey: "intervalSeconds",
     header: "Interval",
     cell: ({ row }) => (
-      <span className="font-mono tabular-nums text-xs">
-        {row.original.intervalSeconds}s
-      </span>
+      <span className="font-mono tabular-nums text-xs">{row.original.intervalSeconds}s</span>
     ),
   },
   {

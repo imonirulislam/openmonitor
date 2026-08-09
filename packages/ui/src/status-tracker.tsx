@@ -68,9 +68,7 @@ function buildSegments(day: TrackerDay): Array<{ status: SegmentStatus; height: 
   const degraded = day.degraded ?? 0;
   // If the API didn't surface degraded/down separately (older client), treat
   // every non-ok probe as `down` so we don't lose a segment.
-  const down =
-    day.down ??
-    Math.max(0, day.total - ok - degraded - (day.unknown ?? 0));
+  const down = day.down ?? Math.max(0, day.total - ok - degraded - (day.unknown ?? 0));
   const unknown = day.unknown ?? Math.max(0, day.total - ok - degraded - down);
 
   const total = day.total;
@@ -100,13 +98,7 @@ const COLUMN_W = 10;
 const BAR_W = 8;
 const GAP = COLUMN_W - BAR_W; // 2 svg units of gap between bars
 
-export function StatusTracker({
-  days,
-  className,
-}: {
-  days: TrackerDay[];
-  className?: string;
-}) {
+export function StatusTracker({ days, className }: { days: TrackerDay[]; className?: string }) {
   // Paint the entire 90-day tracker as ONE SVG so every day-bar shares the
   // same coordinate system — no possibility of flex/grid distributing
   // fractional widths unevenly across cells. Hover triggers are HTML
@@ -147,7 +139,7 @@ export function StatusTracker({
       {/* Per-day hover triggers — invisible div overlays positioned by
           percentage so they cover exactly the same area each SVG bar paints. */}
       {days.map((day, dayIdx) => {
-        const leftPct = (dayIdx * COLUMN_W + GAP / 2) / totalW * 100;
+        const leftPct = ((dayIdx * COLUMN_W + GAP / 2) / totalW) * 100;
         const widthPct = (BAR_W / totalW) * 100;
         return (
           <HoverCard.Root key={day.date} openDelay={0} closeDelay={50}>
@@ -176,12 +168,7 @@ export function StatusTracker({
                   <p className="mt-2 text-muted-foreground text-xs">No probes recorded.</p>
                 ) : (
                   <div className="mt-2 flex flex-col gap-1 text-xs">
-                    <BreakdownRow
-                      status="up"
-                      label="Normal"
-                      count={day.ok}
-                      total={day.total}
-                    />
+                    <BreakdownRow status="up" label="Normal" count={day.ok} total={day.total} />
                     {(day.degraded ?? 0) > 0 ? (
                       <BreakdownRow
                         status="degraded"

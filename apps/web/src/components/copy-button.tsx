@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@openmonitor/ui";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@openmonitor/ui";
 
 export function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);

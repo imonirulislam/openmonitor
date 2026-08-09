@@ -1,15 +1,9 @@
 "use client";
 
-import {
-  CogIcon,
-  HammerIcon,
-  LayoutTemplateIcon,
-  MegaphoneIcon,
-  UsersIcon,
-} from "lucide-react";
+import { cn } from "@openmonitor/ui";
+import { CogIcon, HammerIcon, LayoutTemplateIcon, MegaphoneIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@openmonitor/ui";
 
 const TABS = [
   { value: "status-reports", label: "Status Reports", icon: MegaphoneIcon },

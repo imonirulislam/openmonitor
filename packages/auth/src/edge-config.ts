@@ -68,9 +68,7 @@ export const edgeAuthConfig: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const path = request.nextUrl.pathname;
       const isPublic =
-        path.startsWith("/login") ||
-        path.startsWith("/api/auth") ||
-        path.startsWith("/invite");
+        path.startsWith("/login") || path.startsWith("/api/auth") || path.startsWith("/invite");
       if (isPublic) return true;
       return isLoggedIn;
     },

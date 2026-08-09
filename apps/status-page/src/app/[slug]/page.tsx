@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { api } from "~/lib/api";
 import { StatusPageView } from "~/components/status-page-view";
+import { api } from "~/lib/api";
 
 export const revalidate = 30;
 
@@ -15,11 +15,7 @@ export const revalidate = 30;
  * two-segment `[slug]/[pageSlug]/page.tsx` underneath without Next's "two
  * different dynamic param names at the same level" rule kicking in.
  */
-export default async function PageBySlug({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function PageBySlug({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? undefined;

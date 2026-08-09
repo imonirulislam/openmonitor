@@ -1,7 +1,7 @@
 "use client";
 
+import { cn, LocalTime } from "@openmonitor/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { LocalTime, cn } from "@openmonitor/ui";
 import { ClockIcon } from "lucide-react";
 import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import { useMemo } from "react";
@@ -64,10 +64,7 @@ const columns: ColumnDef<Row>[] = [
       <span
         aria-label={row.original.status}
         title={row.original.status}
-        className={cn(
-          "inline-block size-2.5 rounded-[2px]",
-          STATUS_DOT[row.original.status],
-        )}
+        className={cn("inline-block size-2.5 rounded-[2px]", STATUS_DOT[row.original.status])}
       />
     ),
   },
@@ -81,8 +78,7 @@ const columns: ColumnDef<Row>[] = [
         className="font-mono text-foreground text-xs"
       />
     ),
-    sortingFn: (a, b) =>
-      Date.parse(a.original.checkedAt) - Date.parse(b.original.checkedAt),
+    sortingFn: (a, b) => Date.parse(a.original.checkedAt) - Date.parse(b.original.checkedAt),
   },
   {
     accessorKey: "statusCode",
@@ -144,14 +140,8 @@ export function MonitorLogsTable({ rows }: { rows: Row[] }) {
   // before they reach the DataTable rather than wiring TanStack column
   // filters, since the DataTable doesn't expose its `table` instance to
   // the caller.
-  const [statusFilter] = useQueryState(
-    "status",
-    parseAsArrayOf(parseAsString),
-  );
-  const [regionFilter] = useQueryState(
-    "region",
-    parseAsArrayOf(parseAsString),
-  );
+  const [statusFilter] = useQueryState("status", parseAsArrayOf(parseAsString));
+  const [regionFilter] = useQueryState("region", parseAsArrayOf(parseAsString));
 
   const regions = useMemo(() => {
     const seen = new Set<string>();

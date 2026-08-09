@@ -1,13 +1,13 @@
 "use client";
 
+import { cn, LocalTime } from "@openmonitor/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { LocalTime, cn } from "@openmonitor/ui";
 import {
   BellRingIcon,
   CircleCheckIcon,
   CircleMinusIcon,
-  TriangleAlertIcon,
   type LucideIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
 import { DataTable } from "./data-table";
 
@@ -29,10 +29,7 @@ export type TimelineRow = {
   chips: Array<{ label: string; value: string }>;
 };
 
-const ICON_BY_ACTION_KIND: Record<
-  string,
-  { icon: LucideIcon; cls: string }
-> = {
+const ICON_BY_ACTION_KIND: Record<string, { icon: LucideIcon; cls: string }> = {
   // Action-name specific overrides come first so we can swap the icon
   // independently of the kind bucket (e.g. "Incident Created" uses a bell
   // even though it's a "fail" kind).
@@ -80,12 +77,8 @@ const columns: ColumnDef<TimelineRow>[] = [
             key={`${c.label}-${idx}`}
             className="inline-flex items-stretch overflow-hidden rounded-md border border-border font-mono text-[10px]"
           >
-            <span className="bg-muted px-1.5 py-0.5 text-muted-foreground">
-              {c.label}
-            </span>
-            <span className="bg-card px-1.5 py-0.5 text-foreground">
-              {c.value}
-            </span>
+            <span className="bg-muted px-1.5 py-0.5 text-muted-foreground">{c.label}</span>
+            <span className="bg-card px-1.5 py-0.5 text-foreground">{c.value}</span>
           </span>
         ))}
       </div>
@@ -101,8 +94,7 @@ const columns: ColumnDef<TimelineRow>[] = [
         className="font-mono text-muted-foreground text-xs"
       />
     ),
-    sortingFn: (a, b) =>
-      Date.parse(a.original.timestamp) - Date.parse(b.original.timestamp),
+    sortingFn: (a, b) => Date.parse(a.original.timestamp) - Date.parse(b.original.timestamp),
   },
 ];
 

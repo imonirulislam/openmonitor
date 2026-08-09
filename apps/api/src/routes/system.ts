@@ -1,7 +1,7 @@
-import { Hono } from "hono";
 import { db, schema, sql } from "@openmonitor/db";
-import { apiKeyAuth } from "../middleware/api-key";
+import { Hono } from "hono";
 import { env } from "../env";
+import { apiKeyAuth } from "../middleware/api-key";
 import { getRetentionStatus, runRetentionSweep } from "../scheduler";
 
 /**
@@ -24,12 +24,14 @@ systemRoutes.get("/v1/system/scheduler", async (c) => {
       (SELECT count(*) FROM events WHERE status = 'pending') AS events_pending,
       (SELECT count(*) FROM events WHERE status = 'failed') AS events_failed
   `);
-  const row = (counts as unknown as Array<{
-    monitor_runs: string;
-    events: string;
-    events_pending: string;
-    events_failed: string;
-  }>)[0];
+  const row = (
+    counts as unknown as Array<{
+      monitor_runs: string;
+      events: string;
+      events_pending: string;
+      events_failed: string;
+    }>
+  )[0];
   return c.json({
     retention: getRetentionStatus(),
     counts: row

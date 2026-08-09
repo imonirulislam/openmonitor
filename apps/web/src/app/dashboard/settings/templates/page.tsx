@@ -12,13 +12,13 @@ import {
   Label,
   Textarea,
 } from "@openmonitor/ui";
-import { getCurrentWorkspaceId } from "~/lib/workspace";
+import { RowActionAction, RowActions } from "~/components/row-actions";
 import {
   createIncidentTemplate,
   deleteIncidentTemplate,
   updateIncidentTemplate,
 } from "~/lib/actions/incident-templates";
-import { RowActionAction, RowActions } from "~/components/row-actions";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function IncidentTemplatesPage() {
   const workspaceId = await getCurrentWorkspaceId();
@@ -73,9 +73,7 @@ export default async function IncidentTemplatesPage() {
       <div className="flex flex-col gap-3">
         <h2 className="font-medium text-sm tracking-tight">Saved templates</h2>
         {templates.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No templates yet. Create one above.
-          </p>
+          <p className="text-muted-foreground text-sm">No templates yet. Create one above.</p>
         ) : (
           templates.map((t) => (
             <FormCard key={t.id} asForm action={updateIncidentTemplate.bind(null, t.id)}>
@@ -85,10 +83,7 @@ export default async function IncidentTemplatesPage() {
                     <FormCardTitle>{t.name}</FormCardTitle>
                   </div>
                   <RowActions>
-                    <RowActionAction
-                      action={deleteIncidentTemplate.bind(null, t.id)}
-                      destructive
-                    >
+                    <RowActionAction action={deleteIncidentTemplate.bind(null, t.id)} destructive>
                       Delete
                     </RowActionAction>
                   </RowActions>

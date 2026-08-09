@@ -3,14 +3,9 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
-import { DataTable } from "./data-table";
-import {
-  RowAction,
-  RowActionAction,
-  RowActionSeparator,
-  RowActions,
-} from "./row-actions";
 import { deleteStatusPage } from "~/lib/actions/status-pages";
+import { DataTable } from "./data-table";
+import { RowAction, RowActionAction, RowActionSeparator, RowActions } from "./row-actions";
 
 export type StatusPageRow = {
   id: string;
@@ -51,9 +46,7 @@ const columns: ColumnDef<StatusPageRow>[] = [
     accessorKey: "slug",
     header: "Slug",
     cell: ({ row }) => (
-      <span className="font-mono text-muted-foreground text-xs">
-        {row.original.slug}
-      </span>
+      <span className="font-mono text-muted-foreground text-xs">{row.original.slug}</span>
     ),
   },
   {
@@ -97,15 +90,10 @@ const columns: ColumnDef<StatusPageRow>[] = [
               <Link href={`/dashboard/status-pages/${p.id}/edit`}>Edit</Link>
             </RowAction>
             <RowAction asChild>
-              <Link href={`/dashboard/status-pages/${p.id}/components`}>
-                Components
-              </Link>
+              <Link href={`/dashboard/status-pages/${p.id}/components`}>Components</Link>
             </RowAction>
             <RowActionSeparator />
-            <RowActionAction
-              action={deleteStatusPage.bind(null, p.id)}
-              destructive
-            >
+            <RowActionAction action={deleteStatusPage.bind(null, p.id)} destructive>
               Delete
             </RowActionAction>
           </RowActions>

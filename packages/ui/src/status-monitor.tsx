@@ -15,11 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
   unknown: "Unknown",
 };
 
-export function StatusMonitor({
-  children,
-  className,
-  ...props
-}: ComponentProps<"section">) {
+export function StatusMonitor({ children, className, ...props }: ComponentProps<"section">) {
   return (
     <section
       data-slot="status-monitor"

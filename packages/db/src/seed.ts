@@ -5,8 +5,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { createDb } from "./client";
 import {
   incidentMonitors,
-  incidentUpdates,
   incidents,
+  incidentUpdates,
   maintenanceMonitors,
   maintenances,
   monitorRuns,
@@ -282,7 +282,7 @@ async function main() {
   type RunRow = typeof monitorRuns.$inferInsert;
   const runs: RunRow[] = [];
   const now = new Date();
-  let lastRunPerMonitor = new Map<string, RunRow>();
+  const lastRunPerMonitor = new Map<string, RunRow>();
 
   for (const m of monitorRows) {
     const downDays = downDaysBySlug[m.slug] ?? new Set<number>();
@@ -384,8 +384,7 @@ async function main() {
         {
           offsetMinutes: 0,
           status: "investigating",
-          message:
-            "We're seeing an elevated 5xx rate on page loads. Engineers are investigating.",
+          message: "We're seeing an elevated 5xx rate on page loads. Engineers are investigating.",
         },
         {
           offsetMinutes: 18,
@@ -566,9 +565,7 @@ async function main() {
     for (const slug of ["web", "docs", "cdn", "api"]) {
       const monitorId = idBySlug.get(slug);
       if (monitorId) {
-        await db
-          .insert(maintenanceMonitors)
-          .values({ maintenanceId: pastMaint.id, monitorId });
+        await db.insert(maintenanceMonitors).values({ maintenanceId: pastMaint.id, monitorId });
       }
     }
   }
@@ -582,8 +579,7 @@ async function main() {
     .values({
       workspaceId,
       title: "Scheduled cache infrastructure migration",
-      description:
-        "Moving Redis cache to the new cluster. We expect minimal user-facing impact.",
+      description: "Moving Redis cache to the new cluster. We expect minimal user-facing impact.",
       status: "scheduled",
       startsAt: upcomingMaintStart,
       endsAt: upcomingMaintEnd,
@@ -594,9 +590,7 @@ async function main() {
     for (const slug of ["web", "docs"]) {
       const monitorId = idBySlug.get(slug);
       if (monitorId) {
-        await db
-          .insert(maintenanceMonitors)
-          .values({ maintenanceId: upcoming.id, monitorId });
+        await db.insert(maintenanceMonitors).values({ maintenanceId: upcoming.id, monitorId });
       }
     }
   }

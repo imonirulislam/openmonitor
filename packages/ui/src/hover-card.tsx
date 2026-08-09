@@ -8,9 +8,9 @@
  * portal/trigger primitives directly.
  */
 export {
+  Arrow as HoverCardArrow,
+  Content as HoverCardContent,
+  Portal as HoverCardPortal,
   Root as HoverCard,
   Trigger as HoverCardTrigger,
-  Portal as HoverCardPortal,
-  Content as HoverCardContent,
-  Arrow as HoverCardArrow,
 } from "@radix-ui/react-hover-card";

@@ -1,5 +1,3 @@
-import { cookies } from "next/headers";
-import { notFound, redirect } from "next/navigation";
 import {
   type MonitorHistory,
   NotFoundError,
@@ -23,12 +21,13 @@ import {
   StatusTitle,
   type StatusVariant,
 } from "@openmonitor/ui";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import { MonitorRow } from "~/components/monitor-row";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";
 
-const DESCRIPTION =
-  process.env.NEXT_PUBLIC_STATUS_DESCRIPTION ?? "Live status for your services";
+const DESCRIPTION = process.env.NEXT_PUBLIC_STATUS_DESCRIPTION ?? "Live status for your services";
 
 type ComponentStatus = "up" | "down" | "degraded" | "unknown";
 
@@ -138,11 +137,7 @@ export async function StatusPageView({
     // Static component — same chrome as MonitorRow but no tracker.
     return (
       <StatusMonitor key={c.id}>
-        <StatusMonitorHeader
-          name={c.name}
-          description={c.description}
-          status={c.status}
-        />
+        <StatusMonitorHeader name={c.name} description={c.description} status={c.status} />
       </StatusMonitor>
     );
   };
@@ -304,10 +299,7 @@ function ComponentGroup({
   children: React.ReactNode;
 }) {
   return (
-    <details
-      open={group.defaultOpen}
-      className="group rounded-lg border border-border bg-card"
-    >
+    <details open={group.defaultOpen} className="group rounded-lg border border-border bg-card">
       <summary className="flex cursor-pointer items-center justify-between gap-2 px-4 py-3 font-medium text-sm [&::-webkit-details-marker]:hidden">
         <span>{group.name}</span>
         <div className="flex items-center gap-2">

@@ -1,6 +1,5 @@
 "use client";
 
-import { PlusIcon } from "lucide-react";
 import {
   Button,
   DateTimeLocalInput,
@@ -14,6 +13,7 @@ import {
   SheetTrigger,
   Textarea,
 } from "@openmonitor/ui";
+import { PlusIcon } from "lucide-react";
 import { MonitorMultiSelect } from "./monitor-multi-select";
 
 /**
@@ -40,9 +40,7 @@ export function MaintenanceSheet({
       <SheetContent className="flex w-full flex-col gap-4 sm:max-w-md">
         <SheetHeader>
           <SheetTitle>New maintenance</SheetTitle>
-          <SheetDescription>
-            Configure a planned outage window. Saved on submit.
-          </SheetDescription>
+          <SheetDescription>Configure a planned outage window. Saved on submit.</SheetDescription>
         </SheetHeader>
 
         <form action={action} className="flex flex-col gap-3 overflow-y-auto pb-4">
@@ -52,7 +50,12 @@ export function MaintenanceSheet({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="description">Message</Label>
-            <Textarea id="description" name="description" rows={3} placeholder="Markdown supported" />
+            <Textarea
+              id="description"
+              name="description"
+              rows={3}
+              placeholder="Markdown supported"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
@@ -67,8 +70,7 @@ export function MaintenanceSheet({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="recurrenceRule">
-                Recurrence{" "}
-                <span className="font-normal text-muted-foreground">(RRULE)</span>
+                Recurrence <span className="font-normal text-muted-foreground">(RRULE)</span>
               </Label>
               <Input
                 id="recurrenceRule"

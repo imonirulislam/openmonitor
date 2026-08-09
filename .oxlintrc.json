@@ -16,6 +16,7 @@
     "**/.next/**",
     "**/.turbo/**",
     "**/drizzle/meta/**",
-    "apps/checker/**"
+    "apps/checker/**",
+    "**/next-env.d.ts"
   ]
 }

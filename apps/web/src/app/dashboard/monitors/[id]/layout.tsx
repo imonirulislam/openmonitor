@@ -1,8 +1,8 @@
-import Link from "next/link";
-import { ArrowLeftIcon } from "lucide-react";
-import { notFound } from "next/navigation";
-import { Badge, Separator } from "@openmonitor/ui";
 import { and, db, eq, schema } from "@openmonitor/db";
+import { Badge, Separator } from "@openmonitor/ui";
+import { ArrowLeftIcon } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { MonitorTabs } from "~/components/monitor-tabs";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
@@ -25,9 +25,7 @@ export default async function MonitorDetailLayout({
   const [monitor] = await db()
     .select()
     .from(schema.monitors)
-    .where(
-      and(eq(schema.monitors.id, id), eq(schema.monitors.workspaceId, workspaceId)),
-    )
+    .where(and(eq(schema.monitors.id, id), eq(schema.monitors.workspaceId, workspaceId)))
     .limit(1);
   if (!monitor) notFound();
 

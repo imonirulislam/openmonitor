@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
-import { Suspense } from "react";
+import { cn, ThemeProvider, Toaster, ToastFlash } from "@openmonitor/ui";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { ThemeProvider, ToastFlash, Toaster, cn } from "@openmonitor/ui";
+import type { ReactNode } from "react";
+import { Suspense } from "react";
 import "./globals.css";
 
 export const metadata = {

@@ -1,7 +1,7 @@
+import { Card } from "@openmonitor/ui";
 import { formatDistanceToNowStrict } from "date-fns";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { Card } from "@openmonitor/ui";
 
 /**
  * Single stat card for the overview's top row. Two modes:

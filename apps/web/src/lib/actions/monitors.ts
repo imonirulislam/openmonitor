@@ -1,13 +1,13 @@
 "use server";
 
+import { and, assertion as assertionSchema, db, eq, monitorKinds, schema } from "@openmonitor/db";
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, assertion as assertionSchema, db, eq, monitorKinds, schema } from "@openmonitor/db";
 import { auth } from "~/auth";
 import { logAudit } from "~/lib/audit";
 import { parseOrFlash } from "~/lib/zod-flash";
-import { withToastRedirect } from "@openmonitor/ui";
 
 // HTML checkboxes don't submit a value when unchecked, so the field is
 // missing from FormData entirely. We can't rely on Zod's default(true) — it
@@ -49,17 +49,33 @@ const configSchema = z
   .superRefine((v, ctx) => {
     if (v.kind === "http") {
       if (!v.url || !/^https?:\/\//i.test(v.url)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "URL must start with http:// or https://", path: ["url"] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "URL must start with http:// or https://",
+          path: ["url"],
+        });
       }
     } else if (v.kind === "tcp") {
       if (!v.hostPort) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Host:Port is required", path: ["hostPort"] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Host:Port is required",
+          path: ["hostPort"],
+        });
       } else if (parseHostPort(v.hostPort) === null) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Expected host:port (e.g. example.com:443)", path: ["hostPort"] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Expected host:port (e.g. example.com:443)",
+          path: ["hostPort"],
+        });
       }
     } else if (v.kind === "dns") {
       if (!v.dnsHost) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "URI is required", path: ["dnsHost"] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "URI is required",
+          path: ["dnsHost"],
+        });
       }
     }
   });
@@ -204,10 +220,7 @@ export async function createMonitor(formData: FormData) {
   if (created) {
     // Land on the edit page so the user can configure response-time + schedule.
     redirect(
-      withToastRedirect(
-        `/dashboard/monitors/${created.id}/edit`,
-        `Created “${parsed.name}”`,
-      ),
+      withToastRedirect(`/dashboard/monitors/${created.id}/edit`, `Created “${parsed.name}”`),
     );
   }
   redirect(withToastRedirect("/dashboard/monitors", `Created “${parsed.name}”`));
@@ -317,7 +330,6 @@ export async function toggleMonitorEnabled(id: string, next: boolean) {
   );
 }
 
-
 // ---------- Slice actions for the per-FormCard edit page ----------
 
 const scheduleSchema = z.object({
@@ -374,7 +386,5 @@ export async function updateMonitorSchedule(id: string, formData: FormData) {
     },
   });
   revalidatePath(`/dashboard/monitors/${id}`);
-  redirect(
-    withToastRedirect(`/dashboard/monitors/${id}/edit`, "Schedule saved"),
-  );
+  redirect(withToastRedirect(`/dashboard/monitors/${id}/edit`, "Schedule saved"));
 }

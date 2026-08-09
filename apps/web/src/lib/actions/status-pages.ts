@@ -1,11 +1,11 @@
 "use server";
 
+import { hashPassword } from "@openmonitor/auth/password";
+import { and, db, eq, inArray, schema } from "@openmonitor/db";
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, db, eq, inArray, schema } from "@openmonitor/db";
-import { hashPassword } from "@openmonitor/auth/password";
-import { withToastRedirect } from "@openmonitor/ui";
 import { logAudit } from "~/lib/audit";
 import { getCurrentWorkspace } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
@@ -24,7 +24,10 @@ const writeSchema = z.object({
     .string()
     .max(255)
     // Coarse hostname check — strips empty strings, requires at least a dot.
-    .regex(/^[a-z0-9.-]+\.[a-z]{2,}$/i, "Custom domain must be a valid hostname like status.example.com")
+    .regex(
+      /^[a-z0-9.-]+\.[a-z]{2,}$/i,
+      "Custom domain must be a valid hostname like status.example.com",
+    )
     .optional(),
 });
 
@@ -111,12 +114,7 @@ export async function createStatusPage(formData: FormData) {
   });
 
   revalidatePath("/dashboard/status-pages");
-  redirect(
-    withToastRedirect(
-      `/dashboard/status-pages/${created?.id}`,
-      `Created “${parsed.name}”`,
-    ),
-  );
+  redirect(withToastRedirect(`/dashboard/status-pages/${created?.id}`, `Created “${parsed.name}”`));
 }
 
 export async function updateStatusPage(id: string, formData: FormData) {
@@ -342,10 +340,7 @@ export async function setStatusPageMonitors(id: string, formData: FormData) {
     await tx
       .delete(schema.pageComponents)
       .where(
-        and(
-          eq(schema.pageComponents.statusPageId, id),
-          eq(schema.pageComponents.type, "monitor"),
-        ),
+        and(eq(schema.pageComponents.statusPageId, id), eq(schema.pageComponents.type, "monitor")),
       );
 
     if (parsed.monitorIds.length > 0) {

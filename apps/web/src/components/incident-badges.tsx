@@ -1,5 +1,5 @@
-import type { ComponentProps } from "react";
 import { Badge } from "@openmonitor/ui";
+import type { ComponentProps } from "react";
 
 type IncidentStatus = "investigating" | "identified" | "monitoring" | "resolved";
 type IncidentSeverity = "minor" | "major" | "critical";

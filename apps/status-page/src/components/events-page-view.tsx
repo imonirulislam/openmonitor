@@ -1,14 +1,13 @@
-import { notFound, redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { NotFoundError, RequiresPasswordError } from "@openmonitor/api-client";
 import type { FeedEvent } from "@openmonitor/ui";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import { EventsTabs } from "~/components/events-tabs";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";
 
 const TITLE = process.env.NEXT_PUBLIC_STATUS_TITLE ?? "OpenMonitor";
-const DESCRIPTION =
-  process.env.NEXT_PUBLIC_STATUS_DESCRIPTION ?? "Live status for your services";
+const DESCRIPTION = process.env.NEXT_PUBLIC_STATUS_DESCRIPTION ?? "Live status for your services";
 
 /**
  * Renders the events tab body for a given (workspace, page) pair. Both the

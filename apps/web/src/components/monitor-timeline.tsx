@@ -1,9 +1,6 @@
 import { db, eq, schema, sql } from "@openmonitor/db";
 import { Card } from "@openmonitor/ui";
-import {
-  MonitorTimelineTable,
-  type TimelineRow,
-} from "./monitor-timeline-table";
+import { MonitorTimelineTable, type TimelineRow } from "./monitor-timeline-table";
 
 /**
  * "Timeline" section under each monitor. Mirrors openstatus's per-monitor
@@ -80,10 +77,7 @@ export async function MonitorTimeline({
     payload: unknown;
     created_at: string | Date;
   };
-  const merged: TimelineRow[] = [
-    ...(monitorEvents as unknown as RawEvent[]),
-    ...incidentEvents,
-  ]
+  const merged: TimelineRow[] = [...(monitorEvents as unknown as RawEvent[]), ...incidentEvents]
     .map((row) => toTimelineRow(row))
     .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
     .slice(0, 200);

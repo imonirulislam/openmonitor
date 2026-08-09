@@ -28,16 +28,18 @@ export async function logAudit(args: {
   try {
     const session = await auth();
     if (!session?.user?.workspaceId) return;
-    await db().insert(schema.auditLogs).values({
-      workspaceId: session.user.workspaceId,
-      actorId: session.user.id ?? null,
-      actorEmail: session.user.email ?? null,
-      action: args.action,
-      targetType: args.targetType,
-      targetId: args.targetId ?? null,
-      targetLabel: args.targetLabel ?? null,
-      metadata: args.metadata ?? null,
-    });
+    await db()
+      .insert(schema.auditLogs)
+      .values({
+        workspaceId: session.user.workspaceId,
+        actorId: session.user.id ?? null,
+        actorEmail: session.user.email ?? null,
+        action: args.action,
+        targetType: args.targetType,
+        targetId: args.targetId ?? null,
+        targetLabel: args.targetLabel ?? null,
+        metadata: args.metadata ?? null,
+      });
   } catch (err) {
     console.error("audit log failed:", err);
   }

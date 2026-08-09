@@ -44,9 +44,7 @@ export function FormCardHeader({ className, ...props }: ComponentProps<"div">) {
 }
 
 export function FormCardTitle({ className, ...props }: ComponentProps<"h3">) {
-  return (
-    <h3 className={cn("font-semibold text-base leading-tight", className)} {...props} />
-  );
+  return <h3 className={cn("font-semibold text-base leading-tight", className)} {...props} />;
 }
 
 export function FormCardDescription({ className, ...props }: ComponentProps<"p">) {
@@ -80,7 +78,5 @@ export function FormCardFooterInfo({
   className?: string;
   children: ReactNode;
 }) {
-  return (
-    <p className={cn("font-mono text-[11px] text-muted-foreground", className)}>{children}</p>
-  );
+  return <p className={cn("font-mono text-[11px] text-muted-foreground", className)}>{children}</p>;
 }

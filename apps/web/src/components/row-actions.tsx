@@ -1,16 +1,16 @@
 "use client";
 
-import { Loader2Icon, MoreHorizontalIcon } from "lucide-react";
-import { type ReactNode, useTransition } from "react";
 import {
   Button,
+  cn,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  cn,
 } from "@openmonitor/ui";
+import { Loader2Icon, MoreHorizontalIcon } from "lucide-react";
+import { type ReactNode, useTransition } from "react";
 
 /**
  * 3-dot row-actions menu for dashboard tables.
@@ -68,10 +68,7 @@ export function RowActionAction({
           await action();
         });
       }}
-      className={cn(
-        "flex w-full items-center gap-2",
-        destructive && "text-destructive",
-      )}
+      className={cn("flex w-full items-center gap-2", destructive && "text-destructive")}
     >
       {pending ? <Loader2Icon className="size-3.5 animate-spin" /> : null}
       <span className="flex-1 text-left">{children}</span>

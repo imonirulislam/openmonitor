@@ -1,8 +1,8 @@
+import { SidebarInset, SidebarProvider } from "@openmonitor/ui";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
-import { SidebarInset, SidebarProvider } from "@openmonitor/ui";
-import { AppSidebar } from "~/components/app-sidebar";
 import { auth } from "~/auth";
+import { AppSidebar } from "~/components/app-sidebar";
 import { getCurrentWorkspace, getUserWorkspaces } from "~/lib/workspace";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -18,11 +18,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar
-        user={
-          session?.user
-            ? { email: session.user.email, role: ws.role }
-            : null
-        }
+        user={session?.user ? { email: session.user.email, role: ws.role } : null}
         current={current}
         workspaces={workspaces}
       />

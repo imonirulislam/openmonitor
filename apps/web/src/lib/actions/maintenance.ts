@@ -1,10 +1,10 @@
 "use server";
 
+import { and, db, eq, inArray, schema } from "@openmonitor/db";
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, db, eq, inArray, schema } from "@openmonitor/db";
-import { withToastRedirect } from "@openmonitor/ui";
 import { auth } from "~/auth";
 import { parseOrFlash } from "~/lib/zod-flash";
 
@@ -115,9 +115,7 @@ export async function createMaintenance(formData: FormData) {
   });
 
   revalidatePath("/dashboard/maintenance");
-  redirect(
-    withToastRedirect("/dashboard/maintenance", `Scheduled “${parsed.title}”`),
-  );
+  redirect(withToastRedirect("/dashboard/maintenance", `Scheduled “${parsed.title}”`));
 }
 
 /** Cancel an upcoming or in-progress maintenance window. */

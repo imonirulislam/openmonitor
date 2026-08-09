@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { asc, db, eq, schema } from "@openmonitor/db";
 import {
   Badge,
@@ -13,17 +12,11 @@ import {
   Separator,
   Textarea,
 } from "@openmonitor/ui";
-import {
-  IncidentSeverityBadge,
-  IncidentStatusBadge,
-} from "~/components/incident-badges";
+import { notFound } from "next/navigation";
+import { IncidentSeverityBadge, IncidentStatusBadge } from "~/components/incident-badges";
 import { postIncidentUpdate } from "~/lib/actions/incidents";
 
-export default async function IncidentDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const conn = db();
 
@@ -112,12 +105,7 @@ export default async function IncidentDetailPage({
                 <option value="monitoring">Monitoring</option>
                 <option value="resolved">Resolved</option>
               </Select>
-              <Textarea
-                name="message"
-                rows={3}
-                required
-                placeholder="What's the latest?"
-              />
+              <Textarea name="message" rows={3} required placeholder="What's the latest?" />
               <Button type="submit" className="self-start">
                 Post update
               </Button>

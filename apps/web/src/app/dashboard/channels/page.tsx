@@ -1,4 +1,4 @@
-import { TrashIcon } from "lucide-react";
+import { and, db, eq, inArray, schema } from "@openmonitor/db";
 import {
   Badge,
   Button,
@@ -9,7 +9,7 @@ import {
   Input,
   Separator,
 } from "@openmonitor/ui";
-import { and, db, eq, inArray, schema } from "@openmonitor/db";
+import { TrashIcon } from "lucide-react";
 import {
   createSlackChannel,
   deleteChannel,
@@ -64,11 +64,7 @@ export default async function ChannelsPage() {
         </CardHeader>
         <CardContent>
           <form action={createSlackChannel} className="flex flex-col gap-3">
-            <Input
-              name="name"
-              placeholder="Friendly name (e.g., #ops-alerts)"
-              required
-            />
+            <Input name="name" placeholder="Friendly name (e.g., #ops-alerts)" required />
             <Input
               name="webhookUrl"
               type="url"

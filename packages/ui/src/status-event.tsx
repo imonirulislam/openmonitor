@@ -179,9 +179,7 @@ export function EventUpdateTimeline({
                   className="font-mono text-muted-foreground"
                 />
                 {durationText ? (
-                  <span className="ml-1.5 font-mono text-muted-foreground/70">
-                    {durationText}
-                  </span>
+                  <span className="ml-1.5 font-mono text-muted-foreground/70">{durationText}</span>
                 ) : null}
               </p>
               {update.message ? (
@@ -298,11 +296,7 @@ function FeedRow({ event }: { event: FeedEvent }) {
 
 export function Separator({ className, ...props }: ComponentProps<"div">) {
   return (
-    <div
-      role="separator"
-      className={cn("h-px w-full shrink-0 bg-border", className)}
-      {...props}
-    />
+    <div role="separator" className={cn("h-px w-full shrink-0 bg-border", className)} {...props} />
   );
 }
 

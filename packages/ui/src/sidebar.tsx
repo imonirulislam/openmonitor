@@ -1,16 +1,16 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
-import { type VariantProps, cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 import {
   type ComponentProps,
   type ComponentPropsWithoutRef,
+  createContext,
   type ElementRef,
+  forwardRef,
   type HTMLAttributes,
   type ReactNode,
-  createContext,
-  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -157,7 +157,11 @@ SidebarHeader.displayName = "SidebarHeader";
 
 export const SidebarContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("flex flex-1 flex-col gap-1 overflow-y-auto p-2", className)} {...props} />
+    <div
+      ref={ref}
+      className={cn("flex flex-1 flex-col gap-1 overflow-y-auto p-2", className)}
+      {...props}
+    />
   ),
 );
 SidebarContent.displayName = "SidebarContent";
@@ -171,11 +175,7 @@ SidebarFooter.displayName = "SidebarFooter";
 
 export const SidebarInset = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <main
-      ref={ref}
-      className={cn("flex-1 overflow-x-hidden", className)}
-      {...props}
-    />
+    <main ref={ref} className={cn("flex-1 overflow-x-hidden", className)} {...props} />
   ),
 );
 SidebarInset.displayName = "SidebarInset";

@@ -1,13 +1,10 @@
 "use client";
 
+import { LocalTime } from "@openmonitor/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { LocalTime } from "@openmonitor/ui";
-import {
-  IncidentSeverityBadge,
-  IncidentStatusBadge,
-} from "./incident-badges";
 import { DataTable } from "./data-table";
+import { IncidentSeverityBadge, IncidentStatusBadge } from "./incident-badges";
 
 export type StatusReportRow = {
   id: string;
@@ -58,8 +55,7 @@ const columns: ColumnDef<StatusReportRow>[] = [
         className="font-mono text-muted-foreground text-xs"
       />
     ),
-    sortingFn: (a, b) =>
-      Date.parse(a.original.startedAt) - Date.parse(b.original.startedAt),
+    sortingFn: (a, b) => Date.parse(a.original.startedAt) - Date.parse(b.original.startedAt),
   },
   {
     accessorKey: "resolvedAt",

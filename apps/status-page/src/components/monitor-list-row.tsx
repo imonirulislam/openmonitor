@@ -55,9 +55,7 @@ export function MonitorListRow({
         />
         <StatusTracker days={days} />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-          <span>
-            {firstDate ? <LocalTime date={firstDate} format="LLL d" /> : "—"} → today
-          </span>
+          <span>{firstDate ? <LocalTime date={firstDate} format="LLL d" /> : "—"} → today</span>
           <div className="flex items-center gap-3">
             <Stat label="probes" value={stats.totalProbes.toLocaleString()} />
             <Stat label="failed" value={stats.totalFailed.toLocaleString()} />

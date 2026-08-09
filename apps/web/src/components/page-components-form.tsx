@@ -1,7 +1,5 @@
 "use client";
 
-import { PlusIcon } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
 import {
   Button,
   Card,
@@ -13,9 +11,10 @@ import {
   FormCardHeader,
   FormCardTitle,
 } from "@openmonitor/ui";
+import { PlusIcon } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
 import { AddComponentMenu } from "./page-component-add-menu";
 import { ComponentRow, GroupRow } from "./page-component-rows";
-import { Sortable, SortableItem } from "./sortable";
 import {
   buildInitialState,
   type ComponentDraft,
@@ -26,6 +25,7 @@ import {
   newKey,
   serializeComponent,
 } from "./page-components-tree";
+import { Sortable, SortableItem } from "./sortable";
 
 export type { LoadedComponent, LoadedGroup } from "./page-components-tree";
 

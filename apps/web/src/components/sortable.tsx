@@ -1,31 +1,25 @@
 "use client";
 
 import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
-  SortableContext,
   arrayMove,
+  SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVerticalIcon } from "lucide-react";
-import {
-  type CSSProperties,
-  type ReactNode,
-  createContext,
-  useContext,
-  useMemo,
-} from "react";
 import { cn } from "@openmonitor/ui";
+import { GripVerticalIcon } from "lucide-react";
+import { type CSSProperties, createContext, type ReactNode, useContext, useMemo } from "react";
 
 /**
  * Thin wrapper around @dnd-kit/sortable. Pass a stable id list and an onChange

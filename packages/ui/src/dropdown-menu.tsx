@@ -5,8 +5,8 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 import {
   type ComponentPropsWithoutRef,
   type ElementRef,
-  type HTMLAttributes,
   forwardRef,
+  type HTMLAttributes,
 } from "react";
 import { cn } from "./cn";
 

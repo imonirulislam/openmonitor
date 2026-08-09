@@ -1,4 +1,4 @@
-import { type VariantProps, cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps } from "react";
 import { cn } from "./cn";
 
@@ -25,9 +25,7 @@ const metricCardVariants = cva(
   },
 );
 
-export type MetricCardVariant = NonNullable<
-  VariantProps<typeof metricCardVariants>["variant"]
->;
+export type MetricCardVariant = NonNullable<VariantProps<typeof metricCardVariants>["variant"]>;
 
 export function MetricCard({
   className,
@@ -94,19 +92,11 @@ export function MetricCardHeader({ className, ...props }: ComponentProps<"div">)
 }
 
 export function MetricCardTitle({ className, ...props }: ComponentProps<"p">) {
-  return (
-    <p
-      className={cn("font-medium font-mono text-sm tracking-tight", className)}
-      {...props}
-    />
-  );
+  return <p className={cn("font-medium font-mono text-sm tracking-tight", className)} {...props} />;
 }
 
 export function MetricCardValue({ className, ...props }: ComponentProps<"p">) {
   return (
-    <p
-      className={cn("font-medium text-foreground text-xl tabular-nums", className)}
-      {...props}
-    />
+    <p className={cn("font-medium text-foreground text-xl tabular-nums", className)} {...props} />
   );
 }

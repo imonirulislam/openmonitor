@@ -1,17 +1,17 @@
 "use client";
 
-import { CheckIcon, ChevronsUpDownIcon, Loader2Icon, PlusIcon } from "lucide-react";
-import { useState, useTransition } from "react";
 import {
+  cn,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  cn,
   useSidebar,
 } from "@openmonitor/ui";
+import { CheckIcon, ChevronsUpDownIcon, Loader2Icon, PlusIcon } from "lucide-react";
+import { useState, useTransition } from "react";
 import { switchWorkspace } from "~/lib/actions/workspace";
 
 export type WorkspaceOption = {
@@ -109,9 +109,7 @@ export function WorkspaceSwitcher({
                 </span>
               )}
               <span className="flex-1 truncate text-sm">{w.name}</span>
-              {isCurrent && !isPending ? (
-                <CheckIcon className="size-3.5 text-foreground" />
-              ) : null}
+              {isCurrent && !isPending ? <CheckIcon className="size-3.5 text-foreground" /> : null}
             </DropdownMenuItem>
           );
         })}

@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { Separator } from "@openmonitor/ui";
+import type { ReactNode } from "react";
 import { SettingsTabs } from "~/components/settings-tabs";
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {

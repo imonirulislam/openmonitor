@@ -1,8 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
-import { type FeedEvent, StatusEventFeed, cn } from "@openmonitor/ui";
+import { cn, type FeedEvent, StatusEventFeed } from "@openmonitor/ui";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Tab = "reports" | "maintenances";
 

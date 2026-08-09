@@ -1,5 +1,5 @@
-import { Hono } from "hono";
 import { and, db, desc, eq, gte, schema, sql } from "@openmonitor/db";
+import { Hono } from "hono";
 import { resolveStatusPage } from "../lib/resolve-page";
 
 export const feedRoutes = new Hono();
@@ -32,9 +32,7 @@ feedRoutes.get("/v1/feed.xml", async (c) => {
   const incidents = await conn
     .select()
     .from(schema.incidents)
-    .where(
-      and(eq(schema.incidents.workspaceId, ws), gte(schema.incidents.startedAt, since)),
-    )
+    .where(and(eq(schema.incidents.workspaceId, ws), gte(schema.incidents.startedAt, since)))
     .orderBy(desc(schema.incidents.startedAt));
 
   const incidentIds = incidents.map((i) => i.id);
@@ -57,9 +55,7 @@ feedRoutes.get("/v1/feed.xml", async (c) => {
   const maintenances = await conn
     .select()
     .from(schema.maintenances)
-    .where(
-      and(eq(schema.maintenances.workspaceId, ws), gte(schema.maintenances.startsAt, since)),
-    )
+    .where(and(eq(schema.maintenances.workspaceId, ws), gte(schema.maintenances.startsAt, since)))
     .orderBy(desc(schema.maintenances.startsAt));
 
   // Compose the feed link from the request URL — keeps the feed self-describing

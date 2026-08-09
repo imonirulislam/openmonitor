@@ -1,6 +1,6 @@
 "use client";
 
-import * as LabelPrimitive from "@radix-ui/react-label";
+import type * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
 import * as React from "react";
 import {
@@ -112,9 +112,7 @@ export const FormControl = React.forwardRef<
     <Slot
       ref={ref}
       id={formItemId}
-      aria-describedby={
-        error ? `${formDescriptionId} ${formMessageId}` : formDescriptionId
-      }
+      aria-describedby={error ? `${formDescriptionId} ${formMessageId}` : formDescriptionId}
       aria-invalid={!!error}
       {...props}
     />

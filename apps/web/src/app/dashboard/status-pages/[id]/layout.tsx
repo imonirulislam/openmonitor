@@ -1,8 +1,8 @@
+import { and, db, eq, schema } from "@openmonitor/db";
+import { Badge } from "@openmonitor/ui";
 import { ExternalLinkIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { and, db, eq, schema } from "@openmonitor/db";
-import { Badge } from "@openmonitor/ui";
 import { StatusPageTabs } from "~/components/status-page-tabs";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
@@ -25,16 +25,12 @@ export default async function StatusPageDetailLayout({
       customDomain: schema.statusPages.customDomain,
     })
     .from(schema.statusPages)
-    .where(
-      and(eq(schema.statusPages.id, id), eq(schema.statusPages.workspaceId, workspaceId)),
-    )
+    .where(and(eq(schema.statusPages.id, id), eq(schema.statusPages.workspaceId, workspaceId)))
     .limit(1);
   if (!page) notFound();
 
   const baseUrl = process.env.NEXT_PUBLIC_STATUS_PAGE_URL ?? "http://localhost:5003";
-  const publicUrl = page.customDomain
-    ? `https://${page.customDomain}`
-    : `${baseUrl}/${page.slug}`;
+  const publicUrl = page.customDomain ? `https://${page.customDomain}` : `${baseUrl}/${page.slug}`;
 
   return (
     <div className="flex flex-col gap-6">

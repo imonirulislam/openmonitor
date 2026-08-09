@@ -5,14 +5,15 @@ import {
   type Assertion,
   assertion as assertionSchema,
   type HeaderEntry,
+  type MonitorKind,
   monitorKinds,
   numberCompareDictionary,
   recordCompareDictionary,
   stringCompareDictionary,
-  type MonitorKind,
 } from "@openmonitor/db/assertions";
 import {
   Button,
+  cn,
   Form,
   FormCard,
   FormCardContent,
@@ -36,7 +37,6 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  cn,
   toast,
 } from "@openmonitor/ui";
 import { GlobeIcon, NetworkIcon, PlusIcon, ServerIcon, XIcon } from "lucide-react";
@@ -87,7 +87,13 @@ const TYPE_OPTIONS: Array<{
   enabled: boolean;
   hint: string;
 }> = [
-  { value: "http", icon: GlobeIcon, label: "HTTP", enabled: true, hint: "HTTP/HTTPS endpoint probe." },
+  {
+    value: "http",
+    icon: GlobeIcon,
+    label: "HTTP",
+    enabled: true,
+    hint: "HTTP/HTTPS endpoint probe.",
+  },
   { value: "tcp", icon: NetworkIcon, label: "TCP", enabled: true, hint: "TCP port probe." },
   { value: "dns", icon: ServerIcon, label: "DNS", enabled: true, hint: "DNS record probe." },
 ];
@@ -123,9 +129,7 @@ export function MonitorConfigForm({
       hostPort: "",
       dnsHost: "",
       followRedirects: true,
-      assertions: [
-        { version: "v1", type: "status", compare: "eq", target: 200 },
-      ],
+      assertions: [{ version: "v1", type: "status", compare: "eq", target: 200 }],
       ...defaultValues,
     },
   });
@@ -293,7 +297,10 @@ export function MonitorConfigForm({
                       <FormItem>
                         <FormLabel>Method</FormLabel>
                         <FormControl>
-                          <Select value={field.value} onChange={(e) => field.onChange(e.target.value)}>
+                          <Select
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
                             {HTTP_METHODS.map((m) => (
                               <option key={m} value={m}>
                                 {m}
@@ -314,7 +321,11 @@ export function MonitorConfigForm({
                       <FormItem>
                         <FormLabel>URL</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://api.example.com/health" type="url" {...field} />
+                          <Input
+                            placeholder="https://api.example.com/health"
+                            type="url"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -425,9 +436,7 @@ export function MonitorConfigForm({
                         <Input placeholder="127.0.0.1:8080" {...field} />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription>
-                        Supports both IPv4 and IPv6 addresses.
-                      </FormDescription>
+                      <FormDescription>Supports both IPv4 and IPv6 addresses.</FormDescription>
                     </FormItem>
                   )}
                 />
@@ -435,12 +444,10 @@ export function MonitorConfigForm({
                   Examples:
                   <ul className="list-inside list-disc">
                     <li>
-                      Domain:{" "}
-                      <span className="font-mono text-foreground">example.com:443</span>
+                      Domain: <span className="font-mono text-foreground">example.com:443</span>
                     </li>
                     <li>
-                      IPv4:{" "}
-                      <span className="font-mono text-foreground">192.168.1.1:443</span>
+                      IPv4: <span className="font-mono text-foreground">192.168.1.1:443</span>
                     </li>
                     <li>
                       IPv6:{" "}
@@ -484,8 +491,7 @@ export function MonitorConfigForm({
                       <FormItem>
                         <FormLabel>Assertions</FormLabel>
                         <FormDescription>
-                          Validate the response to ensure your service is working as
-                          expected.
+                          Validate the response to ensure your service is working as expected.
                           <br />
                           {watchKind === "http"
                             ? "Add body, header, or status assertions."
@@ -630,7 +636,12 @@ function renderAssertionRow(
       {assertion.type === "dnsRecord" ? (
         <Select
           value={assertion.key}
-          onChange={(e) => update({ ...assertion, key: e.target.value as Assertion extends { key: infer K } ? K : never })}
+          onChange={(e) =>
+            update({
+              ...assertion,
+              key: e.target.value as Assertion extends { key: infer K } ? K : never,
+            })
+          }
         >
           {DNS_ASSERTION_TYPES.map((t) => (
             <option key={t} value={t}>

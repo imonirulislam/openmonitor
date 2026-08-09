@@ -83,10 +83,7 @@ export type InitialState = {
   groupKeys: string[];
 };
 
-export function buildInitialState(
-  loaded: LoadedComponent[],
-  groups: LoadedGroup[],
-): InitialState {
+export function buildInitialState(loaded: LoadedComponent[], groups: LoadedGroup[]): InitialState {
   const componentsByKey: Record<string, ComponentDraft> = {};
   const groupsByKey: Record<string, GroupDraft> = {};
 

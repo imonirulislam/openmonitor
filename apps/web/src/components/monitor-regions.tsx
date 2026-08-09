@@ -1,8 +1,8 @@
 "use client";
 
+import { Button, Card, cn } from "@openmonitor/ui";
 import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, YAxis } from "recharts";
-import { Button, Card, cn } from "@openmonitor/ui";
 import { RowAction, RowActions } from "~/components/row-actions";
 
 /**
@@ -178,13 +178,16 @@ export function MonitorRegions() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
-                    {r.p50}<span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
+                    {r.p50}
+                    <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
                   </td>
                   <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
-                    {r.p90}<span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
+                    {r.p90}
+                    <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
                   </td>
                   <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
-                    {r.p99}<span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
+                    {r.p99}
+                    <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <RowActions>
@@ -210,16 +213,40 @@ export function MonitorRegions() {
           <span className="rounded border border-border bg-card px-2 py-1 font-mono">20</span>
           <span className="ml-2">Page 1 of 1</span>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="size-7" disabled aria-label="First page">
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7"
+              disabled
+              aria-label="First page"
+            >
               «
             </Button>
-            <Button variant="outline" size="icon" className="size-7" disabled aria-label="Previous page">
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7"
+              disabled
+              aria-label="Previous page"
+            >
               ‹
             </Button>
-            <Button variant="outline" size="icon" className="size-7" disabled aria-label="Next page">
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7"
+              disabled
+              aria-label="Next page"
+            >
               ›
             </Button>
-            <Button variant="outline" size="icon" className="size-7" disabled aria-label="Last page">
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7"
+              disabled
+              aria-label="Last page"
+            >
               »
             </Button>
           </div>

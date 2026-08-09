@@ -16,7 +16,8 @@ import type { Database } from "./client";
  * against the final column set. Both are idempotent.
  */
 export async function installTriggerFunction(db: Database): Promise<void> {
-  await db.execute(sql.raw(`
+  await db.execute(
+    sql.raw(`
     CREATE OR REPLACE FUNCTION notify_monitor_changed() RETURNS trigger AS $$
     DECLARE
       payload TEXT;
@@ -30,12 +31,14 @@ export async function installTriggerFunction(db: Database): Promise<void> {
       RETURN NULL;
     END;
     $$ LANGUAGE plpgsql;
-  `));
+  `),
+  );
 }
 
 export async function installTriggers(db: Database): Promise<void> {
   await installTriggerFunction(db);
-  await db.execute(sql.raw(`
+  await db.execute(
+    sql.raw(`
     -- INSERT/DELETE always fire. UPDATE only fires when probe-affecting columns
     -- change — last_checked_at / current_status are written on every probe and
     -- would otherwise trigger a refresh storm.
@@ -75,5 +78,6 @@ export async function installTriggers(db: Database): Promise<void> {
       OLD.slug                    IS DISTINCT FROM NEW.slug
     )
     EXECUTE FUNCTION notify_monitor_changed();
-  `));
+  `),
+  );
 }

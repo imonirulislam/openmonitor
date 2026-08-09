@@ -1,11 +1,11 @@
-export { sendSlack } from "./slack";
 export type { SlackSendResult } from "./slack";
-export { renderSlackMessage } from "./templates";
+export { sendSlack } from "./slack";
 export type {
-  SlackMessage,
-  SlackBlock,
   IncidentPayload,
   MaintenancePayload,
   MonitorDownPayload,
   MonitorRecoveredPayload,
+  SlackBlock,
+  SlackMessage,
 } from "./templates";
+export { renderSlackMessage } from "./templates";

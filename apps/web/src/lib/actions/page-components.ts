@@ -1,10 +1,10 @@
 "use server";
 
+import { and, db, eq, inArray, schema } from "@openmonitor/db";
+import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, db, eq, inArray, schema } from "@openmonitor/db";
-import { withToastRedirect } from "@openmonitor/ui";
 import { logAudit } from "~/lib/audit";
 import { getCurrentWorkspace } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
@@ -19,9 +19,7 @@ async function assertPageInWorkspace(pageId: string, workspaceId: string) {
   const [row] = await db()
     .select({ id: schema.statusPages.id })
     .from(schema.statusPages)
-    .where(
-      and(eq(schema.statusPages.id, pageId), eq(schema.statusPages.workspaceId, workspaceId)),
-    )
+    .where(and(eq(schema.statusPages.id, pageId), eq(schema.statusPages.workspaceId, workspaceId)))
     .limit(1);
   if (!row) throw new Error("status page not found");
 }
@@ -76,11 +74,7 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
   } catch {
     throw new Error("invalid tree payload");
   }
-  const tree = parseOrFlash(
-    treeSchema,
-    parsedJson,
-    `/dashboard/status-pages/${pageId}/components`,
-  );
+  const tree = parseOrFlash(treeSchema, parsedJson, `/dashboard/status-pages/${pageId}/components`);
 
   await db().transaction(async (tx) => {
     const existingComponents = await tx
@@ -104,10 +98,7 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
     // unique-(page,monitor) constraint blowing up when a monitor row is
     // removed and re-added in the same submit (an INSERT against an old
     // row not yet deleted would conflict).
-    const allTreeComponents = [
-      ...tree.ungrouped,
-      ...tree.groups.flatMap((g) => g.components),
-    ];
+    const allTreeComponents = [...tree.ungrouped, ...tree.groups.flatMap((g) => g.components)];
     const keptComponentIds = new Set<string>();
     for (const c of allTreeComponents) {
       if (c.id && UUID_RE.test(c.id) && existingComponentIds.has(c.id)) {
@@ -122,9 +113,7 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
     }
 
     // ---- 2. Delete first ----
-    const componentsToDelete = [...existingComponentIds].filter(
-      (id) => !keptComponentIds.has(id),
-    );
+    const componentsToDelete = [...existingComponentIds].filter((id) => !keptComponentIds.has(id));
     if (componentsToDelete.length > 0) {
       await tx
         .delete(schema.pageComponents)
@@ -259,10 +248,5 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
   });
 
   revalidatePath(`/dashboard/status-pages/${pageId}/components`);
-  redirect(
-    withToastRedirect(
-      `/dashboard/status-pages/${pageId}/components`,
-      "Components saved",
-    ),
-  );
+  redirect(withToastRedirect(`/dashboard/status-pages/${pageId}/components`, "Components saved"));
 }

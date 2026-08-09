@@ -1,4 +1,4 @@
-import { and, db, eq, schema } from "@openmonitor/db";
+import { and, type db, eq, schema } from "@openmonitor/db";
 
 const PAGE_COLUMNS = {
   id: schema.statusPages.id,
@@ -52,9 +52,7 @@ export async function resolveStatusPage(
       .select(PAGE_COLUMNS)
       .from(schema.statusPages)
       .innerJoin(schema.workspaces, eq(schema.workspaces.id, schema.statusPages.workspaceId))
-      .where(
-        and(eq(schema.workspaces.slug, workspaceSlug), eq(schema.statusPages.slug, pageSlug)),
-      )
+      .where(and(eq(schema.workspaces.slug, workspaceSlug), eq(schema.statusPages.slug, pageSlug)))
       .limit(1);
     return rows[0] ?? null;
   }
