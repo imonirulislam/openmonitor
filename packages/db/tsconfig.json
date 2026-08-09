@@ -1,0 +1,8 @@
+{
+  "extends": "@openmonitor/tsconfig/node.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "drizzle.config.ts"],
+  "exclude": ["dist", "drizzle"]
+}

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifier
+  namespace: open-monitor
+  labels: { app: notifier }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: notifier } }
+  template:
+    metadata: { labels: { app: notifier } }
+    spec:
+      containers:
+        - name: notifier
+          image: REGISTRY/open-monitor-notifier:latest
+          env:
+            - { name: NODE_ENV, value: production }
+            - { name: POLL_INTERVAL_MS, value: "5000" }
+          envFrom:
+            - secretRef: { name: open-monitor-secrets }
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 250m, memory: 256Mi }

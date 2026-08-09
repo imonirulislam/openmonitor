@@ -1,0 +1,38 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreDependencies": ["@biomejs/biome", "oxlint", "oxlint-tsgolint", "oxfmt"],
+  "ignore": ["**/drizzle/**", "**/*.gen.ts"],
+  "workspaces": {
+    ".": {
+      "entry": ["turbo/generators/config.ts"]
+    },
+    "apps/api": {
+      "entry": ["src/index.ts"],
+      "project": "src/**/*.ts"
+    },
+    "apps/notifier": {
+      "entry": ["src/index.ts"],
+      "project": "src/**/*.ts"
+    },
+    "apps/web": {
+      "entry": [
+        "next.config.ts",
+        "src/app/**/{page,layout,loading,error,not-found,route}.{ts,tsx}",
+        "src/middleware.ts",
+        "src/auth.ts"
+      ],
+      "project": "src/**/*.{ts,tsx}"
+    },
+    "apps/status-page": {
+      "entry": [
+        "next.config.ts",
+        "src/app/**/{page,layout,loading,error,not-found,route}.{ts,tsx}"
+      ],
+      "project": "src/**/*.{ts,tsx}"
+    },
+    "packages/*": {
+      "entry": ["src/index.ts"],
+      "project": "src/**/*.{ts,tsx}"
+    }
+  }
+}

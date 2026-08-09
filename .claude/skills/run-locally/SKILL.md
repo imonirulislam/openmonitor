@@ -1,0 +1,82 @@
+---
+name: run-locally
+description: Get the whole stack running on the user's machine. Use when the user says "how do I run this," "set up dev," or asks about local development.
+---
+
+# Run the stack locally
+
+## First time
+
+```bash
+# 1. Install all workspace deps
+bun install
+
+# 2. Copy env
+cp .env.example .env
+# Edit .env if needed — defaults work for local docker-compose Postgres.
+
+# 3. Start Postgres
+docker compose up -d postgres
+
+# 4. Run migrations
+bun run db:migrate
+
+# 5. Seed admin user + example monitors
+bun run db:seed
+# Output prints the admin credentials. Default: admin@openmonitor.local / changeme.
+
+# 6. Start everything in parallel
+bun run dev
+```
+
+| Service     | URL                       |
+|-------------|---------------------------|
+| Admin       | http://localhost:5001     |
+| API         | http://localhost:5002     |
+| Status page | http://localhost:5003     |
+| Postgres    | localhost:5433            |
+
+The Go checker (`apps/checker`) does NOT start with `bun run dev` — it's a Go binary, not a
+node app. Run it separately:
+
+```bash
+cd apps/checker
+go run .
+```
+
+It will fail until the API is up and `PROBE_API_KEY` matches. The default `.env` sets it
+to `change-me-probe-key`; keep it consistent.
+
+## Sanity checks
+
+- Visit http://localhost:5001/login and sign in with the seeded admin.
+- Visit http://localhost:5003 — should show 4 monitors with "Unknown" status until the
+  checker runs.
+- Once the checker runs, statuses update within `intervalSeconds`.
+
+## Common issues
+
+- **`AUTH_SECRET` errors on web** — generate one with `openssl rand -base64 32`, paste into
+  `.env`.
+- **DB connection refused** — `docker compose ps` to confirm Postgres is up; `docker
+  compose logs postgres` to see why if not.
+- **Checker can't reach api** — make sure `bun run dev` started the API (port 5002). The
+  checker uses `API_URL` from env.
+- **Slack messages not firing** — there's no notification channel seeded by default. Add
+  one in /dashboard/channels and link it to a monitor.
+
+## Full stack via Docker
+
+```bash
+docker compose up --build
+```
+
+This builds and runs all five apps + Postgres. Slower iteration than `bun run dev` for
+TS apps, but useful for verifying the production build path.
+
+## Tearing down
+
+```bash
+docker compose down            # stop, keep data
+docker compose down -v         # stop and wipe Postgres volume
+```

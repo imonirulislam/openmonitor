@@ -1,0 +1,23 @@
+{
+  "name": "@openmonitor/{{name}}",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "dotenv": "^16.4.5",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@openmonitor/tsconfig": "workspace:*",
+    "@types/node": "^20.16.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.3"
+  }
+}

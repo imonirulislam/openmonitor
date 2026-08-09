@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checker
+  namespace: open-monitor
+  labels: { app: checker }
+spec:
+  # Each replica is an independent prober. Multiple replicas multiply probe frequency
+  # (each does its own probes). For multi-region monitoring, run one Deployment per
+  # region with a different CHECKER_REGION env var.
+  replicas: 1
+  selector: { matchLabels: { app: checker } }
+  template:
+    metadata: { labels: { app: checker } }
+    spec:
+      containers:
+        - name: checker
+          image: REGISTRY/open-monitor-checker:latest
+          env:
+            - { name: API_URL, value: "http://api.open-monitor.svc.cluster.local" }
+            - { name: CHECKER_REGION, value: "eks-eu-west-1" }
+            - { name: CHECKER_REFRESH_INTERVAL, value: "30s" }
+            - { name: CHECKER_DEFAULT_TIMEOUT_MS, value: "10000" }
+          envFrom:
+            - secretRef: { name: open-monitor-secrets }
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }

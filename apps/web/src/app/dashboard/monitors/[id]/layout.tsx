@@ -1,0 +1,59 @@
+import Link from "next/link";
+import { ArrowLeftIcon } from "lucide-react";
+import { notFound } from "next/navigation";
+import { Badge, Separator } from "@openmonitor/ui";
+import { and, db, eq, schema } from "@openmonitor/db";
+import { MonitorTabs } from "~/components/monitor-tabs";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
+
+const STATUS_VARIANT: Record<string, "success" | "destructive" | "warning" | "default"> = {
+  up: "success",
+  down: "destructive",
+  degraded: "warning",
+  unknown: "default",
+};
+
+export default async function MonitorDetailLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const workspaceId = await getCurrentWorkspaceId();
+  const [monitor] = await db()
+    .select()
+    .from(schema.monitors)
+    .where(
+      and(eq(schema.monitors.id, id), eq(schema.monitors.workspaceId, workspaceId)),
+    )
+    .limit(1);
+  if (!monitor) notFound();
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <Link
+          href="/dashboard/monitors"
+          className="inline-flex items-center gap-1.5 font-mono text-muted-foreground text-xs uppercase tracking-wide hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-3" /> All monitors
+        </Link>
+      </div>
+      <header>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="font-semibold text-2xl tracking-tight">{monitor.name}</h1>
+          <Badge variant={STATUS_VARIANT[monitor.currentStatus]}>{monitor.currentStatus}</Badge>
+          {!monitor.enabled ? <Badge variant="outline">disabled</Badge> : null}
+        </div>
+        <p className="mt-1 font-mono text-muted-foreground text-xs">{monitor.url}</p>
+      </header>
+
+      <MonitorTabs monitorId={id} />
+      <Separator />
+
+      {children}
+    </div>
+  );
+}

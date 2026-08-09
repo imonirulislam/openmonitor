@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: open-monitor
+  labels: { app: web }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: web } }
+  template:
+    metadata: { labels: { app: web } }
+    spec:
+      containers:
+        - name: web
+          # TODO: replace with your registry path
+          image: REGISTRY/open-monitor-web:latest
+          ports:
+            - containerPort: 5001
+          env:
+            - { name: NODE_ENV, value: production }
+            - { name: API_URL, value: "http://api.open-monitor.svc.cluster.local" }
+            # TODO: set to your public origin (https://status-admin.example.com)
+            - { name: AUTH_URL, value: "https://status-admin.example.com" }
+          envFrom:
+            - secretRef: { name: open-monitor-secrets }
+          readinessProbe:
+            httpGet: { path: /login, port: 5001 }
+            initialDelaySeconds: 10
+          resources:
+            requests: { cpu: 200m, memory: 256Mi }
+            limits: { cpu: 1, memory: 1Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: open-monitor
+spec:
+  selector: { app: web }
+  ports:
+    - port: 80
+      targetPort: 5001

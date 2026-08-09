@@ -1,0 +1,19 @@
+# Run once per release to apply pending migrations.
+# kubectl apply -f migrate-job.yaml --replace
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: open-monitor
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          # Use the api image — it ships with @openmonitor/db.
+          image: REGISTRY/open-monitor-api:latest
+          command: ["node", "/app/packages/db/dist/migrate.js"]
+          envFrom:
+            - secretRef: { name: open-monitor-secrets }

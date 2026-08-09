@@ -1,0 +1,24 @@
+{
+  "name": "@openmonitor/notifications",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./slack": "./src/slack.ts",
+    "./templates": "./src/templates.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openmonitor/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@openmonitor/tsconfig": "workspace:*",
+    "@types/node": "^20.16.0",
+    "typescript": "^5.6.3"
+  }
+}

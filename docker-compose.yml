@@ -1,0 +1,109 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: open-monitor-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openmonitor
+      POSTGRES_PASSWORD: openmonitor
+      POSTGRES_DB: open_monitor
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openmonitor -d open_monitor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+    container_name: open-monitor-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      PROBE_API_KEY: ${PROBE_API_KEY:-change-me-probe-key}
+      PORT: "5002"
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5002:5002"
+
+  notifier:
+    build:
+      context: .
+      dockerfile: deploy/docker/notifier.Dockerfile
+    container_name: open-monitor-notifier
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      NODE_ENV: production
+      POLL_INTERVAL_MS: "5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/web.Dockerfile
+    container_name: open-monitor-web
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-32-byte-random-secret}
+      AUTH_URL: http://localhost:5001
+      API_URL: http://api:5002
+      PROBE_API_KEY: ${PROBE_API_KEY:-change-me-probe-key}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+    ports:
+      - "5001:5001"
+
+  status-page:
+    build:
+      context: .
+      dockerfile: deploy/docker/status-page.Dockerfile
+    container_name: open-monitor-page
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:5002
+      NEXT_PUBLIC_API_URL: http://localhost:5002
+      NEXT_PUBLIC_STATUS_TITLE: OpenMonitor
+      NEXT_PUBLIC_STATUS_DESCRIPTION: Live status for your services
+      NODE_ENV: production
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "5003:5003"
+
+  checker:
+    build:
+      context: .
+      dockerfile: deploy/docker/checker.Dockerfile
+    container_name: open-monitor-checker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      API_URL: http://api:5002
+      PROBE_API_KEY: ${PROBE_API_KEY:-change-me-probe-key}
+      CHECKER_REGION: local
+      CHECKER_DEFAULT_TIMEOUT_MS: "10000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+
+volumes:
+  postgres-data:

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-page
+  namespace: open-monitor
+  labels: { app: status-page }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: status-page } }
+  template:
+    metadata: { labels: { app: status-page } }
+    spec:
+      containers:
+        - name: status-page
+          image: REGISTRY/open-monitor-page:latest
+          ports:
+            - containerPort: 5003
+          env:
+            - { name: NODE_ENV, value: production }
+            - { name: API_URL, value: "http://api.open-monitor.svc.cluster.local" }
+            # TODO: replace public-facing URL
+            - { name: NEXT_PUBLIC_API_URL, value: "https://status-api.example.com" }
+            - { name: NEXT_PUBLIC_STATUS_TITLE, value: "Azerion Status" }
+            - { name: NEXT_PUBLIC_STATUS_DESCRIPTION, value: "Live status for your services" }
+          readinessProbe:
+            httpGet: { path: /, port: 5003 }
+            initialDelaySeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: status-page
+  namespace: open-monitor
+spec:
+  selector: { app: status-page }
+  ports:
+    - port: 80
+      targetPort: 5003

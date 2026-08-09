@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.turbo/
+
+# Go
+apps/checker/bin/
+apps/checker/checker
+*.test
+vendor/
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+bun-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.recommended.json
+*.swp
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Drizzle generated meta cache (kept migrations checked in)
+**/drizzle/meta/_journal.json.bak
+
+# Misc
+*.pem
+*.tsbuildinfo
+
+# Reference checkout — read-only, ignored
+_reference

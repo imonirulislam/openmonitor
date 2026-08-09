@@ -1,0 +1,23 @@
+{
+  "name": "@openmonitor/notifier",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "echo 'no build step — runtime is tsx; typecheck runs separately'",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openmonitor/db": "workspace:*",
+    "@openmonitor/notifications": "workspace:*",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@openmonitor/tsconfig": "workspace:*",
+    "@types/node": "^20.16.0",
+    "typescript": "^5.6.3"
+  }
+}

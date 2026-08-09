@@ -1,0 +1,6 @@
+@import "@openmonitor/ui/globals.css";
+
+/* Status page uses sharp corners — distinct from the admin app. */
+:root {
+  --radius: 0rem;
+}
