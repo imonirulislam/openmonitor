@@ -8,6 +8,7 @@ const TABS = [
   { href: "/dashboard/settings/workspace", label: "Workspace" },
   { href: "/dashboard/settings/members", label: "Members" },
   { href: "/dashboard/settings/templates", label: "Templates" },
+  { href: "/dashboard/settings/probe-locations", label: "Probe locations" },
   { href: "/dashboard/settings/system", label: "System" },
   { href: "/dashboard/settings/account", label: "Account" },
 ];

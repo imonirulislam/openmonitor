@@ -110,12 +110,9 @@ across 3 clouds, and that doesn't transfer to a single Postgres.
 
 ## Not built yet
 
-- **Admin UI for probe locations.** Creating one currently means an insert plus
-  `hashProbeToken`. Needs CRUD, monitor assignment, one-time token reveal, and `last_seen_at`
-  surfaced.
-- **Region policy picker** on the monitor form.
-- **Per-region breakdown** in `/v1/status` and on the public page. The data supports both a
-  rollup and a per-region view; which to show is undecided.
+- **Region policy picker** on the monitor form. `region_policy` is settable only in SQL.
+- **Per-region breakdown** in `/v1/status` and on the public page. The admin monitor page
+  shows it; the public surface still shows only the rollup.
 - **Silent-location alerting.** `last_seen_at` is recorded but nothing watches it. Wants a
   `location.silent` event type and a sweeper — `apps/notifier/src/heartbeat-sweeper.ts` is the
   model.

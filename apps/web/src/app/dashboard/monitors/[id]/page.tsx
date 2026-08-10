@@ -19,7 +19,7 @@ import {
   RESOLUTIONS,
   type Resolution,
 } from "~/components/latency-chart-options";
-import { MonitorRegions } from "~/components/monitor-regions";
+import { MonitorRegions, type RegionRow } from "~/components/monitor-regions";
 import { MonitorTimeline } from "~/components/monitor-timeline";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
@@ -56,6 +56,73 @@ export default async function OverviewPage({
   if (!monitor) notFound();
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  // Per-region latency for the Regions panel. Percentiles come from the raw
+  // runs; the trend is hourly means so the sparkline has a stable number of
+  // points regardless of probe interval. Runs whose region no longer has a
+  // location still show up — dropping them would silently hide history.
+  const regionStats = (await conn.execute(sql`
+    WITH runs AS (
+      SELECT region, latency_ms, date_trunc('hour', checked_at) AS hour
+      FROM monitor_runs
+      -- ISO string + explicit cast: a JS Date interpolated into a raw sql
+      -- template reaches the driver unserialized and throws ERR_INVALID_ARG_TYPE.
+      WHERE monitor_id = ${id}
+        AND checked_at >= ${since.toISOString()}::timestamptz
+        AND latency_ms IS NOT NULL
+    ),
+    hourly AS (
+      SELECT region, hour, avg(latency_ms) AS mean FROM runs GROUP BY region, hour
+    )
+    SELECT
+      r.region,
+      percentile_cont(0.5)  WITHIN GROUP (ORDER BY r.latency_ms) AS p50,
+      percentile_cont(0.9)  WITHIN GROUP (ORDER BY r.latency_ms) AS p90,
+      percentile_cont(0.99) WITHIN GROUP (ORDER BY r.latency_ms) AS p99,
+      min(r.latency_ms) AS min,
+      max(r.latency_ms) AS max,
+      (SELECT array_agg(round(h.mean) ORDER BY h.hour)
+         FROM hourly h WHERE h.region = r.region) AS trend
+    FROM runs r
+    GROUP BY r.region
+    ORDER BY r.region
+  `)) as unknown as Array<{
+    region: string;
+    p50: string | number | null;
+    p90: string | number | null;
+    p99: string | number | null;
+    min: number | null;
+    max: number | null;
+    trend: Array<string | number> | null;
+  }>;
+
+  const regionStatuses = await conn
+    .select({
+      region: schema.monitorRegionStatus.region,
+      status: schema.monitorRegionStatus.status,
+    })
+    .from(schema.monitorRegionStatus)
+    .where(eq(schema.monitorRegionStatus.monitorId, id));
+  const statusByRegion = new Map(regionStatuses.map((r) => [r.region, r.status]));
+
+  const locationNames = await conn
+    .select({ region: schema.probeLocations.region, name: schema.probeLocations.name })
+    .from(schema.probeLocations)
+    .where(eq(schema.probeLocations.workspaceId, workspaceId));
+  const nameByRegion = new Map(locationNames.map((l) => [l.region, l.name]));
+
+  const num = (v: string | number | null | undefined) => Math.round(Number(v ?? 0));
+  const regions: RegionRow[] = regionStats.map((r) => ({
+    code: r.region,
+    name: nameByRegion.get(r.region) ?? r.region,
+    status: statusByRegion.get(r.region) ?? "unknown",
+    trend: (r.trend ?? []).map((n) => Number(n)),
+    p50: num(r.p50),
+    p90: num(r.p90),
+    p99: num(r.p99),
+    min: num(r.min),
+    max: num(r.max),
+  }));
 
   // Aggregate stats over the 24h window — counts by status + all five
   // latency percentiles in one round-trip.
@@ -196,7 +263,7 @@ export default async function OverviewPage({
         </Card>
       </section>
 
-      <MonitorRegions />
+      <MonitorRegions regions={regions} monitorId={id} />
 
       <MonitorTimeline monitorId={id} workspaceId={workspaceId} />
     </div>

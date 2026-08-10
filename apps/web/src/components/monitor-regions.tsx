@@ -1,79 +1,56 @@
 "use client";
 
 import { Button, Card, cn } from "@openmonitor/ui";
+import Link from "next/link";
 import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, YAxis } from "recharts";
 import { RowAction, RowActions } from "~/components/row-actions";
 
 /**
- * Mirrors openstatus's per-region table on the monitor overview. Dummy data
- * for now — we only run a single region (`local`) and don't yet split
- * latency by point-of-presence. Wired so the visual structure is in place
- * for when real multi-region probing lands.
+ * Per-region latency for one monitor. Rows come from `monitor_runs` grouped by
+ * region, joined with each region's current status from `monitor_region_status`.
  */
 
-type RegionRow = {
+export interface RegionRow {
+  /** Region code as stored on probe results, e.g. "eu-west". */
   code: string;
-  flag: string;
+  /** Location name from probe_locations, or the code if the location is gone. */
   name: string;
+  status: "up" | "down" | "degraded" | "unknown";
+  /** Hourly average latency over the window, oldest first. */
   trend: number[];
   p50: number;
   p90: number;
   p99: number;
   min: number;
   max: number;
-};
+}
 
-// Hardcoded for now. Three regions matching openstatus's screenshot — ams,
-// iad, sin — so the layout reads consistently while real data is plumbed.
-const DUMMY_REGIONS: RegionRow[] = [
-  {
-    code: "ams",
-    flag: "🇳🇱",
-    name: "Amsterdam",
-    trend: [125, 142, 130, 118, 165, 148, 132, 158, 138, 122, 152, 135, 128, 145, 130],
-    p50: 129,
-    p90: 129,
-    p99: 129,
-    min: 118,
-    max: 182,
-  },
-  {
-    code: "iad",
-    flag: "🇺🇸",
-    name: "Washington",
-    trend: [148, 145, 152, 158, 175, 165, 170, 215, 198, 168, 175, 162, 145, 158, 160],
-    p50: 141,
-    p90: 141,
-    p99: 141,
-    min: 122,
-    max: 254,
-  },
-  {
-    code: "sin",
-    flag: "🇸🇬",
-    name: "Singapore",
-    trend: [205, 220, 195, 245, 280, 265, 320, 380, 350, 310, 295, 268, 232, 205, 218],
-    p50: 237,
-    p90: 237,
-    p99: 237,
-    min: 186,
-    max: 422,
-  },
-];
+const STATUS_DOT: Record<RegionRow["status"], string> = {
+  up: "bg-emerald-500",
+  degraded: "bg-amber-500",
+  down: "bg-destructive",
+  unknown: "bg-muted-foreground/40",
+};
 
 type SortKey = "p50" | "p90" | "p99";
 
-export function MonitorRegions() {
+export function MonitorRegions({
+  regions,
+  monitorId,
+}: {
+  regions: RegionRow[];
+  monitorId: string;
+}) {
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean } | null>(null);
   const [view, setView] = useState<"table" | "chart">("table");
 
   const sorted = sort
-    ? [...DUMMY_REGIONS].sort((a, b) => {
+    ? [...regions].sort((a, b) => {
         const diff = a[sort.key] - b[sort.key];
         return sort.desc ? -diff : diff;
       })
-    : DUMMY_REGIONS;
+    : regions;
 
   function toggleSort(key: SortKey) {
     setSort((prev) => {
@@ -81,6 +58,28 @@ export function MonitorRegions() {
       if (!prev.desc) return { key, desc: true };
       return null;
     });
+  }
+
+  if (regions.length === 0) {
+    return (
+      <section className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-medium text-lg">Regions</h2>
+          <p className="font-mono text-muted-foreground text-sm tracking-tight">
+            Every selected region's latency trend
+          </p>
+        </div>
+        <Card className="p-8 text-center">
+          <p className="text-muted-foreground text-sm">
+            No probe results yet. Add a probe location in{" "}
+            <Link href="/dashboard/settings/probe-locations" className="underline">
+              Settings → Probe locations
+            </Link>{" "}
+            and point a checker at it.
+          </p>
+        </Card>
+      </section>
+    );
   }
 
   return (
@@ -162,9 +161,17 @@ export function MonitorRegions() {
             <tbody className="divide-y divide-border">
               {sorted.map((r) => (
                 <tr key={r.code} className="transition-colors hover:bg-muted/30">
-                  <td className="px-4 py-3 font-mono text-sm">
-                    <span className="mr-2">{r.flag}</span>
-                    {r.code}
+                  <td className="px-4 py-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span
+                        aria-hidden
+                        className={cn("size-2 shrink-0 rounded-full", STATUS_DOT[r.status])}
+                      />
+                      <span className="font-mono">{r.code}</span>
+                    </div>
+                    {r.name !== r.code ? (
+                      <span className="text-muted-foreground text-xs">{r.name}</span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -191,8 +198,11 @@ export function MonitorRegions() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <RowActions>
-                      <RowAction onSelect={() => {}}>Pin region</RowAction>
-                      <RowAction onSelect={() => {}}>View logs</RowAction>
+                      <RowAction asChild>
+                        <Link href={`/dashboard/monitors/${monitorId}/logs?region=${r.code}`}>
+                          View logs
+                        </Link>
+                      </RowAction>
                     </RowActions>
                   </td>
                 </tr>
