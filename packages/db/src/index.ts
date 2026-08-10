@@ -13,6 +13,7 @@ export {
 } from "drizzle-orm";
 export * from "./assertions";
 export * from "./client";
+export * from "./probe-token";
 export * from "./region-status";
 export * as schema from "./schema";
 export * from "./types";

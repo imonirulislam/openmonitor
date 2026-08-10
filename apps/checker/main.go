@@ -21,17 +21,18 @@ func main() {
 
 	cfg := Config{
 		APIBaseURL:     envOr("API_URL", "http://localhost:5002"),
-		APIKey:         os.Getenv("PROBE_API_KEY"),
-		Region:         envOr("CHECKER_REGION", "local"),
+		APIToken:       os.Getenv("PROBE_TOKEN"),
 		RefreshEvery:   parseDurationEnv("CHECKER_REFRESH_INTERVAL", 30*time.Second),
 		DefaultTimeout: parseDurationEnv("CHECKER_DEFAULT_TIMEOUT_MS", 10*time.Second),
 		DatabaseURL:    os.Getenv("DATABASE_URL"),
 	}
-	if cfg.APIKey == "" {
-		log.Fatal("PROBE_API_KEY must be set")
+	if cfg.APIToken == "" {
+		log.Fatal("PROBE_TOKEN must be set")
 	}
 
-	log.Printf("checker starting region=%s api=%s", cfg.Region, cfg.APIBaseURL)
+	// The region is a property of the token, resolved server-side, so the
+	// checker no longer knows or asserts where it is running.
+	log.Printf("checker starting api=%s", cfg.APIBaseURL)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

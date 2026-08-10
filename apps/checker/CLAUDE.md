@@ -8,7 +8,9 @@ source of truth for monitor state and emits events on transitions.
 
 - Cheap per-probe overhead (one goroutine, low memory).
 - Simple deploy: single static binary, `FROM scratch` image.
-- Easy to add per-region replicas later — set `CHECKER_REGION` per deployment.
+- Easy to add per-region replicas — give each deployment its own `PROBE_TOKEN`.
+  The region is a property of the token, resolved server-side, so a checker can't
+  attribute results to a region it isn't.
 
 ## Design
 
@@ -25,7 +27,7 @@ source of truth for monitor state and emits events on transitions.
 |-------------------------------|--------------------------|
 | `API_URL`                     | `http://localhost:5002`  |
 | `PROBE_API_KEY`               | required                 |
-| `CHECKER_REGION`              | `local`                  |
+| `PROBE_TOKEN`                 | _(required)_             |
 | `CHECKER_REFRESH_INTERVAL`    | `30s`                    |
 | `CHECKER_DEFAULT_TIMEOUT_MS`  | `10000` (or as duration) |
 

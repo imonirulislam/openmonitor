@@ -1,9 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
-import { and, db, eq, ne, reduceRegionStatuses, schema, sql } from "@openmonitor/db";
+import { and, db, eq, inArray, ne, reduceRegionStatuses, schema, sql } from "@openmonitor/db";
 import { Hono } from "hono";
 import { z } from "zod";
 import { env } from "../env";
-import { apiKeyAuth } from "../middleware/api-key";
+import { probeAuth } from "../middleware/probe-auth";
 
 const probeSchema = z.object({
   monitorId: z.string().uuid(),
@@ -17,7 +17,6 @@ const probeSchema = z.object({
   latencyTlsMs: z.number().int().nullable().optional(),
   latencyTtfbMs: z.number().int().nullable().optional(),
   latencyTransferMs: z.number().int().nullable().optional(),
-  region: z.string().min(1).max(50).default("local"),
   error: z.string().nullable(),
   checkedAt: z.string().datetime().optional(),
 });
@@ -36,7 +35,7 @@ function formatDuration(ms: number): string {
 
 export const probeRoutes = new Hono();
 
-probeRoutes.use("/v1/probes/*", apiKeyAuth(env.PROBE_API_KEY));
+probeRoutes.use("/v1/probes/*", probeAuth());
 
 probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c) => {
   const body = c.req.valid("json");
@@ -49,6 +48,31 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
     .limit(1);
 
   if (!monitor) return c.json({ error: "monitor not found" }, 404);
+
+  const identity = c.get("probeIdentity");
+
+  // A location may only report on monitors in its own workspace that it was
+  // explicitly assigned. Both checks return 404 rather than 403 so a token can't
+  // be used to enumerate which monitors exist.
+  {
+    if (identity.workspaceId !== monitor.workspaceId) {
+      return c.json({ error: "monitor not found" }, 404);
+    }
+    const [assigned] = await conn
+      .select({ monitorId: schema.probeLocationMonitors.monitorId })
+      .from(schema.probeLocationMonitors)
+      .where(
+        and(
+          eq(schema.probeLocationMonitors.probeLocationId, identity.locationId),
+          eq(schema.probeLocationMonitors.monitorId, monitor.id),
+        ),
+      )
+      .limit(1);
+    if (!assigned) return c.json({ error: "monitor not found" }, 404);
+  }
+
+  // The token names the region; the caller never gets to assert it.
+  const region = identity.region;
 
   const checkedAt = body.checkedAt ? new Date(body.checkedAt) : new Date();
   const previousStatus = monitor.currentStatus;
@@ -66,7 +90,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
       latencyTlsMs: body.latencyTlsMs ?? null,
       latencyTtfbMs: body.latencyTtfbMs ?? null,
       latencyTransferMs: body.latencyTransferMs ?? null,
-      region: body.region,
+      region,
       error: body.error,
       checkedAt,
     });
@@ -78,7 +102,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
       .insert(schema.monitorRegionStatus)
       .values({
         monitorId: body.monitorId,
-        region: body.region,
+        region,
         status: body.status,
         consecutiveFailures: body.status === "down" ? 1 : 0,
         lastCheckedAt: checkedAt,
@@ -153,6 +177,13 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
       })
       .where(eq(schema.monitors.id, body.monitorId));
 
+    // Liveness for the location itself. Without it a checker that has died and a
+    // service nobody is probing look identical — both just stop producing rows.
+    await tx
+      .update(schema.probeLocations)
+      .set({ lastSeenAt: checkedAt, updatedAt: new Date() })
+      .where(eq(schema.probeLocations.id, identity.locationId));
+
     // Status-transition events, gated on the DERIVED status:
     //   prev != down                  && next == down     → monitor.down
     //   prev != degraded && prev != down && next == degraded → monitor.degraded
@@ -175,7 +206,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
         type: "monitor.down",
         payload: {
           monitor: monitorPayload,
-          region: body.region,
+          region,
           error: body.error,
           statusCode: body.statusCode,
           checkedAt: checkedAt.toISOString(),
@@ -191,7 +222,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
         type: "monitor.degraded",
         payload: {
           monitor: monitorPayload,
-          region: body.region,
+          region,
           latencyMs: body.latencyMs,
           degradedAfterMs: monitor.degradedAfterMs,
           checkedAt: checkedAt.toISOString(),
@@ -209,7 +240,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
         type: "monitor.recovered",
         payload: {
           monitor: monitorPayload,
-          region: body.region,
+          region,
           downForMs,
           fromStatus: previousStatus,
           checkedAt: checkedAt.toISOString(),
@@ -347,11 +378,11 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
 });
 
 probeRoutes.get("/v1/probes/monitors", async (c) => {
-  const header = c.req.header("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (token !== env.PROBE_API_KEY) return c.json({ error: "unauthorized" }, 401);
-
+  // Auth already ran in probeAuth for /v1/probes/*; re-checking the raw header
+  // here would reject location tokens.
+  const identity = c.get("probeIdentity");
   const conn = db();
+
   const rows = await conn
     .select({
       id: schema.monitors.id,
@@ -373,7 +404,19 @@ probeRoutes.get("/v1/probes/monitors", async (c) => {
       retryDelaySeconds: schema.monitors.retryDelaySeconds,
     })
     .from(schema.monitors)
-    .where(eq(schema.monitors.enabled, true));
+    // A location only ever learns about monitors it was assigned.
+    .where(
+      and(
+        eq(schema.monitors.enabled, true),
+        inArray(
+          schema.monitors.id,
+          conn
+            .select({ id: schema.probeLocationMonitors.monitorId })
+            .from(schema.probeLocationMonitors)
+            .where(eq(schema.probeLocationMonitors.probeLocationId, identity.locationId)),
+        ),
+      ),
+    );
 
   return c.json({ monitors: rows });
 });

@@ -10,7 +10,8 @@
     "./schema": "./src/schema.ts",
     "./types": "./src/types.ts",
     "./assertions": "./src/assertions.ts",
-    "./region-status": "./src/region-status.ts"
+    "./region-status": "./src/region-status.ts",
+    "./probe-token": "./src/probe-token.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate",

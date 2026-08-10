@@ -48,6 +48,7 @@ services:
     restart: "no"
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      PROBE_TOKEN: ${PROBE_TOKEN:-omp_dev_local_change_me}
       NODE_ENV: production
     depends_on:
       migrate:
@@ -140,8 +141,7 @@ services:
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       API_URL: http://api:5002
-      PROBE_API_KEY: ${PROBE_API_KEY:-change-me-probe-key}
-      CHECKER_REGION: local
+      PROBE_TOKEN: ${PROBE_TOKEN:-omp_dev_local_change_me}
       CHECKER_DEFAULT_TIMEOUT_MS: "10000"
     depends_on:
       postgres:

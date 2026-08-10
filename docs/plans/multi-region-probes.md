@@ -1,228 +1,131 @@
-# Multi-region probes: per-location auth + per-region status
+# Multi-region probes
 
-Status: **steps 1–2 landed.** Schema and the reduction are in; per-location auth (step 3)
-and everything after it are still proposed. Per root `CLAUDE.md`, multi-region probe
-aggregation is on the "propose the design before scaffolding" list.
+How probe locations authenticate, and how per-region results become one status.
 
-## What already works
+## Probe authentication
 
-Region flows end to end today. This is not a greenfield feature:
+A checker authenticates with a **probe-location token**. The token is the location's
+identity: the server looks up `probe_locations` by token hash and takes `region` from that
+row. Clients never send a region.
 
-| Layer | Where | State |
+```
+probe_locations           id, workspace_id, name, region, token_hash, last_seen_at, enabled
+probe_location_monitors   (probe_location_id, monitor_id)
+```
+
+`probe_location_monitors` is the authorization check. `GET /v1/probes/monitors` returns only
+assigned monitors, and `POST /v1/probes/results` rejects anything else. Both reject with 404
+rather than 403, so a token can't be used to discover which monitors exist.
+
+There is no shared-key fallback. A single global key can't say *which* region is calling, so
+the region would have to come from the request body — letting any key holder attribute
+results to any region, and making one leaked key unrevocable without redeploying every
+checker. `PROBE_API_KEY` still guards `/v1/system/*`; that's a separate credential for
+operational endpoints and can't post probe results.
+
+Every successful ingest bumps `last_seen_at`. Without it, a checker that has died and a
+service nobody is probing look identical — both just stop producing rows.
+
+### Token storage
+
+Tokens are 32 random bytes, prefixed `omp_`, stored as an **unsalted SHA-256 digest**
+(`packages/db/src/probe-token.ts`).
+
+Not the salted scrypt used for user passwords. `hashPassword` salts randomly, so the digest
+differs every call and there's nothing to look up by — matching would mean scanning every
+location and running a deliberately slow KDF against each, on every ingest. Salting and key
+stretching exist to make offline brute force expensive against low-entropy human passwords;
+256 bits of CSPRNG output has no dictionary to precompute. SHA-256 is safe here and directly
+indexable.
+
+Only the hash is persisted. Plaintext is shown once, at creation.
+
+## Deriving status from regions
+
+`monitors.current_status` is a single scalar. With more than one location, every region would
+overwrite it: status flaps, `consecutive_failures` counts interleaved regions, and transition
+events fire per probe instead of per actual change — one region reporting down while another
+reports up emits `monitor.down` and `monitor.recovered` on every cycle, forever.
+
+`monitor_region_status` holds one row per `(monitor_id, region)` with that region's own status
+and failure counter. On ingest the API upserts this region's row, reads all rows for the
+monitor, and reduces them to a global status via `reduceRegionStatuses`
+(`packages/db/src/region-status.ts`). Transition events compare against that derived value,
+not against the incoming probe. `monitors.current_status` becomes a cache of the reduction so
+read paths don't have to aggregate.
+
+`monitors.consecutive_failures` tracks sustained *derived* down-ness, which is what
+`auto_incident_threshold` is meant to measure. Per-region counters live in
+`monitor_region_status`.
+
+### Reduction policy
+
+`monitors.region_policy` selects how the rows reduce:
+
+| Policy | Down when | Use for |
 |---|---|---|
-| Checker sends region | `apps/checker/api.go:52` — `Region string \`json:"region"\`` | ✅ |
-| API accepts it | `apps/api/src/routes/probes.ts:20` — `region: z.string().min(1).max(50).default("local")` | ✅ |
-| DB stores it | `monitor_runs.region varchar(50) not null default 'local'` | ✅ |
-| Events carry it | `monitor.down` / `.degraded` / `.recovered` payloads include `region` | ✅ |
-| Checker needs no DB access | `listener.go` logs "falling back to polling only" when `DATABASE_URL` is unset | ✅ |
+| `any` | >=1 region reports down | Default. Catches regional outages and bad routes. |
+| `majority` | more than half report down | Noisy networks; tolerates one flaky probe. |
+| `all` | every region reports down | "Is it globally dead?" - good for paging. |
 
-That last row is the important one: **a remote checker needs only outbound HTTPS to
-`apps/api` plus a token.** Postgres is never exposed. Deploying a checker to another
-region is already an infrastructure task, not a code task.
+`degraded` reduces the same way but ranks below `down`; a region that is down also counts
+toward a degraded majority.
 
-Two things block actually turning it on.
+Regions at `unknown` — never probed, or disabled before first report — are excluded from the
+denominator. Counting them would drag healthy monitors toward `unknown` the moment a location
+is added, and would make `majority` depend on how many locations exist rather than how many
+actually report.
 
-## Problem 1 — the probe token can't distinguish or scope regions
-
-`apps/api/src/middleware/api-key.ts` does a timing-safe compare against a single global
-`PROBE_API_KEY` and nothing else. `region` is then read straight from the request body.
-
-With one region that's fine. With N regions:
-
-- Any checker holding the key can **claim to be any region** and write results attributed
-  to `eu-west`. Region is self-declared and unverified.
-- One leaked key compromises **every** region, and revoking it means redeploying all of them.
-- A checker can post results for **any monitor in any workspace**, not just the ones it was
-  assigned.
-
-### How openstatus solves it
-
-Read from `apps/private-location/internal/server/ingest_common.go`. Auth is a per-location
-token in an `openstatus-token` header, and the lookup query is the authorization:
-
-```sql
-SELECT monitor.* FROM monitor
-JOIN private_location_to_monitor a ON monitor.id = a.monitor_id
-JOIN private_location b ON a.private_location_id = b.id
-WHERE b.token = ? AND monitor.id = ?
-```
-
-The token does three jobs at once: authenticates the caller, **identifies which location it
-is**, and scopes it to an explicitly assigned monitor subset. Their transport is ConnectRPC
-with four RPCs (`Monitors`, `IngestHTTP`, `IngestTCP`, `IngestDNS`), which is the protobuf
-form of the two verbs we already expose.
-
-### Proposal
-
-```ts
-// packages/db/src/schema.ts
-export const probeLocations = pgTable("probe_locations", {
-  id: uuid().primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 100 }).notNull(),     // "EU West (Frankfurt)"
-  region: varchar("region", { length: 50 }).notNull(),  // "eu-west"  — the stored discriminator
-  tokenHash: varchar("token_hash", { length: 255 }).notNull(),
-  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
-  enabled: boolean("enabled").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [
-  uniqueIndex("probe_locations_workspace_region_unique").on(t.workspaceId, t.region),
-  uniqueIndex("probe_locations_token_hash_unique").on(t.tokenHash),
-]);
-
-// Which monitors a location may probe and report on.
-export const probeLocationMonitors = pgTable("probe_location_monitors", {
-  probeLocationId: uuid("probe_location_id").notNull().references(() => probeLocations.id, { onDelete: "cascade" }),
-  monitorId: uuid("monitor_id").notNull().references(() => monitors.id, { onDelete: "cascade" }),
-}, (t) => [primaryKey({ columns: [t.probeLocationId, t.monitorId] })]);
-```
-
-Rules:
-
-- **Store a hash, not the token.** Unlike openstatus (plaintext `b.token = ?`), hash it —
-  reuse the scrypt helper in `packages/auth/src/password.ts`. Show the plaintext once at
-  creation. Lookup is by hash, so it stays a single indexed query.
-- **`region` is derived from the token, never from the body.** Delete `region` from the
-  probe-result Zod schema; the middleware resolves the location and puts it on the context.
-  This is the security fix.
-- **`GET /v1/probes/monitors` returns only assigned monitors**, via the join.
-- **Bump `last_seen_at` on every ingest** — openstatus's `sendEventAndUpdateLastSeen`. Without
-  it a dead checker and a healthy-but-unprobed service look identical. A location silent past
-  a threshold should raise its own alert, not silently stop reporting.
-- **Keep `PROBE_API_KEY` working** during migration; see rollout below.
-
-## Problem 2 — `currentStatus` is a single scalar
-
-`apps/api/src/routes/probes.ts:109-115` runs on every ingest:
-
-```ts
-.update(schema.monitors).set({
-  currentStatus: body.status,          // one scalar — every region overwrites it
-  consecutiveFailures: newConsecutiveFailures,
-})
-```
-
-With three regions this produces three distinct failures:
-
-1. **Status flapping.** `eu-west` writes `down`, `us-east` writes `up` two seconds later.
-2. **Slack alert storms.** The transition logic compares the *global* `previousStatus` against
-   *one region's* result. Region A down → `monitor.down`. Region B up → `monitor.recovered`.
-   Repeats every probe cycle, forever.
-3. **`consecutiveFailures` becomes meaningless**, so `autoIncidentThreshold` counts
-   interleaved regions instead of sustained failure.
-
-### Proposal
-
-```ts
-export const monitorRegionStatus = pgTable("monitor_region_status", {
-  monitorId: uuid("monitor_id").notNull().references(() => monitors.id, { onDelete: "cascade" }),
-  region: varchar("region", { length: 50 }).notNull(),
-  status: monitorStatusEnum("status").notNull().default("unknown"),
-  consecutiveFailures: integer("consecutive_failures").notNull().default(0),
-  lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [primaryKey({ columns: [t.monitorId, t.region] })]);
-```
-
-Ingestion becomes, inside the existing transaction:
-
-1. Insert the `monitor_runs` row (unchanged).
-2. Upsert **this region's** row in `monitor_region_status`. Per-region
-   `consecutiveFailures` now means what it says.
-3. Recompute the monitor's global status from all enabled regions' rows.
-4. **Emit transition events only if the derived global status changed.** This is what kills
-   the alert storm — events stop being per-probe and become per-actual-transition.
-5. Write the derived value to `monitors.currentStatus`, which becomes a **cache** of the
-   reduction rather than the source of truth. Keeping it avoids rewriting every read path.
-
-### Aggregation policy
-
-Add to `monitors`:
-
-```ts
-regionPolicy: monitorRegionPolicyEnum("region_policy").notNull().default("any"),
-```
-
-with `pgEnum("monitor_region_policy", ["any", "majority", "all"])`:
-
-| Policy | Global status is `down` when | Use for |
-|---|---|---|
-| `any` | ≥1 region reports down | Default. Catches regional outages and bad routes. |
-| `majority` | > half of regions report down | Noisy networks; tolerates one flaky probe. |
-| `all` | every region reports down | "Is it globally dead?" — good for paging. |
-
-`degraded` reduces the same way, below `down`. Regions reporting `unknown` (never checked,
-or location disabled) are **excluded from the denominator** — otherwise adding a new region
-instantly drags every monitor toward `unknown`.
+All three policies agree when exactly one region reports, so single-location installs behave
+identically regardless of the configured policy.
 
 ### Settling
 
-Because only *reporting* regions count, the derived status legitimately moves while a new
-set of regions reports in for the first time. Bring up three regions under `majority` and
-the first probe arrives when that region is the only one reporting, so it briefly decides
-the outcome on its own; the value settles once its peers report.
+Because only reporting regions count, the derived status moves while a new set of locations
+reports in for the first time: the first to report is briefly the only one, so it decides the
+outcome alone until its peers arrive.
 
-This is not the alert storm — it happens once, on the way in, and then stops. Verified
-end-to-end: after all regions have reported, six further probes with one region flapping
-produce **zero** events under both `all` and `majority`. Worth knowing when adding a region
-to a live workspace, and an argument for adding a location in a disabled state and enabling
-it once it has reported.
+This is not flapping — it happens once, on the way in, then stops. After all regions have
+reported, six probes with one region permanently down and another permanently up produce zero
+events under both `all` and `majority`. When adding a location to a live workspace, create it
+disabled and enable it once it has reported.
 
-Default `any` preserves today's single-region behavior exactly, which makes the migration a
-no-op for existing users.
+## Running a second region
+
+The checker needs outbound HTTPS to `apps/api` and its own `PROBE_TOKEN`. It does not need
+database access — `listener.go` uses `LISTEN/NOTIFY` for instant refresh when `DATABASE_URL`
+is set, and falls back to interval polling when it isn't. Postgres is never exposed.
+
+Give each location its own token. Never share one across regions.
 
 ## Row volume
 
-`monitor_runs` grows linearly with region count — N regions is N× the rows. At 4 monitors ×
-60s × 5 regions that's ~432k rows/day.
+`monitor_runs` grows linearly with location count. At 4 monitors x 60s x 5 regions that's
+roughly 432k rows/day. `packages/db/src/retention.ts` prunes; the existing
+`monitor_runs_monitor_checked_idx` still serves the hot query.
 
-Not a problem yet. `packages/db/src/retention.ts` already prunes, and the existing
-`monitor_runs_monitor_checked_idx` still serves the common query. **Do not add TimescaleDB or
-an analytics DB now.** Revisit partitioning `monitor_runs` by `checked_at` only when
-retention pruning starts to hurt. This is the one place openstatus's architecture does not
-transfer — they push results to Tinybird because they run 28 regions; we don't.
+Partitioning `monitor_runs` by `checked_at` is the next move if pruning stops keeping up. An
+analytics store is not — openstatus pushes results to Tinybird because they run 28 regions
+across 3 clouds, and that doesn't transfer to a single Postgres.
 
-## Rollout
+## Not built yet
 
-Additive and reversible. Each step ships independently.
-
-**Step 1 — schema. ✅ Landed.** Add all three tables plus the `region_policy` column and enum. Backfill
-`monitor_region_status` from `monitors.currentStatus` as region `local` so nothing reads empty.
-No behavior change.
-
-**Step 2 — reduction logic. ✅ Landed.** Move ingest to per-region upsert + derived global status + gated
-events. With one region and policy `any`, output is byte-identical to today. **This is the step
-that needs the most test coverage** — it's where alert-storm regressions would hide.
-
-**Step 3 — per-location auth.** Add `probe_locations` and the resolve-token middleware.
-Accept *either* a location token *or* the legacy `PROBE_API_KEY` (legacy maps to region
-`local`, all monitors). Nothing breaks mid-deploy.
-
-**Step 4 — admin UI.** CRUD for probe locations under `apps/web/src/app/dashboard/settings/`,
-token shown once on creation, `last_seen_at` surfaced, monitor assignment. Region policy
-picker on the monitor form.
-
-**Step 5 — checker.** Swap `PROBE_API_KEY` for a location token; stop sending `region` in the
-body. Document deploying one checker per region.
-
-**Step 6 — public surface.** Per-region breakdown in `/v1/status` and the status page. Decide
-then whether the public page shows per-region detail or only the rollup — the data supports
-both.
-
-**Step 7 — remove the legacy path.** Drop `PROBE_API_KEY` and the body `region` field. Breaking
-change; needs a release note.
+- **Admin UI for probe locations.** Creating one currently means an insert plus
+  `hashProbeToken`. Needs CRUD, monitor assignment, one-time token reveal, and `last_seen_at`
+  surfaced.
+- **Region policy picker** on the monitor form.
+- **Per-region breakdown** in `/v1/status` and on the public page. The data supports both a
+  rollup and a per-region view; which to show is undecided.
+- **Silent-location alerting.** `last_seen_at` is recorded but nothing watches it. Wants a
+  `location.silent` event type and a sweeper — `apps/notifier/src/heartbeat-sweeper.ts` is the
+  model.
 
 ## Open questions
 
-- **Should a silent location alert?** It needs a new event type (`location.silent`) and a
-  sweeper — `apps/notifier/src/heartbeat-sweeper.ts` is the obvious model. Probably alongside the admin UI step.
-- **Per-monitor region assignment, or per-workspace?** openstatus does per-monitor via the
-  join table. Per-monitor is more flexible; a workspace-wide default with per-monitor
-  override may be friendlier. Leaning per-monitor with "assign all" as the UI default.
-- **Should `regionPolicy` apply to `degraded` independently from `down`?** A monitor slow in
-  one region but fine elsewhere is arguably degraded globally under `any`. Start with one
-  policy for both; split later if it proves wrong.
-- **Retry semantics per region.** `retryCount` currently retries within one checker. Should a
-  region retry before reporting down, or should the reduction handle it? Leaning: keep
-  per-checker retries as-is and let the reduction do cross-region debouncing.
+- Should region assignment be per-monitor (as now) or a workspace-wide default with
+  per-monitor override? Per-monitor is more flexible; the UI default should probably be
+  "assign all".
+- Should `region_policy` apply to `degraded` independently from `down`? A monitor slow in one
+  region but fine elsewhere is arguably degraded globally under `any`.
+- `retry_count` retries within a single checker. Should a region retry before reporting down,
+  or should the reduction absorb it? Currently the former.

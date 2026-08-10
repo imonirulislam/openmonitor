@@ -59,6 +59,6 @@ accordingly. Don't expose the api on the same host as admin without auth in fron
 
 ## Multi-region probing
 
-Run one `checker` Deployment per region cluster, with a unique `CHECKER_REGION` env. They
+Run one `checker` Deployment per region cluster, each with its own `PROBE_TOKEN`. They
 all post results to the same API. The admin UI doesn't yet split status by region — that's
 a future enhancement.

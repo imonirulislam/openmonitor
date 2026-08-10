@@ -3,6 +3,7 @@ import { randomBytes, scrypt as scryptCb } from "node:crypto";
 import { promisify } from "node:util";
 import { and, eq, sql } from "drizzle-orm";
 import { createDb } from "./client";
+import { hashProbeToken } from "./probe-token";
 import {
   incidentMonitors,
   incidents,
@@ -13,6 +14,8 @@ import {
   monitorRuns,
   monitors,
   pageComponents,
+  probeLocationMonitors,
+  probeLocations,
   statusPages,
   users,
   workspaceMembers,
@@ -191,6 +194,26 @@ async function main() {
       });
   }
 
+  // ---------- Probe location ----------
+  // The checker authenticates with a location token, and the location — not the
+  // request body — decides which region a result is attributed to. Seeding one
+  // is what makes `docker compose up` work out of the box.
+  const probeToken = process.env.PROBE_TOKEN ?? "omp_dev_local_change_me";
+  const [probeLocation] = await db
+    .insert(probeLocations)
+    .values({
+      workspaceId,
+      name: "Local",
+      region: "local",
+      tokenHash: hashProbeToken(probeToken),
+    })
+    .onConflictDoUpdate({
+      target: [probeLocations.workspaceId, probeLocations.region],
+      set: { tokenHash: hashProbeToken(probeToken), updatedAt: new Date() },
+    })
+    .returning({ id: probeLocations.id });
+  if (!probeLocation) throw new Error("failed to create probe location");
+
   // ---------- Default status page + linkage ----------
   const [page] = await db
     .insert(statusPages)
@@ -214,6 +237,15 @@ async function main() {
     .from(monitors)
     .where(eq(monitors.workspaceId, workspaceId));
   const idBySlug = new Map(monitorRows.map((r) => [r.slug, r.id]));
+
+  // Assign every monitor to the seeded location; the join is what authorizes
+  // the checker to report on them.
+  for (const row of monitorRows) {
+    await db
+      .insert(probeLocationMonitors)
+      .values({ probeLocationId: probeLocation.id, monitorId: row.id })
+      .onConflictDoNothing();
+  }
 
   // Link all monitors to the default status page as page components. Wipe
   // first so re-running the seed produces a clean slate; the partial unique
@@ -356,7 +388,7 @@ async function main() {
       .where(eq(monitors.id, monitorId));
 
     // Deliberately "local", not the "seed" label the synthetic runs carry: the
-    // real checker defaults to CHECKER_REGION=local, so it overwrites this exact
+    // seeded probe location uses region 'local', so the checker overwrites this exact
     // row on its first probe. Writing "seed" here would strand a region that
     // nothing ever updates, and it would skew the reduction forever.
     await db
@@ -626,6 +658,7 @@ async function main() {
   console.log(`Seeded ${pastIncidentsSeed.length} past incidents + 1 active incident.`);
   console.log("Seeded 1 past maintenance + 1 upcoming maintenance.");
   console.log(`Admin user: ${adminEmail} / ${adminPassword}  (CHANGE THIS BEFORE DEPLOYING)`);
+  console.log(`Probe token (region "local"): ${probeToken}  (CHANGE THIS BEFORE DEPLOYING)`);
 
   process.exit(0);
 }

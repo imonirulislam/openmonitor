@@ -7,7 +7,7 @@ metadata:
 spec:
   # Each replica is an independent prober. Multiple replicas multiply probe frequency
   # (each does its own probes). For multi-region monitoring, run one Deployment per
-  # region with a different CHECKER_REGION env var.
+  # region with its own PROBE_TOKEN; the server derives the region from the token.
   replicas: 1
   selector: { matchLabels: { app: checker } }
   template:
@@ -18,7 +18,8 @@ spec:
           image: REGISTRY/open-monitor-checker:latest
           env:
             - { name: API_URL, value: "http://api.open-monitor.svc.cluster.local" }
-            - { name: CHECKER_REGION, value: "eks-eu-west-1" }
+            # Token for THIS location. Mint one per region; never share.
+            - { name: PROBE_TOKEN, valueFrom: { secretKeyRef: { name: open-monitor-secrets, key: PROBE_TOKEN } } }
             - { name: CHECKER_REFRESH_INTERVAL, value: "30s" }
             - { name: CHECKER_DEFAULT_TIMEOUT_MS, value: "10000" }
           envFrom:

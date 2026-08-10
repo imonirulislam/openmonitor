@@ -49,21 +49,20 @@ type ProbeResult struct {
 	LatencyTlsMs      *int    `json:"latencyTlsMs,omitempty"`
 	LatencyTtfbMs     *int    `json:"latencyTtfbMs,omitempty"`
 	LatencyTransferMs *int    `json:"latencyTransferMs,omitempty"`
-	Region            string  `json:"region"`
 	Error             *string `json:"error"`
 	CheckedAt         string  `json:"checkedAt"`
 }
 
 type APIClient struct {
-	baseURL string
-	apiKey  string
-	http    *http.Client
+	baseURL  string
+	apiToken string
+	http     *http.Client
 }
 
-func NewAPIClient(baseURL, apiKey string) *APIClient {
+func NewAPIClient(baseURL, apiToken string) *APIClient {
 	return &APIClient{
-		baseURL: baseURL,
-		apiKey:  apiKey,
+		baseURL:  baseURL,
+		apiToken: apiToken,
 		http: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -75,7 +74,7 @@ func (c *APIClient) ListMonitors(ctx context.Context) ([]Monitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	req.Header.Set("Authorization", "Bearer "+c.apiToken)
 
 	res, err := c.http.Do(req)
 	if err != nil {
@@ -108,7 +107,7 @@ func (c *APIClient) PostResult(ctx context.Context, r ProbeResult) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	req.Header.Set("Authorization", "Bearer "+c.apiToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := c.http.Do(req)

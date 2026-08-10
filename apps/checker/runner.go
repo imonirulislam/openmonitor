@@ -27,7 +27,7 @@ type Runner struct {
 func NewRunner(cfg Config) *Runner {
 	return &Runner{
 		cfg:     cfg,
-		api:     NewAPIClient(cfg.APIBaseURL, cfg.APIKey),
+		api:     NewAPIClient(cfg.APIBaseURL, cfg.APIToken),
 		tracked: make(map[string]*trackedMonitor),
 	}
 }
@@ -162,7 +162,6 @@ func (r *Runner) runOne(ctx context.Context, m Monitor) {
 		LatencyTlsMs:      out.LatencyTlsMs,
 		LatencyTtfbMs:     out.LatencyTtfbMs,
 		LatencyTransferMs: out.LatencyTransferMs,
-		Region:            r.cfg.Region,
 		Error:             out.Error,
 		CheckedAt:         checkedAt,
 	}); err != nil {
