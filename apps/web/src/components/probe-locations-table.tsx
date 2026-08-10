@@ -16,6 +16,8 @@ export interface ProbeLocationRow {
   region: string;
   enabled: boolean;
   lastSeenAt: Date | null;
+  /** Operator-owned and offered to every workspace. */
+  shared: boolean;
   monitorIds: string[];
 }
 
@@ -142,6 +144,9 @@ export function ProbeLocationsTable({
               <td className="py-3 pr-4 font-medium">{l.name}</td>
               <td className="py-3 pr-4">
                 <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{l.region}</code>
+                <div className="mt-0.5 text-muted-foreground text-xs">
+                  {l.shared ? "shared" : "private"}
+                </div>
               </td>
               <td className="py-3 pr-4">
                 <Badge variant={l.enabled ? "success" : "outline"}>

@@ -51,11 +51,12 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
 
   const identity = c.get("probeIdentity");
 
-  // A location may only report on monitors in its own workspace that it was
-  // explicitly assigned. Both checks return 404 rather than 403 so a token can't
-  // be used to enumerate which monitors exist.
+  // A location may only report on monitors explicitly assigned to it. A private
+  // location is additionally confined to its own workspace; a shared one has no
+  // workspace, so the assignment join is the whole check. Returns 404 rather
+  // than 403 so a token can't be used to enumerate which monitors exist.
   {
-    if (identity.workspaceId !== monitor.workspaceId) {
+    if (identity.workspaceId !== null && identity.workspaceId !== monitor.workspaceId) {
       return c.json({ error: "monitor not found" }, 404);
     }
     const [assigned] = await conn

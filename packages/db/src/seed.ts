@@ -1,7 +1,7 @@
 import "./load-env";
 import { randomBytes, scrypt as scryptCb } from "node:crypto";
 import { promisify } from "node:util";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { createDb } from "./client";
 import { hashProbeToken } from "./probe-token";
 import {
@@ -199,20 +199,34 @@ async function main() {
   // request body — decides which region a result is attributed to. Seeding one
   // is what makes `docker compose up` work out of the box.
   const probeToken = process.env.PROBE_TOKEN ?? "omp_dev_local_change_me";
-  const [probeLocation] = await db
-    .insert(probeLocations)
-    .values({
-      workspaceId,
-      name: "Local",
-      region: "local",
-      tokenHash: hashProbeToken(probeToken),
-    })
-    .onConflictDoUpdate({
-      target: [probeLocations.workspaceId, probeLocations.region],
-      set: { tokenHash: hashProbeToken(probeToken), updatedAt: new Date() },
-    })
-    .returning({ id: probeLocations.id });
-  if (!probeLocation) throw new Error("failed to create probe location");
+  // workspaceId stays null: this is the operator's own fleet, so every
+  // workspace can select it when configuring a monitor.
+  const [existingLocal] = await db
+    .select({ id: probeLocations.id })
+    .from(probeLocations)
+    .where(and(isNull(probeLocations.workspaceId), eq(probeLocations.region, "local")))
+    .limit(1);
+
+  let probeLocationId: string;
+  if (existingLocal) {
+    await db
+      .update(probeLocations)
+      .set({ tokenHash: hashProbeToken(probeToken), updatedAt: new Date() })
+      .where(eq(probeLocations.id, existingLocal.id));
+    probeLocationId = existingLocal.id;
+  } else {
+    const [row] = await db
+      .insert(probeLocations)
+      .values({
+        workspaceId: null,
+        name: "Local",
+        region: "local",
+        tokenHash: hashProbeToken(probeToken),
+      })
+      .returning({ id: probeLocations.id });
+    if (!row) throw new Error("failed to create probe location");
+    probeLocationId = row.id;
+  }
 
   // ---------- Default status page + linkage ----------
   const [page] = await db
@@ -243,7 +257,7 @@ async function main() {
   for (const row of monitorRows) {
     await db
       .insert(probeLocationMonitors)
-      .values({ probeLocationId: probeLocation.id, monitorId: row.id })
+      .values({ probeLocationId, monitorId: row.id })
       .onConflictDoNothing();
   }
 

@@ -6,6 +6,7 @@ export {
   gte,
   ilike,
   inArray,
+  isNull,
   lte,
   ne,
   or,

@@ -1,4 +1,4 @@
-import { type Assertion, db, eq, schema } from "@openmonitor/db";
+import { type Assertion, asc, db, eq, isNull, or, schema } from "@openmonitor/db";
 import {
   Button,
   FormCard,
@@ -12,7 +12,7 @@ import {
   Label,
 } from "@openmonitor/ui";
 import { notFound } from "next/navigation";
-import { MonitorConfigForm } from "~/components/monitor-config-form";
+import { MonitorConfigForm, type ProbeLocationChoice } from "~/components/monitor-config-form";
 import { MonitorResponseTimeForm } from "~/components/monitor-response-time-form";
 import {
   deleteMonitor,
@@ -30,6 +30,33 @@ export default async function EditMonitorPage({ params }: { params: Promise<{ id
     .limit(1);
   if (!monitor) notFound();
 
+  const locations = await db()
+    .select({
+      id: schema.probeLocations.id,
+      name: schema.probeLocations.name,
+      region: schema.probeLocations.region,
+      workspaceId: schema.probeLocations.workspaceId,
+    })
+    .from(schema.probeLocations)
+    .where(
+      or(
+        isNull(schema.probeLocations.workspaceId),
+        eq(schema.probeLocations.workspaceId, monitor.workspaceId),
+      ),
+    )
+    .orderBy(asc(schema.probeLocations.region));
+  const probeLocations: ProbeLocationChoice[] = locations.map((l) => ({
+    id: l.id,
+    name: l.name,
+    region: l.region,
+    shared: l.workspaceId === null,
+  }));
+
+  const assigned = await db()
+    .select({ probeLocationId: schema.probeLocationMonitors.probeLocationId })
+    .from(schema.probeLocationMonitors)
+    .where(eq(schema.probeLocationMonitors.monitorId, id));
+
   const hostPort =
     monitor.kind === "tcp" && monitor.host && monitor.port != null
       ? `${monitor.host}:${monitor.port}`
@@ -40,7 +67,9 @@ export default async function EditMonitorPage({ params }: { params: Promise<{ id
       <MonitorConfigForm
         mode="edit"
         action={updateMonitorConfig.bind(null, id)}
+        probeLocations={probeLocations}
         defaultValues={{
+          probeLocationIds: assigned.map((a) => a.probeLocationId),
           slug: monitor.slug,
           name: monitor.name,
           description: monitor.description ?? "",

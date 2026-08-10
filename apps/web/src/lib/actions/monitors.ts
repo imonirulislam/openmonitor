@@ -1,6 +1,15 @@
 "use server";
 
-import { and, assertion as assertionSchema, db, eq, monitorKinds, schema } from "@openmonitor/db";
+import {
+  and,
+  assertion as assertionSchema,
+  db,
+  eq,
+  isNull,
+  monitorKinds,
+  or,
+  schema,
+} from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -45,6 +54,9 @@ const configSchema = z
     dnsHost: z.string().optional().default(""),
     followRedirects: z.boolean().default(true),
     assertions: z.array(assertionSchema).default([]),
+    // probe_locations this monitor is probed from. Not a monitor column —
+    // persisted into probe_location_monitors by syncProbeLocations().
+    probeLocationIds: z.array(z.string().uuid()).default([]),
   })
   .superRefine((v, ctx) => {
     if (v.kind === "http") {
@@ -198,17 +210,56 @@ function parseConfigPayload(formData: FormData, destination: string) {
   return parseOrFlash(configSchema, json, destination);
 }
 
+/**
+ * Replaces a monitor's probe-location assignments. Accepts shared locations
+ * (workspace_id IS NULL) plus this workspace's own private ones, so a poisoned
+ * payload can't attach another tenant's private location.
+ */
+async function syncProbeLocations(
+  tx: Parameters<Parameters<ReturnType<typeof db>["transaction"]>[0]>[0],
+  monitorId: string,
+  workspaceId: string,
+  requestedIds: string[],
+) {
+  const selectable = await tx
+    .select({ id: schema.probeLocations.id })
+    .from(schema.probeLocations)
+    .where(
+      or(
+        isNull(schema.probeLocations.workspaceId),
+        eq(schema.probeLocations.workspaceId, workspaceId),
+      ),
+    );
+  const allowed = new Set(selectable.map((l) => l.id));
+  const toAssign = requestedIds.filter((id) => allowed.has(id));
+
+  await tx
+    .delete(schema.probeLocationMonitors)
+    .where(eq(schema.probeLocationMonitors.monitorId, monitorId));
+  if (toAssign.length > 0) {
+    await tx
+      .insert(schema.probeLocationMonitors)
+      .values(toAssign.map((probeLocationId) => ({ probeLocationId, monitorId })));
+  }
+}
+
 export async function createMonitor(formData: FormData) {
   const session = await requireEditor();
   const parsed = parseConfigPayload(formData, "/dashboard/monitors/new");
   const cols = configToColumns(parsed);
-  const [created] = await db()
-    .insert(schema.monitors)
-    .values({
-      workspaceId: session.user.workspaceId,
-      ...cols,
-    })
-    .returning({ id: schema.monitors.id });
+  const created = await db().transaction(async (tx) => {
+    const [row] = await tx
+      .insert(schema.monitors)
+      .values({
+        workspaceId: session.user.workspaceId,
+        ...cols,
+      })
+      .returning({ id: schema.monitors.id });
+    if (row) {
+      await syncProbeLocations(tx, row.id, session.user.workspaceId, parsed.probeLocationIds);
+    }
+    return row;
+  });
   await logAudit({
     action: "monitor.created",
     targetType: "monitor",
@@ -235,13 +286,16 @@ export async function updateMonitorConfig(id: string, formData: FormData) {
   const session = await requireEditor();
   const parsed = parseConfigPayload(formData, `/dashboard/monitors/${id}/edit`);
   const cols = configToColumns(parsed);
-  await db()
-    .update(schema.monitors)
-    .set({
-      ...cols,
-      updatedAt: new Date(),
-    })
-    .where(monitorScope(id, session.user.workspaceId));
+  await db().transaction(async (tx) => {
+    await tx
+      .update(schema.monitors)
+      .set({
+        ...cols,
+        updatedAt: new Date(),
+      })
+      .where(monitorScope(id, session.user.workspaceId));
+    await syncProbeLocations(tx, id, session.user.workspaceId, parsed.probeLocationIds);
+  });
   await logAudit({
     action: "monitor.updated.config",
     targetType: "monitor",

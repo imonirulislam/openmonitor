@@ -447,9 +447,12 @@ export const probeLocations = pgTable(
   "probe_locations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    workspaceId: uuid("workspace_id")
-      .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /**
+     * NULL means a shared location the operator runs: selectable by every
+     * workspace when configuring a monitor. Set means a private location owned
+     * by one workspace, for probing inside that tenant's own network.
+     */
+    workspaceId: uuid("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
     // Human label, e.g. "EU West (Frankfurt)".
     name: varchar("name", { length: 100 }).notNull(),
     // Stored on every monitor_runs row; unique per workspace.
@@ -467,7 +470,14 @@ export const probeLocations = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex("probe_locations_workspace_region_unique").on(t.workspaceId, t.region),
+    // Postgres treats NULLs as distinct, so a single (workspace_id, region)
+    // index would not stop two shared locations claiming the same region.
+    uniqueIndex("probe_locations_shared_region_unique")
+      .on(t.region)
+      .where(sql`${t.workspaceId} IS NULL`),
+    uniqueIndex("probe_locations_private_region_unique")
+      .on(t.workspaceId, t.region)
+      .where(sql`${t.workspaceId} IS NOT NULL`),
     uniqueIndex("probe_locations_token_hash_unique").on(t.tokenHash),
     index("probe_locations_workspace_idx").on(t.workspaceId),
   ],

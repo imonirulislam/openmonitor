@@ -1,6 +1,16 @@
 "use server";
 
-import { and, db, eq, generateProbeToken, hashProbeToken, inArray, schema } from "@openmonitor/db";
+import {
+  and,
+  db,
+  eq,
+  generateProbeToken,
+  hashProbeToken,
+  inArray,
+  isNull,
+  or,
+  schema,
+} from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -9,6 +19,10 @@ import { auth } from "~/auth";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 const PATH = "/dashboard/settings/probe-locations";
+
+/** Shared locations plus this workspace's own private ones. */
+const visibleTo = (workspaceId: string) =>
+  or(isNull(schema.probeLocations.workspaceId), eq(schema.probeLocations.workspaceId, workspaceId));
 
 const locationSchema = z.object({
   name: z.string().min(1).max(100),
@@ -30,19 +44,32 @@ async function requireEditor() {
 }
 
 /**
+ * Shared locations are deployment-wide infrastructure that every workspace can
+ * select, so creating or destroying one is an operator action — an editor in one
+ * tenant must not be able to change what other tenants can probe from.
+ */
+async function requireAdmin() {
+  const session = await requireEditor();
+  if (session.user.role !== "admin") throw new Error("forbidden");
+  return session;
+}
+
+/**
  * Creates a location and returns its token exactly once, via the redirect
  * query string. Only the hash is stored, so there is no way to show it again —
  * losing it means rotating.
  */
 export async function createProbeLocation(formData: FormData) {
-  const session = await requireEditor();
+  await requireAdmin();
   const parsed = parseOrFlash(locationSchema, Object.fromEntries(formData), PATH);
 
   const token = generateProbeToken();
   const [created] = await db()
     .insert(schema.probeLocations)
     .values({
-      workspaceId: session.user.workspaceId,
+      // Shared: this deployment's own fleet. Per-workspace private locations
+      // are a separate feature and aren't creatable here yet.
+      workspaceId: null,
       name: parsed.name,
       region: parsed.region,
       tokenHash: hashProbeToken(token),
@@ -56,18 +83,13 @@ export async function createProbeLocation(formData: FormData) {
 
 /** Invalidates the old token immediately; any checker still using it gets 401. */
 export async function rotateProbeLocationToken(id: string) {
-  const session = await requireEditor();
+  const session = await requireAdmin();
   const token = generateProbeToken();
 
   const [updated] = await db()
     .update(schema.probeLocations)
     .set({ tokenHash: hashProbeToken(token), updatedAt: new Date() })
-    .where(
-      and(
-        eq(schema.probeLocations.id, id),
-        eq(schema.probeLocations.workspaceId, session.user.workspaceId),
-      ),
-    )
+    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)))
     .returning({ id: schema.probeLocations.id });
   if (!updated) throw new Error("probe location not found");
 
@@ -76,16 +98,11 @@ export async function rotateProbeLocationToken(id: string) {
 }
 
 export async function setProbeLocationEnabled(id: string, enabled: boolean) {
-  const session = await requireEditor();
+  const session = await requireAdmin();
   await db()
     .update(schema.probeLocations)
     .set({ enabled, updatedAt: new Date() })
-    .where(
-      and(
-        eq(schema.probeLocations.id, id),
-        eq(schema.probeLocations.workspaceId, session.user.workspaceId),
-      ),
-    );
+    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)));
   revalidatePath(PATH);
   redirect(withToastRedirect(PATH, enabled ? "Location enabled" : "Location disabled", "info"));
 }
@@ -95,28 +112,18 @@ export async function setProbeLocationEnabled(id: string, enabled: boolean) {
  * status stops counting a region that will never report again.
  */
 export async function deleteProbeLocation(id: string) {
-  const session = await requireEditor();
+  const session = await requireAdmin();
   const [location] = await db()
     .select({ region: schema.probeLocations.region })
     .from(schema.probeLocations)
-    .where(
-      and(
-        eq(schema.probeLocations.id, id),
-        eq(schema.probeLocations.workspaceId, session.user.workspaceId),
-      ),
-    )
+    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)))
     .limit(1);
   if (!location) throw new Error("probe location not found");
 
   await db().transaction(async (tx) => {
     await tx
       .delete(schema.probeLocations)
-      .where(
-        and(
-          eq(schema.probeLocations.id, id),
-          eq(schema.probeLocations.workspaceId, session.user.workspaceId),
-        ),
-      );
+      .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)));
     // monitor_region_status is keyed by region string, not by location id, so
     // cascade doesn't reach it. Left behind, the stale row keeps voting in the
     // reduction forever.
@@ -151,12 +158,7 @@ export async function setProbeLocationMonitors(id: string, monitorIds: string[])
   const [location] = await db()
     .select({ id: schema.probeLocations.id })
     .from(schema.probeLocations)
-    .where(
-      and(
-        eq(schema.probeLocations.id, id),
-        eq(schema.probeLocations.workspaceId, session.user.workspaceId),
-      ),
-    )
+    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)))
     .limit(1);
   if (!location) throw new Error("probe location not found");
 

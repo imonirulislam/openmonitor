@@ -13,7 +13,12 @@ import type { MiddlewareHandler } from "hono";
 export interface ProbeIdentity {
   locationId: string;
   region: string;
-  workspaceId: string;
+  /**
+   * Null for a shared, operator-run location, which may serve monitors in any
+   * workspace. For those, the probe_location_monitors join is the only
+   * authorization — there is no workspace to compare against.
+   */
+  workspaceId: string | null;
 }
 
 declare module "hono" {

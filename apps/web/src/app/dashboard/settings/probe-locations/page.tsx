@@ -1,4 +1,4 @@
-import { asc, db, eq, schema } from "@openmonitor/db";
+import { asc, db, eq, isNull, or, schema } from "@openmonitor/db";
 import {
   Button,
   Card,
@@ -36,9 +36,16 @@ export default async function ProbeLocationsPage({
       region: schema.probeLocations.region,
       enabled: schema.probeLocations.enabled,
       lastSeenAt: schema.probeLocations.lastSeenAt,
+      workspaceId: schema.probeLocations.workspaceId,
     })
     .from(schema.probeLocations)
-    .where(eq(schema.probeLocations.workspaceId, ws.workspaceId))
+    // Shared locations are the operator's fleet, visible to every workspace.
+    .where(
+      or(
+        isNull(schema.probeLocations.workspaceId),
+        eq(schema.probeLocations.workspaceId, ws.workspaceId),
+      ),
+    )
     .orderBy(asc(schema.probeLocations.region));
 
   const monitors: MonitorOption[] = await db()
@@ -66,7 +73,12 @@ export default async function ProbeLocationsPage({
   }
 
   const rows: ProbeLocationRow[] = locations.map((l) => ({
-    ...l,
+    id: l.id,
+    name: l.name,
+    region: l.region,
+    enabled: l.enabled,
+    lastSeenAt: l.lastSeenAt,
+    shared: l.workspaceId === null,
     monitorIds: byLocation.get(l.id) ?? [],
   }));
 
@@ -76,7 +88,9 @@ export default async function ProbeLocationsPage({
         <h2 className="font-semibold text-lg">Probe locations</h2>
         <p className="mt-0.5 text-muted-foreground text-sm">
           Each location runs a checker and reports results under its own region. The token
-          identifies the location, so a checker can't report as a region it isn't.
+          identifies the location, so a checker can't report as a region it isn't. Shared locations
+          belong to this deployment and can be selected by any workspace; monitors choose their
+          regions on the monitor form.
         </p>
       </div>
 

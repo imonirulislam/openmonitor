@@ -13,6 +13,7 @@ import {
 } from "@openmonitor/db/assertions";
 import {
   Button,
+  Checkbox,
   cn,
   Form,
   FormCard,
@@ -40,6 +41,7 @@ import {
   toast,
 } from "@openmonitor/ui";
 import { GlobeIcon, NetworkIcon, PlusIcon, ServerIcon, XIcon } from "lucide-react";
+import Link from "next/link";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -73,6 +75,9 @@ const formSchema = z.object({
   // the form, server action, and DB type stay in lockstep — including
   // jsonBody (no UI button yet but schema-supported).
   assertions: z.array(assertionSchema).default([]),
+  // probe_locations.id values. Empty means nothing probes this monitor, which
+  // the picker warns about rather than silently accepting.
+  probeLocationIds: z.array(z.string().uuid()).default([]),
 });
 
 export type MonitorFormValues = z.output<typeof formSchema>;
@@ -101,15 +106,25 @@ const TYPE_OPTIONS: Array<{
 const HTTP_ASSERTION_TYPES = ["status", "header", "textBody"] as const;
 const DNS_ASSERTION_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS"] as const;
 
+export interface ProbeLocationChoice {
+  id: string;
+  name: string;
+  region: string;
+  /** Shared locations are operator-run and offered to every workspace. */
+  shared: boolean;
+}
+
 export function MonitorConfigForm({
   mode,
   defaultValues,
   action,
+  probeLocations = [],
 }: {
   mode: Mode;
   defaultValues?: Partial<MonitorFormInput>;
   /** Server action receiving the JSON-serialized payload via FormData["payload"]. */
   action: (formData: FormData) => Promise<void>;
+  probeLocations?: ProbeLocationChoice[];
 }) {
   const form = useForm<MonitorFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver's
@@ -596,6 +611,68 @@ export function MonitorConfigForm({
                 </FormCardContent>
               </>
             ) : null}
+
+            {/* Section E — which locations probe this monitor */}
+            <FormCardSeparator />
+            <FormCardContent>
+              <FormField
+                control={form.control}
+                name="probeLocationIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Regions</FormLabel>
+                    <FormDescription>
+                      Where this monitor is probed from. Results are recorded per region and reduced
+                      to one status using the monitor's region policy.
+                    </FormDescription>
+                    <FormControl>
+                      <div className="flex flex-col gap-2">
+                        {probeLocations.length === 0 ? (
+                          <p className="text-muted-foreground text-sm">
+                            No probe locations configured yet. Add one in{" "}
+                            <Link href="/dashboard/settings/probe-locations" className="underline">
+                              Settings → Probe locations
+                            </Link>
+                            .
+                          </p>
+                        ) : (
+                          probeLocations.map((loc) => {
+                            const selected = (field.value ?? []).includes(loc.id);
+                            return (
+                              <label key={loc.id} className="flex items-center gap-2 text-sm">
+                                <Checkbox
+                                  checked={selected}
+                                  onCheckedChange={(checked: boolean) => {
+                                    const next = new Set(field.value ?? []);
+                                    if (checked) next.add(loc.id);
+                                    else next.delete(loc.id);
+                                    field.onChange([...next]);
+                                  }}
+                                />
+                                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                                  {loc.region}
+                                </code>
+                                <span>{loc.name}</span>
+                                {loc.shared ? null : (
+                                  <span className="text-muted-foreground text-xs">private</span>
+                                )}
+                              </label>
+                            );
+                          })
+                        )}
+                        {probeLocations.length > 0 && (field.value ?? []).length === 0 ? (
+                          <p className="text-destructive text-xs">
+                            No region selected — nothing will probe this monitor and its status will
+                            stay unknown.
+                          </p>
+                        ) : null}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FormCardContent>
 
             <FormCardFooter>
               <FormCardFooterInfo>

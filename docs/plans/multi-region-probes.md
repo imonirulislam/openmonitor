@@ -8,6 +8,25 @@ A checker authenticates with a **probe-location token**. The token is the locati
 identity: the server looks up `probe_locations` by token hash and takes `region` from that
 row. Clients never send a region.
 
+Locations are **shared by default**: `workspace_id IS NULL` means the operator runs it and
+every workspace can select it when configuring a monitor. A non-null `workspace_id` marks a
+private location belonging to one tenant, for probing inside their own network. Postgres
+treats NULLs as distinct, so the uniqueness rules are two partial indexes rather than one
+composite: `UNIQUE (region) WHERE workspace_id IS NULL` and
+`UNIQUE (workspace_id, region) WHERE workspace_id IS NOT NULL`.
+
+Monitors choose their regions on the monitor form, which writes
+`probe_location_monitors`. New monitors default to every shared region, so a freshly created
+workspace is probed without any per-tenant setup. Creating, disabling, rotating or deleting a
+shared location is deployment-wide, so those actions require an admin.
+
+openstatus models this differently: region codes are a hardcoded constant list
+(`ALL_REGIONS` in `@openstatus/regions`) and `monitors.regions` is a comma-separated text
+column. That works for their SaaS, where the region set is fixed by their Fly.io deployment,
+but it's why their self-hosting guide says it "only works with private locations" — a
+self-hoster's regions are whatever they choose to deploy, which a compile-time enum can't
+express. Locations as rows makes self-hosted and hosted the same code path.
+
 ```
 probe_locations           id, workspace_id, name, region, token_hash, last_seen_at, enabled
 probe_location_monitors   (probe_location_id, monitor_id)
@@ -111,6 +130,8 @@ across 3 clouds, and that doesn't transfer to a single Postgres.
 ## Not built yet
 
 - **Region policy picker** on the monitor form. `region_policy` is settable only in SQL.
+- **Creating private (per-workspace) locations.** The schema supports them; the UI only
+  creates shared ones.
 - **Per-region breakdown** in `/v1/status` and on the public page. The admin monitor page
   shows it; the public surface still shows only the rollup.
 - **Silent-location alerting.** `last_seen_at` is recorded but nothing watches it. Wants a
