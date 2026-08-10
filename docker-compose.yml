@@ -151,5 +151,93 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # Extra region for exercising multi-region aggregation locally. Probes the same
+  # targets from the same host, so latencies are similar — it's the per-region
+  # bookkeeping and reduction being tested, not real geography.
+  checker-eu-west:
+    profiles: ["multi-region"]
+    build:
+      context: .
+      dockerfile: deploy/docker/checker.Dockerfile
+    container_name: open-monitor-checker-eu-west
+    restart: unless-stopped
+    environment:
+      # No DATABASE_URL: remote regions have no database access, so this also
+      # exercises the LISTEN/NOTIFY-less polling path.
+      API_URL: http://api:5002
+      PROBE_TOKEN: omp_dev_eu_west_change_me
+      CHECKER_DEFAULT_TIMEOUT_MS: "10000"
+    depends_on:
+      api:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+
+  # Extra region for exercising multi-region aggregation locally. Probes the same
+  # targets from the same host, so latencies are similar — it's the per-region
+  # bookkeeping and reduction being tested, not real geography.
+  checker-us-east:
+    profiles: ["multi-region"]
+    build:
+      context: .
+      dockerfile: deploy/docker/checker.Dockerfile
+    container_name: open-monitor-checker-us-east
+    restart: unless-stopped
+    environment:
+      # No DATABASE_URL: remote regions have no database access, so this also
+      # exercises the LISTEN/NOTIFY-less polling path.
+      API_URL: http://api:5002
+      PROBE_TOKEN: omp_dev_us_east_change_me
+      CHECKER_DEFAULT_TIMEOUT_MS: "10000"
+    depends_on:
+      api:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+
+  # Extra region for exercising multi-region aggregation locally. Probes the same
+  # targets from the same host, so latencies are similar — it's the per-region
+  # bookkeeping and reduction being tested, not real geography.
+  checker-ap-south:
+    profiles: ["multi-region"]
+    build:
+      context: .
+      dockerfile: deploy/docker/checker.Dockerfile
+    container_name: open-monitor-checker-ap-south
+    restart: unless-stopped
+    environment:
+      # No DATABASE_URL: remote regions have no database access, so this also
+      # exercises the LISTEN/NOTIFY-less polling path.
+      API_URL: http://api:5002
+      PROBE_TOKEN: omp_dev_ap_south_change_me
+      CHECKER_DEFAULT_TIMEOUT_MS: "10000"
+    depends_on:
+      api:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+
+  # Extra region for exercising multi-region aggregation locally. Probes the same
+  # targets from the same host, so latencies are similar — it's the per-region
+  # bookkeeping and reduction being tested, not real geography.
+  checker-sa-east:
+    profiles: ["multi-region"]
+    build:
+      context: .
+      dockerfile: deploy/docker/checker.Dockerfile
+    container_name: open-monitor-checker-sa-east
+    restart: unless-stopped
+    environment:
+      # No DATABASE_URL: remote regions have no database access, so this also
+      # exercises the LISTEN/NOTIFY-less polling path.
+      API_URL: http://api:5002
+      PROBE_TOKEN: omp_dev_sa_east_change_me
+      CHECKER_DEFAULT_TIMEOUT_MS: "10000"
+    depends_on:
+      api:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   postgres-data:

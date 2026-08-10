@@ -194,38 +194,56 @@ async function main() {
       });
   }
 
-  // ---------- Probe location ----------
+  // ---------- Probe locations ----------
   // The checker authenticates with a location token, and the location — not the
-  // request body — decides which region a result is attributed to. Seeding one
+  // request body — decides which region a result is attributed to. Seeding these
   // is what makes `docker compose up` work out of the box.
-  const probeToken = process.env.PROBE_TOKEN ?? "omp_dev_local_change_me";
-  // workspaceId stays null: this is the operator's own fleet, so every
-  // workspace can select it when configuring a monitor.
-  const [existingLocal] = await db
-    .select({ id: probeLocations.id })
-    .from(probeLocations)
-    .where(and(isNull(probeLocations.workspaceId), eq(probeLocations.region, "local")))
-    .limit(1);
+  //
+  // workspaceId stays null on all of them: this is the operator's own fleet, so
+  // every workspace can select them when configuring a monitor.
+  //
+  // Region names mirror common cloud regions so the dashboard reads realistically.
+  // `local` keeps its own env override because the default compose checker uses it;
+  // the rest exist for exercising multi-region behaviour and only run under the
+  // `multi-region` compose profile.
+  const seedLocations = [
+    { region: "local", name: "Local", token: process.env.PROBE_TOKEN ?? "omp_dev_local_change_me" },
+    { region: "eu-west", name: "EU West (Frankfurt)", token: "omp_dev_eu_west_change_me" },
+    { region: "us-east", name: "US East (Virginia)", token: "omp_dev_us_east_change_me" },
+    { region: "ap-south", name: "AP South (Singapore)", token: "omp_dev_ap_south_change_me" },
+    { region: "sa-east", name: "SA East (São Paulo)", token: "omp_dev_sa_east_change_me" },
+  ];
 
-  let probeLocationId: string;
-  if (existingLocal) {
-    await db
-      .update(probeLocations)
-      .set({ tokenHash: hashProbeToken(probeToken), updatedAt: new Date() })
-      .where(eq(probeLocations.id, existingLocal.id));
-    probeLocationId = existingLocal.id;
-  } else {
-    const [row] = await db
-      .insert(probeLocations)
-      .values({
-        workspaceId: null,
-        name: "Local",
-        region: "local",
-        tokenHash: hashProbeToken(probeToken),
-      })
-      .returning({ id: probeLocations.id });
-    if (!row) throw new Error("failed to create probe location");
-    probeLocationId = row.id;
+  const probeLocationIds: string[] = [];
+  for (const loc of seedLocations) {
+    // Can't use onConflictDoUpdate here: the uniqueness rule is a partial index
+    // (region WHERE workspace_id IS NULL), which ON CONFLICT can't target
+    // without an explicit predicate, so match the row explicitly instead.
+    const [existing] = await db
+      .select({ id: probeLocations.id })
+      .from(probeLocations)
+      .where(and(isNull(probeLocations.workspaceId), eq(probeLocations.region, loc.region)))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(probeLocations)
+        .set({ tokenHash: hashProbeToken(loc.token), name: loc.name, updatedAt: new Date() })
+        .where(eq(probeLocations.id, existing.id));
+      probeLocationIds.push(existing.id);
+    } else {
+      const [row] = await db
+        .insert(probeLocations)
+        .values({
+          workspaceId: null,
+          name: loc.name,
+          region: loc.region,
+          tokenHash: hashProbeToken(loc.token),
+        })
+        .returning({ id: probeLocations.id });
+      if (!row) throw new Error(`failed to create probe location ${loc.region}`);
+      probeLocationIds.push(row.id);
+    }
   }
 
   // ---------- Default status page + linkage ----------
@@ -252,13 +270,15 @@ async function main() {
     .where(eq(monitors.workspaceId, workspaceId));
   const idBySlug = new Map(monitorRows.map((r) => [r.slug, r.id]));
 
-  // Assign every monitor to the seeded location; the join is what authorizes
-  // the checker to report on them.
+  // Assign every monitor to every seeded location; the join is what authorizes
+  // a checker to report on them.
   for (const row of monitorRows) {
-    await db
-      .insert(probeLocationMonitors)
-      .values({ probeLocationId, monitorId: row.id })
-      .onConflictDoNothing();
+    for (const probeLocationId of probeLocationIds) {
+      await db
+        .insert(probeLocationMonitors)
+        .values({ probeLocationId, monitorId: row.id })
+        .onConflictDoNothing();
+    }
   }
 
   // Link all monitors to the default status page as page components. Wipe
@@ -672,7 +692,10 @@ async function main() {
   console.log(`Seeded ${pastIncidentsSeed.length} past incidents + 1 active incident.`);
   console.log("Seeded 1 past maintenance + 1 upcoming maintenance.");
   console.log(`Admin user: ${adminEmail} / ${adminPassword}  (CHANGE THIS BEFORE DEPLOYING)`);
-  console.log(`Probe token (region "local"): ${probeToken}  (CHANGE THIS BEFORE DEPLOYING)`);
+  console.log(
+    `Seeded ${seedLocations.length} probe locations: ${seedLocations.map((l) => l.region).join(", ")}`,
+  );
+  console.log("Probe tokens are omp_dev_<region>_change_me  (CHANGE THESE BEFORE DEPLOYING)");
 
   process.exit(0);
 }

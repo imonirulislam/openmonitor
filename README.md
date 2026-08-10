@@ -36,6 +36,17 @@ docker compose up --build                  # migrations run automatically
 docker compose --profile seed up seed      # optional demo data + admin user
 ```
 
+To exercise multi-region probing locally, start four extra checkers alongside the
+default one. The seed creates a shared probe location per region, and each checker
+authenticates with that region's token:
+
+```bash
+docker compose --profile multi-region up -d --build   # local + eu-west, us-east, ap-south, sa-east
+```
+
+They all probe from the same host, so latencies are similar — it's the per-region
+bookkeeping and status reduction being exercised, not real geography.
+
 Then open http://localhost:5001 (admin) or http://localhost:5003 (public status page).
 Seeded login: `admin@openmonitor.local` / `changeme`.
 

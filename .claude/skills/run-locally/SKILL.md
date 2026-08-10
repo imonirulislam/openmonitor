@@ -70,7 +70,14 @@ to `change-me-probe-key`; keep it consistent.
 ```bash
 docker compose up --build                  # everything, migrations included
 docker compose --profile seed up seed      # optional: demo monitors + admin user
+docker compose --profile multi-region up -d --build   # 4 extra regional checkers
 ```
+
+The `multi-region` profile adds checkers for eu-west, us-east, ap-south and sa-east
+next to the default `local` one. The seed creates a shared probe location for each,
+with token `omp_dev_<region>_change_me`. Useful for exercising the per-region status
+reduction and the Regions panel; all five probe from the same host so latency is not
+representative.
 
 This builds and runs all five apps + Postgres. A one-shot `migrate` service applies
 migrations before any schema-reading service starts, so this works on an empty volume
