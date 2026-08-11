@@ -1,6 +1,5 @@
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "@openmonitor/ui";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { submitUnlock } from "./actions";
 
 export default async function UnlockPage({

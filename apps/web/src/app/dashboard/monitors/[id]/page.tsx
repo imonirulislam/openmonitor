@@ -298,11 +298,3 @@ function BigMetric({
     </MetricCard>
   );
 }
-
-function FilterChip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded border border-border bg-card px-2 py-0.5 font-mono text-foreground text-xs">
-      {children}
-    </span>
-  );
-}

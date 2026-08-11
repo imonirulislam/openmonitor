@@ -3,6 +3,15 @@ import type { MonitorStatus } from "./types";
 
 export type RegionPolicy = (typeof monitorRegionPolicyEnum.enumValues)[number];
 
+/**
+ * Ordered for UI, least strict first. Mirrors the pgEnum.
+ *
+ * Plain `as const` with no `satisfies`: the readonly-array constraint widens the
+ * tuple enough that `z.enum()` stops inferring literals, which silently degrades
+ * every type derived from the form schema. Same shape as `monitorKinds`.
+ */
+export const REGION_POLICIES = ["any", "majority", "all"] as const;
+
 /** The slice of a `monitor_region_status` row the reduction needs. */
 export interface RegionStatusRow {
   region: string;

@@ -2,7 +2,6 @@ import { zValidator } from "@hono/zod-validator";
 import { and, db, eq, inArray, ne, reduceRegionStatuses, schema, sql } from "@openmonitor/db";
 import { Hono } from "hono";
 import { z } from "zod";
-import { env } from "../env";
 import { probeAuth } from "../middleware/probe-auth";
 
 const probeSchema = z.object({

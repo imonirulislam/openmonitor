@@ -18,7 +18,7 @@
     "build": "turbo run build",
     "start": "turbo run start",
     "lint": "biome check . && oxlint . && tsgolint",
-    "lint:fix": "biome check --write . && oxlint --fix .",
+    "lint:fix": "biome check --write . && biome check --write --unsafe --only=correctness/noUnusedImports . && oxlint --fix .",
     "lint:types": "tsgolint",
     "format": "biome format --write . && oxfmt .",
     "typecheck": "turbo run typecheck",

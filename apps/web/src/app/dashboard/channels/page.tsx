@@ -1,4 +1,4 @@
-import { and, db, eq, inArray, schema } from "@openmonitor/db";
+import { db, eq, inArray, schema } from "@openmonitor/db";
 import {
   Badge,
   Button,

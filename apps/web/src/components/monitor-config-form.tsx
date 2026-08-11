@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { REGION_POLICIES } from "@openmonitor/db/region-status";
 import {
   type Assertion,
   assertion as assertionSchema,
@@ -78,6 +79,7 @@ const formSchema = z.object({
   // probe_locations.id values. Empty means nothing probes this monitor, which
   // the picker warns about rather than silently accepting.
   probeLocationIds: z.array(z.string().uuid()).default([]),
+  regionPolicy: z.enum(REGION_POLICIES).default("any"),
 });
 
 export type MonitorFormValues = z.output<typeof formSchema>;
@@ -151,8 +153,6 @@ export function MonitorConfigForm({
   const [pending, startTransition] = useTransition();
   const watchKind = form.watch("kind");
   const watchMethod = form.watch("method");
-  const headers = form.watch("headers") ?? [];
-  const assertions = form.watch("assertions") ?? [];
   const kindLocked = mode === "edit";
 
   function onSubmit(values: MonitorFormValues) {
@@ -355,41 +355,50 @@ export function MonitorConfigForm({
                     <FormItem className="col-span-full">
                       <FormLabel>Request Headers</FormLabel>
                       <div className="flex flex-col gap-2">
-                        {(field.value ?? []).map((h, idx) => (
-                          <div key={idx} className="grid gap-2 sm:grid-cols-5">
-                            <Input
-                              placeholder="Key"
-                              className="sm:col-span-2 font-mono text-xs"
-                              value={h.key}
-                              onChange={(e) => {
-                                const next = [...(field.value ?? [])];
-                                next[idx] = { ...next[idx], key: e.target.value } as HeaderEntry;
-                                field.onChange(next);
-                              }}
-                            />
-                            <Input
-                              placeholder="Value"
-                              className="sm:col-span-2 font-mono text-xs"
-                              value={h.value}
-                              onChange={(e) => {
-                                const next = [...(field.value ?? [])];
-                                next[idx] = { ...next[idx], value: e.target.value } as HeaderEntry;
-                                field.onChange(next);
-                              }}
-                            />
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              type="button"
-                              onClick={() => {
-                                field.onChange((field.value ?? []).filter((_, i) => i !== idx));
-                              }}
-                              aria-label="Remove header"
-                            >
-                              <XIcon className="size-4" />
-                            </Button>
-                          </div>
-                        ))}
+                        {((field.value ?? []) as HeaderEntry[]).map(
+                          (h: HeaderEntry, idx: number) => (
+                            <div key={idx} className="grid gap-2 sm:grid-cols-5">
+                              <Input
+                                placeholder="Key"
+                                className="sm:col-span-2 font-mono text-xs"
+                                value={h.key}
+                                onChange={(e) => {
+                                  const next = [...(field.value ?? [])];
+                                  next[idx] = { ...next[idx], key: e.target.value } as HeaderEntry;
+                                  field.onChange(next);
+                                }}
+                              />
+                              <Input
+                                placeholder="Value"
+                                className="sm:col-span-2 font-mono text-xs"
+                                value={h.value}
+                                onChange={(e) => {
+                                  const next = [...(field.value ?? [])];
+                                  next[idx] = {
+                                    ...next[idx],
+                                    value: e.target.value,
+                                  } as HeaderEntry;
+                                  field.onChange(next);
+                                }}
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                type="button"
+                                onClick={() => {
+                                  field.onChange(
+                                    ((field.value ?? []) as HeaderEntry[]).filter(
+                                      (_: HeaderEntry, i: number) => i !== idx,
+                                    ),
+                                  );
+                                }}
+                                aria-label="Remove header"
+                              >
+                                <XIcon className="size-4" />
+                              </Button>
+                            </div>
+                          ),
+                        )}
                       </div>
                       <Button
                         size="sm"
@@ -513,9 +522,17 @@ export function MonitorConfigForm({
                             : "Add DNS record assertions."}
                         </FormDescription>
                         <div className="flex flex-col gap-2">
-                          {(field.value ?? []).map((a, idx) =>
+                          {/* Explicit annotations: this schema is large enough that TS
+                              stops inferring the field's element type, and these params
+                              fall back to implicit any. Same reason the resolver above
+                              needs a cast. */}
+                          {((field.value ?? []) as Assertion[]).map((a: Assertion, idx: number) =>
                             renderAssertionRow(form, a, idx, () => {
-                              field.onChange((field.value ?? []).filter((_, i) => i !== idx));
+                              field.onChange(
+                                ((field.value ?? []) as Assertion[]).filter(
+                                  (_: Assertion, i: number) => i !== idx,
+                                ),
+                              );
                             }),
                           )}
                         </div>
@@ -667,6 +684,28 @@ export function MonitorConfigForm({
                           </p>
                         ) : null}
                       </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="regionPolicy"
+                render={({ field }) => (
+                  <FormItem className="mt-4">
+                    <FormLabel>Region policy</FormLabel>
+                    <FormDescription>
+                      How the selected regions reduce to one status. Regions that have never
+                      reported are ignored, so adding one doesn't drag the monitor to unknown.
+                    </FormDescription>
+                    <FormControl>
+                      <Select value={field.value} onChange={(e) => field.onChange(e.target.value)}>
+                        <option value="any">any — down if any region says down</option>
+                        <option value="majority">majority — down if more than half say down</option>
+                        <option value="all">all — down only if every region says down</option>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

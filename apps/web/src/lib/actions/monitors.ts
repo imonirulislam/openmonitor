@@ -8,6 +8,7 @@ import {
   isNull,
   monitorKinds,
   or,
+  REGION_POLICIES,
   schema,
 } from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
@@ -57,6 +58,7 @@ const configSchema = z
     // probe_locations this monitor is probed from. Not a monitor column —
     // persisted into probe_location_monitors by syncProbeLocations().
     probeLocationIds: z.array(z.string().uuid()).default([]),
+    regionPolicy: z.enum(REGION_POLICIES).default("any"),
   })
   .superRefine((v, ctx) => {
     if (v.kind === "http") {
@@ -138,6 +140,7 @@ function configToColumns(parsed: z.infer<typeof configSchema>) {
     headers: parsed.headers,
     assertions: parsed.assertions,
     followRedirects: parsed.followRedirects,
+    regionPolicy: parsed.regionPolicy,
     enabled: parsed.active,
   } as const;
   if (parsed.kind === "http") {
