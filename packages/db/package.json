@@ -20,7 +20,8 @@
     "seed": "tsx src/seed.ts",
     "studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "lint:types": "tsgolint --tsconfig tsconfig.json"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",

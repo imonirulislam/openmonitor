@@ -11,7 +11,8 @@
     "./templates": "./src/templates.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint:types": "tsgolint --tsconfig tsconfig.json"
   },
   "dependencies": {
     "@openmonitor/db": "workspace:*"

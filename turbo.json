@@ -38,6 +38,10 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": []
+    },
+    "lint:types": {
+      "dependsOn": ["^build"],
+      "outputs": []
     }
   }
 }

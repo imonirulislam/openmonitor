@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { REGION_POLICIES } from "@openmonitor/db/region-status";
 import {
   type Assertion,
   assertion as assertionSchema,
@@ -12,6 +11,7 @@ import {
   recordCompareDictionary,
   stringCompareDictionary,
 } from "@openmonitor/db/assertions";
+import { REGION_POLICIES } from "@openmonitor/db/region-status";
 import {
   Button,
   Checkbox,

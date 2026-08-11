@@ -138,16 +138,29 @@ bun run format                           # apply formatting
 cd apps/checker && go build ./... && go vet ./...
 ```
 
-Two things to know about lint:
+Three things to know about lint:
 
-- `bun run lint` runs biome, oxlint, and tsgolint. It must exit 0.
+- `bun run lint` runs biome and oxlint. It must exit 0.
+- `bun run lint:types` runs tsgolint per package for type-aware rules. It is
+  **informational** — it prints findings and exits 0, and the Next apps are excluded
+  because tsgolint can't build a TS program from their tsconfig. Don't add it to a
+  gate without first agreeing on a rule set; the defaults flag idiomatic code like
+  `if (!url) throw`.
 - Some rules are deliberately set to **warn**, not error — non-null assertions, plus a
   batch of pre-existing accessibility and `useExhaustiveDependencies` findings. Warnings
   are visible tech debt, not permission to add more. If you can fix one you touched,
   please do.
 
-Avoid `biome check --write --unsafe`. Its optional-chaining rewrite turns load-bearing
-`!` assertions into `?.` and breaks typechecking.
+`bun run lint:fix` applies biome's safe fixes, then a second pass scoped to
+`correctness/noUnusedImports` — that one fix is classified unsafe, so the first pass
+leaves unused imports behind.
+
+Avoid a blanket `biome check --write --unsafe`. Its optional-chaining rewrite turns
+load-bearing `!` assertions into `?.` and breaks typechecking.
+
+If `typecheck` reports errors inside `.next/types/**`, your build output is stale.
+Those files are generated and included by the Next apps' tsconfigs — delete `.next`
+and re-run.
 
 ## Pull requests
 

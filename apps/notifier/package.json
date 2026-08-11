@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "echo 'no build step — runtime is tsx; typecheck runs separately'",
+    "build": "echo 'no build step \u2014 runtime is tsx; typecheck runs separately'",
     "start": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint:types": "tsgolint --tsconfig tsconfig.json"
   },
   "dependencies": {
     "@openmonitor/db": "workspace:*",

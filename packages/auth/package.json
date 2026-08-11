@@ -12,7 +12,8 @@
     "./providers": "./src/providers.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint:types": "tsgolint --tsconfig tsconfig.json"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.0",
