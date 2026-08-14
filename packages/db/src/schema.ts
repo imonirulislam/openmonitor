@@ -55,6 +55,10 @@ export const eventTypeEnum = pgEnum("event_type", [
   "maintenance.scheduled",
   "maintenance.started",
   "maintenance.ended",
+  // A probe location stopped reporting / started again. Not tied to one monitor,
+  // so these route via `monitorIds` like the incident events do.
+  "location.silent",
+  "location.recovered",
 ]);
 
 // ---------- Auth (Auth.js v5 compatible shape) ----------
@@ -465,6 +469,12 @@ export const probeLocations = pgTable(
      * hook for a future `location.silent` event.
      */
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    /**
+     * Set when the sweeper has alerted that this location went silent, cleared
+     * when it reports again. Makes the sweep idempotent — without it every tick
+     * would re-emit while the location stays down.
+     */
+    silentAlertedAt: timestamp("silent_alerted_at", { withTimezone: true }),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -85,6 +85,8 @@ services:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       NODE_ENV: production
       POLL_INTERVAL_MS: "5000"
+      HEARTBEAT_SWEEP_MS: "${HEARTBEAT_SWEEP_MS:-30000}"
+      LOCATION_SILENT_GRACE_SECONDS: "${LOCATION_SILENT_GRACE_SECONDS:-60}"
     depends_on:
       postgres:
         condition: service_healthy

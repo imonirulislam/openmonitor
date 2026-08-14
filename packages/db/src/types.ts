@@ -2,6 +2,7 @@ import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type {
   auditLogs,
   events,
+  eventTypeEnum,
   incidents,
   incidentUpdates,
   maintenances,
@@ -67,13 +68,9 @@ export type MonitorStatus = "up" | "down" | "degraded" | "unknown";
 export type IncidentStatus = "investigating" | "identified" | "monitoring" | "resolved";
 export type IncidentSeverity = "minor" | "major" | "critical";
 export type MaintenanceStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
-export type EventType =
-  | "monitor.down"
-  | "monitor.recovered"
-  | "monitor.degraded"
-  | "incident.created"
-  | "incident.updated"
-  | "incident.resolved"
-  | "maintenance.scheduled"
-  | "maintenance.started"
-  | "maintenance.ended";
+/**
+ * Derived from the pgEnum rather than hand-listed, so adding a value to
+ * `eventTypeEnum` immediately breaks the exhaustive switch in
+ * `@openmonitor/notifications` instead of silently drifting from it.
+ */
+export type EventType = (typeof eventTypeEnum.enumValues)[number];

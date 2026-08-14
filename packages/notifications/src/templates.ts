@@ -45,6 +45,15 @@ export type MonitorDegradedPayload = {
   checkedAt: string;
 };
 
+export type LocationSilencePayload = {
+  location: { id: string; name: string; region: string };
+  /** Monitors this location was probing, used for channel routing. */
+  monitorIds: string[];
+  monitorNames: string[];
+  lastSeenAt: string | null;
+  silentForMs: number | null;
+};
+
 export type IncidentPayload = {
   incident: {
     id: string;
@@ -93,6 +102,10 @@ export function renderSlackMessage(
     case "incident.updated":
     case "incident.resolved":
       return incidentMessage(type, payload as unknown as IncidentPayload);
+    case "location.silent":
+      return locationSilent(payload as unknown as LocationSilencePayload);
+    case "location.recovered":
+      return locationRecovered(payload as unknown as LocationSilencePayload);
     case "maintenance.scheduled":
     case "maintenance.started":
     case "maintenance.ended":
@@ -293,6 +306,80 @@ function maintenanceMessage(type: EventType, p: MaintenancePayload): SlackMessag
                 },
               ]
             : []),
+        ],
+      },
+    ],
+  };
+}
+
+/** Duration in ms as a compact human string. */
+function elapsed(ms: number | null): string {
+  if (ms === null || ms <= 0) return "—";
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  return m % 60 === 0 ? `${h}h` : `${h}h ${m % 60}m`;
+}
+
+/**
+ * A probe location stopped reporting. Deliberately amber rather than the red
+ * used for monitor.down: the monitored service may be perfectly healthy — what
+ * broke is our ability to observe it from this region.
+ */
+function locationSilent(p: LocationSilencePayload): SlackMessage {
+  const text = `:satellite_antenna: Probe location ${p.location.name} stopped reporting`;
+  return {
+    text,
+    blocks: [],
+    attachments: [
+      {
+        color: "#f59e0b",
+        blocks: [
+          { type: "header", text: { type: "plain_text", text } },
+          {
+            type: "section",
+            fields: [
+              { type: "mrkdwn", text: `*Region*\n${p.location.region}` },
+              { type: "mrkdwn", text: `*Silent for*\n${elapsed(p.silentForMs)}` },
+              { type: "mrkdwn", text: `*Last seen*\n${p.lastSeenAt ?? "never"}` },
+              {
+                type: "mrkdwn",
+                text: `*Monitors affected*\n${p.monitorNames.length > 0 ? p.monitorNames.join(", ") : "none"}`,
+              },
+            ],
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: "Results from this region have stopped. Status shown for these monitors now reflects the remaining regions only.",
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function locationRecovered(p: LocationSilencePayload): SlackMessage {
+  const text = `:satellite_antenna: Probe location ${p.location.name} is reporting again`;
+  return {
+    text,
+    blocks: [],
+    attachments: [
+      {
+        color: "#22c55e",
+        blocks: [
+          { type: "header", text: { type: "plain_text", text } },
+          {
+            type: "section",
+            fields: [
+              { type: "mrkdwn", text: `*Region*\n${p.location.region}` },
+              { type: "mrkdwn", text: `*Was silent for*\n${elapsed(p.silentForMs)}` },
+            ],
+          },
         ],
       },
     ],

@@ -45,6 +45,14 @@ operational endpoints and can't post probe results.
 Every successful ingest bumps `last_seen_at`. Without it, a checker that has died and a
 service nobody is probing look identical — both just stop producing rows.
 
+The notifier sweeps that column and emits `location.silent` / `location.recovered` through
+the outbox. The threshold is derived per location rather than fixed: a location only reports
+as often as its slowest assigned monitor is checked, so one covering a 120s monitor is
+legitimately quiet for 120s at a time. Two missed cycles plus `LOCATION_SILENT_GRACE_SECONDS`
+(default 60) detects a fast location quickly without a slow one flapping. A shared location
+emits one event per workspace, scoped to that workspace's monitors, so one tenant's monitor
+names never reach another tenant's Slack channel.
+
 ### Token storage
 
 Tokens are 32 random bytes, prefixed `omp_`, stored as an **unsalted SHA-256 digest**
@@ -134,9 +142,6 @@ across 3 clouds, and that doesn't transfer to a single Postgres.
   creates shared ones.
 - **Per-region breakdown** in `/v1/status` and on the public page. The admin monitor page
   shows it; the public surface still shows only the rollup.
-- **Silent-location alerting.** `last_seen_at` is recorded but nothing watches it. Wants a
-  `location.silent` event type and a sweeper — `apps/notifier/src/heartbeat-sweeper.ts` is the
-  model.
 
 ## Open questions
 
