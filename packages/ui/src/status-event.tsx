@@ -64,7 +64,7 @@ export function StatusEventBanner({
       <header className="flex items-start gap-3">
         <div
           className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-full text-background [&>svg]:size-4",
+            "flex size-7 shrink-0 items-center justify-center rounded-md text-background [&>svg]:size-4",
             variant === "incident" && "bg-destructive",
             variant === "maintenance" && "bg-info",
             variant === "degraded" && "bg-warning",
@@ -257,7 +257,7 @@ function FeedRow({ event }: { event: FeedEvent }) {
         <div className="flex items-center gap-2">
           <div
             className={cn(
-              "flex size-5 shrink-0 items-center justify-center rounded-full text-background [&>svg]:size-3",
+              "flex size-5 shrink-0 items-center justify-center rounded-md text-background [&>svg]:size-3",
               event.type === "incident" ? "bg-success" : "bg-info",
             )}
           >

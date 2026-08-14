@@ -24,7 +24,21 @@ export function Status({
 
 export function StatusHeader({ children, className, ...props }: ComponentProps<"div">) {
   return (
-    <div data-slot="status-header" className={cn("flex items-center gap-3", className)} {...props}>
+    <div
+      data-slot="status-header"
+      className={cn(
+        // Boxed banner: status-coloured outline over a faint wash of the same
+        // hue, so the overall state reads at a glance without a solid fill
+        // fighting the page background in either theme.
+        "flex items-center gap-3 rounded-md border px-4 py-3",
+        "group-data-[variant=success]:border-success/50 group-data-[variant=success]:bg-success/5",
+        "group-data-[variant=degraded]:border-warning/50 group-data-[variant=degraded]:bg-warning/5",
+        "group-data-[variant=error]:border-destructive/50 group-data-[variant=error]:bg-destructive/5",
+        "group-data-[variant=info]:border-info/50 group-data-[variant=info]:bg-info/5",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </div>
   );
@@ -34,7 +48,7 @@ export function StatusIcon({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "flex size-7 items-center justify-center rounded-full bg-muted text-background [&>svg]:size-4",
+        "flex size-7 items-center justify-center rounded-md bg-muted text-background [&>svg]:size-4",
         "group-data-[variant=success]:bg-success",
         "group-data-[variant=degraded]:bg-warning",
         "group-data-[variant=error]:bg-destructive",

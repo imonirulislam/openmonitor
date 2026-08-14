@@ -7,6 +7,7 @@ import {
 } from "@openmonitor/api-client";
 import {
   type FeedEvent,
+  LocalTime,
   SectionMetaTitle,
   Separator,
   Status,
@@ -26,8 +27,6 @@ import { notFound, redirect } from "next/navigation";
 import { MonitorRow } from "~/components/monitor-row";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";
-
-const DESCRIPTION = process.env.NEXT_PUBLIC_STATUS_DESCRIPTION ?? "Live status for your services";
 
 type ComponentStatus = "up" | "down" | "degraded" | "unknown";
 
@@ -81,6 +80,12 @@ export async function StatusPageView({
   const variant = toStatusVariant(overall);
   const headline = overallHeadline(overall);
   const subline = overallSubline(overall, summary.incidents.length);
+  // Most recent check across all components. Null until something has been
+  // probed, in which case the banner simply omits the timestamp.
+  const lastCheckedAt = summary.components.reduce<string | null>((latest, c) => {
+    if (!c.lastCheckedAt) return latest;
+    return latest === null || c.lastCheckedAt > latest ? c.lastCheckedAt : latest;
+  }, null);
 
   const feedEvents: FeedEvent[] = [
     ...summary.pastIncidents.map((i) => ({
@@ -156,10 +161,18 @@ export async function StatusPageView({
       <Status variant={variant}>
         <StatusHeader>
           <StatusIcon />
-          <div className="flex flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <StatusTitle>{headline}</StatusTitle>
-            <StatusDescription>{subline}</StatusDescription>
+            {subline ? <StatusDescription>{subline}</StatusDescription> : null}
           </div>
+          {lastCheckedAt ? (
+            <LocalTime
+              date={lastCheckedAt}
+              format="LLL dd, y HH:mm"
+              showTimezone
+              className="ml-auto shrink-0 font-mono text-muted-foreground text-xs"
+            />
+          ) : null}
         </StatusHeader>
 
         {summary.incidents.length > 0 || summary.maintenances.length > 0 ? (
@@ -362,8 +375,10 @@ function overallHeadline(s: ComponentStatus): string {
   }
 }
 
+/** Empty when healthy — the headline already says it, and the banner shows a
+ *  last-updated timestamp instead of restating the page description. */
 function overallSubline(s: ComponentStatus, incidentCount: number): string {
-  if (s === "up") return DESCRIPTION;
+  if (s === "up") return "";
   if (incidentCount === 0) return "We're investigating.";
   return `${incidentCount} active ${incidentCount === 1 ? "incident" : "incidents"}.`;
 }
