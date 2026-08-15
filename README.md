@@ -25,7 +25,8 @@ packages/
 ## Prerequisites
 
 - [Bun](https://bun.sh) >= 1.2 (package manager and script runner)
-- Node.js >= 20.11 (production runtime for the Next.js and Hono apps)
+- Node.js >= 22 (production runtime for the Next.js and Hono apps — the Neon
+  driver needs a global WebSocket, which Node 22 provides)
 - Go >= 1.22 (for `apps/checker`)
 - Docker + Docker Compose (for local Postgres / full stack)
 

@@ -16,6 +16,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "~/auth";
+import { isOperator } from "~/lib/operator";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 const PATH = "/dashboard/settings/probe-locations";
@@ -43,15 +44,47 @@ async function requireEditor() {
   return session;
 }
 
-/**
- * Shared locations are deployment-wide infrastructure that every workspace can
- * select, so creating or destroying one is an operator action — an editor in one
- * tenant must not be able to change what other tenants can probe from.
- */
 async function requireAdmin() {
   const session = await requireEditor();
   if (session.user.role !== "admin") throw new Error("forbidden");
   return session;
+}
+
+/**
+ * Loads a location the caller is allowed to change, and decides who that is.
+ *
+ * The two kinds of location have different owners, so one role check can't
+ * cover both. A shared row (workspaceId null) is the deployment's own fleet:
+ * rotating its token breaks probing for every tenant using that region until
+ * their checkers are redeployed, so it takes an instance operator. A private
+ * row belongs to one workspace and its admin owns it outright.
+ *
+ * `admin` alone is not sufficient for the shared case — it comes from
+ * workspace_members, so anyone who creates a workspace is an admin of it.
+ */
+async function requireMutableLocation(id: string) {
+  const session = await requireEditor();
+
+  const [location] = await db()
+    .select({
+      id: schema.probeLocations.id,
+      region: schema.probeLocations.region,
+      workspaceId: schema.probeLocations.workspaceId,
+    })
+    .from(schema.probeLocations)
+    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)))
+    .limit(1);
+  if (!location) throw new Error("probe location not found");
+
+  if (location.workspaceId === null) {
+    if (!isOperator(session.user.email)) {
+      throw new Error("forbidden: shared probe locations are managed by the instance operator");
+    }
+  } else if (session.user.role !== "admin") {
+    throw new Error("forbidden");
+  }
+
+  return { session, location };
 }
 
 /**
@@ -60,16 +93,22 @@ async function requireAdmin() {
  * losing it means rotating.
  */
 export async function createProbeLocation(formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
   const parsed = parseOrFlash(locationSchema, Object.fromEntries(formData), PATH);
+
+  // Default to a private location owned by the caller's workspace. Only an
+  // instance operator can add to the shared fleet, because every other tenant
+  // then gets to select it.
+  const wantsShared = formData.get("shared") === "on";
+  if (wantsShared && !isOperator(session.user.email)) {
+    throw new Error("forbidden: only the instance operator can create shared locations");
+  }
 
   const token = generateProbeToken();
   const [created] = await db()
     .insert(schema.probeLocations)
     .values({
-      // Shared: this deployment's own fleet. Per-workspace private locations
-      // are a separate feature and aren't creatable here yet.
-      workspaceId: null,
+      workspaceId: wantsShared ? null : session.user.workspaceId,
       name: parsed.name,
       region: parsed.region,
       tokenHash: hashProbeToken(token),
@@ -83,13 +122,13 @@ export async function createProbeLocation(formData: FormData) {
 
 /** Invalidates the old token immediately; any checker still using it gets 401. */
 export async function rotateProbeLocationToken(id: string) {
-  const session = await requireAdmin();
+  await requireMutableLocation(id);
   const token = generateProbeToken();
 
   const [updated] = await db()
     .update(schema.probeLocations)
     .set({ tokenHash: hashProbeToken(token), updatedAt: new Date() })
-    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)))
+    .where(eq(schema.probeLocations.id, id))
     .returning({ id: schema.probeLocations.id });
   if (!updated) throw new Error("probe location not found");
 
@@ -98,11 +137,11 @@ export async function rotateProbeLocationToken(id: string) {
 }
 
 export async function setProbeLocationEnabled(id: string, enabled: boolean) {
-  const session = await requireAdmin();
+  await requireMutableLocation(id);
   await db()
     .update(schema.probeLocations)
     .set({ enabled, updatedAt: new Date() })
-    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)));
+    .where(eq(schema.probeLocations.id, id));
   revalidatePath(PATH);
   redirect(withToastRedirect(PATH, enabled ? "Location enabled" : "Location disabled", "info"));
 }
@@ -112,18 +151,10 @@ export async function setProbeLocationEnabled(id: string, enabled: boolean) {
  * status stops counting a region that will never report again.
  */
 export async function deleteProbeLocation(id: string) {
-  const session = await requireAdmin();
-  const [location] = await db()
-    .select({ region: schema.probeLocations.region })
-    .from(schema.probeLocations)
-    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)))
-    .limit(1);
-  if (!location) throw new Error("probe location not found");
+  const { session, location } = await requireMutableLocation(id);
 
   await db().transaction(async (tx) => {
-    await tx
-      .delete(schema.probeLocations)
-      .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)));
+    await tx.delete(schema.probeLocations).where(eq(schema.probeLocations.id, id));
     // monitor_region_status is keyed by region string, not by location id, so
     // cascade doesn't reach it. Left behind, the stale row keeps voting in the
     // reduction forever.
@@ -151,7 +182,16 @@ export async function deleteProbeLocation(id: string) {
   redirect(withToastRedirect(PATH, "Location deleted", "info"));
 }
 
-/** Replaces the whole assignment set for a location in one transaction. */
+/**
+ * Replaces this workspace's assignments for a location, in one transaction.
+ *
+ * "This workspace's" is load-bearing. A shared location carries assignments
+ * from every tenant that selected it, so clearing the whole set and re-inserting
+ * the caller's would silently stop probing everyone else's monitors from that
+ * region — no error, no audit trail, just results that quietly stop arriving.
+ * Both the delete and the insert are therefore scoped to monitors the caller
+ * owns, which also means an editor never needs rights over the location itself.
+ */
 export async function setProbeLocationMonitors(id: string, monitorIds: string[]) {
   const session = await requireEditor();
 
@@ -174,7 +214,18 @@ export async function setProbeLocationMonitors(id: string, monitorIds: string[])
   await db().transaction(async (tx) => {
     await tx
       .delete(schema.probeLocationMonitors)
-      .where(eq(schema.probeLocationMonitors.probeLocationId, id));
+      .where(
+        and(
+          eq(schema.probeLocationMonitors.probeLocationId, id),
+          inArray(
+            schema.probeLocationMonitors.monitorId,
+            tx
+              .select({ id: schema.monitors.id })
+              .from(schema.monitors)
+              .where(eq(schema.monitors.workspaceId, session.user.workspaceId)),
+          ),
+        ),
+      );
     if (toAssign.length > 0) {
       await tx
         .insert(schema.probeLocationMonitors)

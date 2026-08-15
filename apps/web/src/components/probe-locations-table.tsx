@@ -18,6 +18,8 @@ export interface ProbeLocationRow {
   lastSeenAt: Date | null;
   /** Operator-owned and offered to every workspace. */
   shared: boolean;
+  /** Whether the signed-in user may enable/rotate/delete this location. */
+  canManage: boolean;
   monitorIds: string[];
 }
 
@@ -160,17 +162,21 @@ export function ProbeLocationsTable({
                 <MonitorAssignment location={l} monitors={monitors} />
               </td>
               <td className="py-3">
-                <RowActions>
-                  <RowActionAction action={() => setProbeLocationEnabled(l.id, !l.enabled)}>
-                    {l.enabled ? "Disable" : "Enable"}
-                  </RowActionAction>
-                  <RowActionAction action={() => rotateProbeLocationToken(l.id)}>
-                    Rotate token
-                  </RowActionAction>
-                  <RowActionAction destructive action={() => deleteProbeLocation(l.id)}>
-                    Delete
-                  </RowActionAction>
-                </RowActions>
+                {l.canManage ? (
+                  <RowActions>
+                    <RowActionAction action={() => setProbeLocationEnabled(l.id, !l.enabled)}>
+                      {l.enabled ? "Disable" : "Enable"}
+                    </RowActionAction>
+                    <RowActionAction action={() => rotateProbeLocationToken(l.id)}>
+                      Rotate token
+                    </RowActionAction>
+                    <RowActionAction destructive action={() => deleteProbeLocation(l.id)}>
+                      Delete
+                    </RowActionAction>
+                  </RowActions>
+                ) : (
+                  <span className="text-muted-foreground text-xs">operator</span>
+                )}
               </td>
             </tr>
           ))}

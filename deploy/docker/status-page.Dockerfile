@@ -22,7 +22,7 @@ COPY packages ./packages
 COPY apps/status-page ./apps/status-page
 RUN bun run --filter @openmonitor/status-page build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /repo/node_modules /app/node_modules

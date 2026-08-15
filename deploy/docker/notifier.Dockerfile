@@ -12,7 +12,7 @@ COPY apps/notifier/package.json ./apps/notifier/
 # See web.Dockerfile for why the default isolated linker and no --frozen-lockfile.
 RUN bun install
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /repo
 ENV NODE_ENV=production
 COPY --from=deps /repo ./

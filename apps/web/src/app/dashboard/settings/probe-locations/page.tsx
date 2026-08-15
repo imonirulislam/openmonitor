@@ -22,6 +22,7 @@ import {
   ProbeLocationsTable,
 } from "~/components/probe-locations-table";
 import { createProbeLocation } from "~/lib/actions/probe-locations";
+import { isOperator } from "~/lib/operator";
 import { getCurrentWorkspace } from "~/lib/workspace";
 
 export default async function ProbeLocationsPage({
@@ -61,12 +62,17 @@ export default async function ProbeLocationsPage({
     .where(eq(schema.monitors.workspaceId, ws.workspaceId))
     .orderBy(asc(schema.monitors.slug));
 
+  // Scoped to this workspace's monitors. A shared location carries assignments
+  // from every tenant that selected it, and an unfiltered read would ship their
+  // monitor ids to this page and show the wrong boxes ticked.
   const assignments = await db()
     .select({
       probeLocationId: schema.probeLocationMonitors.probeLocationId,
       monitorId: schema.probeLocationMonitors.monitorId,
     })
-    .from(schema.probeLocationMonitors);
+    .from(schema.probeLocationMonitors)
+    .innerJoin(schema.monitors, eq(schema.monitors.id, schema.probeLocationMonitors.monitorId))
+    .where(eq(schema.monitors.workspaceId, ws.workspaceId));
 
   const byLocation = new Map<string, string[]>();
   for (const a of assignments) {
@@ -75,6 +81,11 @@ export default async function ProbeLocationsPage({
     byLocation.set(a.probeLocationId, list);
   }
 
+  // Shared locations belong to the deployment, not to any workspace, so only an
+  // instance operator may change one. The server actions enforce this; mirroring
+  // it here keeps the UI from offering buttons that would only throw.
+  const operator = isOperator(ws.email);
+
   const rows: ProbeLocationRow[] = locations.map((l) => ({
     id: l.id,
     name: l.name,
@@ -82,6 +93,7 @@ export default async function ProbeLocationsPage({
     enabled: l.enabled,
     lastSeenAt: l.lastSeenAt,
     shared: l.workspaceId === null,
+    canManage: l.workspaceId === null ? operator : ws.role === "admin",
     monitorIds: byLocation.get(l.id) ?? [],
   }));
 
@@ -147,9 +159,25 @@ export default async function ProbeLocationsPage({
                 </p>
               </div>
             </div>
+            {operator ? (
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" name="shared" className="mt-0.5" />
+                <span>
+                  Shared across all workspaces
+                  <span className="block text-muted-foreground text-xs">
+                    Part of this deployment's fleet, selectable by every workspace. Leave unticked
+                    for a location only this workspace can see.
+                  </span>
+                </span>
+              </label>
+            ) : null}
           </FormCardContent>
           <FormCardFooter>
-            <FormCardFooterInfo>The token is shown once, on creation.</FormCardFooterInfo>
+            <FormCardFooterInfo>
+              {operator
+                ? "The token is shown once, on creation."
+                : "Private to this workspace. The token is shown once, on creation."}
+            </FormCardFooterInfo>
             <Button type="submit">Create location</Button>
           </FormCardFooter>
         </form>

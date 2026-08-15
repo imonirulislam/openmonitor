@@ -131,6 +131,8 @@ services:
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       NEON_WS_PROXY: wsproxy:80
+      # Who may manage shared probe locations. Empty means nobody.
+      OPERATOR_EMAILS: ${OPERATOR_EMAILS-admin@openmonitor.local}
       AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-32-byte-random-secret}
       AUTH_URL: http://localhost:5001
       API_URL: http://api:5002

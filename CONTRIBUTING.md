@@ -6,7 +6,8 @@ that keep the codebase coherent, and what a good PR looks like.
 ## Prerequisites
 
 - [Bun](https://bun.sh) >= 1.2 — package manager and script runner
-- Node.js >= 20.11 — production runtime for the Next.js and Hono apps
+- Node.js >= 22 — production runtime for the Next.js and Hono apps. The Neon driver
+  needs a global `WebSocket`; Node 20 doesn't have one.
 - Go >= 1.25 — for `apps/checker`
 - Docker + Docker Compose — for Postgres, or the whole stack
 

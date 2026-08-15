@@ -102,6 +102,15 @@ the boundary.
 `admin` > `editor` > `viewer`. Server actions check `requireEditor()` (refuses viewer).
 Add `requireAdmin()` only when there's an admin-only screen — don't pre-build the gate.
 
+These are **per-workspace** roles, read from `workspace_members`. "admin" means admin of
+one tenant, and anyone who creates a workspace is an admin of it.
+
+Deployment-wide things therefore can't be gated on `admin`. Shared probe locations
+(`workspaceId IS NULL`) are the operator's fleet, and mutating one is gated on
+`isOperator()` in `apps/web/src/lib/operator.ts` — an allowlist in `OPERATOR_EMAILS`,
+controlled by whoever controls the deploy. If you add another deployment-wide resource,
+gate it the same way, not on a workspace role.
+
 ## How features land
 
 1. **Schema** — add to `packages/db/src/schema.ts`, then hand-write the migration under

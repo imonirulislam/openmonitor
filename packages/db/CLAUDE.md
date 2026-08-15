@@ -2,6 +2,24 @@
 
 Drizzle ORM + Postgres. Single source of truth for schema and types.
 
+## Driver
+
+`@neondatabase/serverless` over WebSocket (`drizzle-orm/neon-serverless`), not postgres.js.
+A serverless invocation can't hold a TCP pool open between requests, and Neon's HTTP driver
+throws on `transaction()` — which the outbox needs, since the event insert has to share a
+transaction with the state change.
+
+Two things follow:
+
+- **Raw `db.execute(sql`…`)` returns `{ rows, rowCount }`,** not an array. Go through
+  `rows()` / `affected()` from `src/raw.ts` rather than casting. The old postgres.js shape
+  compiled fine through `as unknown as` and failed only at runtime.
+- **Local Postgres can't terminate a WebSocket.** docker compose runs Neon's `wsproxy`
+  sidecar; `NEON_WS_PROXY` points at it. Leave it unset against Neon itself. Dev and
+  production run the same driver, deliberately.
+
+Requires Node >= 22 for the global `WebSocket`.
+
 ## Conventions
 
 - **Schema lives in `src/schema.ts`** — one file, organized by domain section. Keep it that way until it grows past ~600 lines.

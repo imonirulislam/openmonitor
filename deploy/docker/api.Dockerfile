@@ -13,7 +13,7 @@ COPY apps/api/package.json ./apps/api/
 # Only the manifests this service needs are copied, so the install stays small.
 RUN bun install
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /repo
 ENV NODE_ENV=production
 # /repo from deps is just manifests + the per-workspace node_modules symlink

@@ -29,7 +29,7 @@ ENV AUTH_SECRET=build-time-placeholder-not-used-at-runtime
 ENV SKIP_ENV_VALIDATION=1
 RUN bun run --filter @openmonitor/web build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 # Copy whole trees so the isolated linker's relative symlinks stay valid:

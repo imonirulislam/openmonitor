@@ -1,5 +1,4 @@
 import { neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
 
 /**
  * Neon's driver carries the Postgres wire protocol over a WebSocket rather than
@@ -8,15 +7,17 @@ import ws from "ws";
  * socket behind, and it still gets real interactive transactions — which the
  * outbox depends on and Neon's HTTP driver cannot provide.
  *
- * Two environments have to be taught about it:
+ * The driver needs a WebSocket implementation. Node 22, Bun and the edge
+ * runtimes all expose one globally, which is why this package requires Node 22:
+ * the `ws` polyfill Node 20 needed is a bare `require` that Next's standalone
+ * tracing does not follow, so it built fine and then failed at runtime with
+ * "Cannot find module 'ws'".
  *
- * - **Node 20** has no global WebSocket, so we hand the driver `ws`. Node 22 and
- *   the edge runtimes ship one and keep theirs.
- * - **Plain Postgres** — docker compose, CI — can't terminate a WebSocket at
- *   all. Neon publish a `wsproxy` sidecar that unwraps it and speaks TCP to
- *   Postgres; point `NEON_WS_PROXY` at that and the same driver works locally.
- *   Dev and production then exercise identical code, which matters most for the
- *   layer that is hardest to test in isolation.
+ * Plain Postgres — docker compose, CI — can't terminate a WebSocket at all.
+ * Neon publish a `wsproxy` sidecar that unwraps it and speaks TCP to Postgres;
+ * point `NEON_WS_PROXY` at that and the same driver works locally. Dev and
+ * production then exercise identical code, which matters most for the layer
+ * that is hardest to test in isolation.
  *
  * Unset `NEON_WS_PROXY` in production and the driver talks to Neon directly
  * over TLS.
@@ -26,10 +27,6 @@ let configured = false;
 export function configureNeon(): void {
   if (configured) return;
   configured = true;
-
-  if (!neonConfig.webSocketConstructor) {
-    neonConfig.webSocketConstructor = globalThis.WebSocket ?? (ws as unknown as typeof WebSocket);
-  }
 
   const proxy = process.env.NEON_WS_PROXY;
   if (!proxy) return;
