@@ -64,7 +64,7 @@ export default async function OverviewPage() {
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-2xl tracking-tight">Overview</h1>
+        <h1 className="font-semibold text-xl tracking-tight">Overview</h1>
         <p className="text-muted-foreground text-sm">Welcome to your dashboard.</p>
       </header>
 

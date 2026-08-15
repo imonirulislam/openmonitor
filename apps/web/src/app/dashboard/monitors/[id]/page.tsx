@@ -248,7 +248,7 @@ export default async function OverviewPage({
 
       <section className="flex flex-col gap-4">
         <div>
-          <h2 className="font-medium text-lg">Latency</h2>
+          <h2 className="font-medium text-base">Latency</h2>
           <p className="font-mono text-muted-foreground text-sm tracking-tight">
             Response time across all the regions
           </p>

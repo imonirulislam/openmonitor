@@ -20,7 +20,7 @@ export default async function IncidentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-2xl tracking-tight">Incidents</h1>
+        <h1 className="font-semibold text-xl tracking-tight">Incidents</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           Workspace-wide view. Open new reports from a status page's Status Reports tab.
         </p>

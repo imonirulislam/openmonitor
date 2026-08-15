@@ -41,7 +41,7 @@ export default async function MonitorDetailLayout({
       </div>
       <header>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-semibold text-2xl tracking-tight">{monitor.name}</h1>
+          <h1 className="font-semibold text-xl tracking-tight">{monitor.name}</h1>
           <Badge variant={STATUS_VARIANT[monitor.currentStatus]}>{monitor.currentStatus}</Badge>
           {!monitor.enabled ? <Badge variant="outline">disabled</Badge> : null}
         </div>

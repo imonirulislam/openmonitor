@@ -34,7 +34,7 @@ export default async function NewMonitorPage() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-2xl tracking-tight">New monitor</h1>
+        <h1 className="font-semibold text-xl tracking-tight">New monitor</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           Configure what to probe and where to probe it from. Response time and schedule are set on
           the monitor once created.

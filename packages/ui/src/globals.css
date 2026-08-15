@@ -35,7 +35,9 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  /* Tight corners to sit with the monospace type — a 10px radius reads consumer,
+     which fought the terminal feel. Yields sm 0, md 2px, lg 4px, xl 8px. */
+  --radius: 0.25rem;
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -52,8 +54,8 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: oklch(0.898 0 0);
+  --input: oklch(0.898 0 0);
   --ring: oklch(0.708 0 0);
 
   --success: oklch(0.72 0.19 150);
@@ -64,7 +66,7 @@
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.178 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
@@ -77,8 +79,8 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 18%);
   --ring: oklch(0.556 0 0);
 
   --success: oklch(0.72 0.19 150);

@@ -40,10 +40,10 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     .where(eq(schema.incidentMonitors.incidentId, id));
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-semibold text-2xl tracking-tight">{incident.title}</h1>
+          <h1 className="font-semibold text-xl tracking-tight">{incident.title}</h1>
           <IncidentSeverityBadge severity={incident.severity} />
           <IncidentStatusBadge status={incident.status} />
         </div>
@@ -72,7 +72,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
       <Separator />
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-medium text-sm">Timeline</h2>
+        <h2 className="font-medium text-sm tracking-tight">Timeline</h2>
         <ol className="space-y-4 border-border border-l pl-4">
           {updates.map((u) => (
             <li key={u.id}>

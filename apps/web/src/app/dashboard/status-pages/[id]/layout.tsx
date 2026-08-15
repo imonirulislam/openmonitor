@@ -37,7 +37,7 @@ export default async function StatusPageDetailLayout({
       <header className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="font-semibold text-2xl tracking-tight">{page.name}</h1>
+            <h1 className="font-semibold text-xl tracking-tight">{page.name}</h1>
             <Badge variant={page.isPublic ? "success" : "default"}>
               {page.isPublic ? "public" : "private"}
             </Badge>

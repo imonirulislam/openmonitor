@@ -43,10 +43,10 @@ export default async function MaintenancesTab({ params }: { params: Promise<{ id
       : [];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-lg">Maintenances</h2>
+          <h2 className="font-medium text-base">Maintenances</h2>
           <p className="mt-0.5 text-muted-foreground text-sm">
             Planned outages affecting components on this page. Looking for{" "}
             <Link href={`/dashboard/status-pages/${id}/status-reports`} className="underline">

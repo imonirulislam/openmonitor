@@ -32,7 +32,7 @@ export default async function StatusPagesIndex() {
     <div className="flex flex-col gap-6">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">Status Pages</h1>
+          <h1 className="font-semibold text-xl tracking-tight">Status Pages</h1>
           <p className="mt-1 text-muted-foreground text-sm">Create and manage your status pages.</p>
         </div>
         <Button asChild size="sm">

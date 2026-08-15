@@ -31,7 +31,7 @@ export function SectionHeaderRow({ className, ...props }: ComponentProps<"div">)
 }
 
 export function SectionTitle({ className, ...props }: ComponentProps<"p">) {
-  return <p className={cn("font-medium text-lg", className)} {...props} />;
+  return <p className={cn("font-medium text-base", className)} {...props} />;
 }
 
 export function SectionDescription({ className, ...props }: ComponentProps<"p">) {
@@ -52,5 +52,5 @@ export function SectionGroupHeader({ className, ...props }: ComponentProps<"div"
 }
 
 export function SectionGroupTitle({ className, ...props }: ComponentProps<"p">) {
-  return <p className={cn("font-bold text-3xl", className)} {...props} />;
+  return <p className={cn("font-semibold text-xl tracking-tight", className)} {...props} />;
 }

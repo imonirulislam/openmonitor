@@ -64,7 +64,7 @@ export function MonitorRegions({
     return (
       <section className="flex flex-col gap-4">
         <div>
-          <h2 className="font-medium text-lg">Regions</h2>
+          <h2 className="font-medium text-base">Regions</h2>
           <p className="font-mono text-muted-foreground text-sm tracking-tight">
             Every selected region's latency trend
           </p>
@@ -85,7 +85,7 @@ export function MonitorRegions({
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="font-medium text-lg">Regions</h2>
+        <h2 className="font-medium text-base">Regions</h2>
         <p className="font-mono text-muted-foreground text-sm tracking-tight">
           Every selected region's latency trend
         </p>

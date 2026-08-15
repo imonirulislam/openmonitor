@@ -85,7 +85,7 @@ export async function MonitorTimeline({
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="font-medium text-lg">Timeline</h2>
+        <h2 className="font-medium text-base">Timeline</h2>
         <p className="font-mono text-muted-foreground text-sm tracking-tight">
           What happened to your monitor over the last 30 days
         </p>

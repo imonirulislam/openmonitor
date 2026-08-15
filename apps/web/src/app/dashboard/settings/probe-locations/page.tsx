@@ -85,7 +85,7 @@ export default async function ProbeLocationsPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-semibold text-lg">Probe locations</h2>
+        <h2 className="font-medium text-base">Probe locations</h2>
         <p className="mt-0.5 text-muted-foreground text-sm">
           Each location runs a checker and reports results under its own region. The token
           identifies the location, so a checker can't report as a region it isn't. Shared locations
@@ -116,7 +116,7 @@ export default async function ProbeLocationsPage({
 
       <ProbeLocationsTable locations={rows} monitors={monitors} />
 
-      <FormCard>
+      <FormCard className="max-w-2xl">
         <form action={createProbeLocation}>
           <FormCardHeader>
             <FormCardTitle>Add a location</FormCardTitle>

@@ -29,9 +29,9 @@ export default async function MaintenancePage() {
     .limit(50);
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-2xl tracking-tight">Maintenance</h1>
+        <h1 className="font-semibold text-xl tracking-tight">Maintenance</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           Schedule planned outages so customers know what to expect.
         </p>

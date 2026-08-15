@@ -18,7 +18,7 @@ export default function NewStatusPagePage() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-2xl tracking-tight">New status page</h1>
+        <h1 className="font-semibold text-xl tracking-tight">New status page</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           A status page collects monitors into a public view. Pick which monitors appear on it after
           creating.

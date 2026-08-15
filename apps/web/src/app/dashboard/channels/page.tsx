@@ -48,9 +48,9 @@ export default async function ChannelsPage() {
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-2xl tracking-tight">Notification channels</h1>
+        <h1 className="font-semibold text-xl tracking-tight">Notification channels</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           Slack webhooks that receive alerts when linked monitors change state.
         </p>
@@ -58,7 +58,7 @@ export default async function ChannelsPage() {
 
       <Separator />
 
-      <Card>
+      <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Add Slack channel</CardTitle>
         </CardHeader>

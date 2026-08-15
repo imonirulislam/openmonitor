@@ -54,7 +54,7 @@ export default async function MembersPage({
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       {inviteUrl ? (
         <Card className="border-success/30 bg-success/5 p-4">
           <p className="font-medium text-sm">Invite link ready</p>
@@ -70,7 +70,7 @@ export default async function MembersPage({
       ) : null}
 
       {isAdmin ? (
-        <FormCard asForm action={inviteMember}>
+        <FormCard asForm action={inviteMember} className="max-w-2xl">
           <FormCardHeader>
             <FormCardTitle>Invite member</FormCardTitle>
             <FormCardDescription>

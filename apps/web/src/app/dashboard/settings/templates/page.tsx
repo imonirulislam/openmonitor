@@ -29,7 +29,7 @@ export default async function IncidentTemplatesPage() {
     .orderBy(desc(schema.incidentTemplates.createdAt));
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex max-w-2xl flex-col gap-6">
       <FormCard asForm action={createIncidentTemplate}>
         <FormCardHeader>
           <FormCardTitle>New incident template</FormCardTitle>

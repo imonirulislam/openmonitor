@@ -262,7 +262,7 @@ export function MonitorConfigForm({
                               <TooltipTrigger asChild>
                                 <label
                                   className={cn(
-                                    "relative flex cursor-pointer flex-row items-center gap-3 rounded-md border border-input bg-background px-3 py-3 text-center shadow-xs outline-none transition-[color,box-shadow,background-color]",
+                                    "relative flex cursor-pointer flex-row items-center gap-3 rounded-md border border-input bg-background px-3 py-3 text-center outline-none transition-[color,box-shadow,background-color]",
                                     "has-[:focus-visible]:border-ring has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50",
                                     checked && "border-primary/50 bg-primary/5",
                                     disabled && "pointer-events-none opacity-50",

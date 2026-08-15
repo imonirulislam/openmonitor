@@ -2,9 +2,9 @@ import { Card } from "@openmonitor/ui";
 
 export default function SubscribersTab() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-semibold text-lg">Subscribers</h2>
+        <h2 className="font-medium text-base">Subscribers</h2>
         <p className="mt-0.5 text-muted-foreground text-sm">
           Email subscribers receive notifications when incidents or maintenance fire on this page.
         </p>

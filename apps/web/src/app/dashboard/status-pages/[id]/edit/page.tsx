@@ -37,7 +37,7 @@ export default async function StatusPageSettings({ params }: { params: Promise<{
   const publicUrl = page.customDomain ? `https://${page.customDomain}` : `${baseUrl}/${page.slug}`;
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex max-w-2xl flex-col gap-6">
       <FormCard asForm action={updateStatusPage.bind(null, id)}>
         <FormCardHeader>
           <FormCardTitle>Identity</FormCardTitle>
