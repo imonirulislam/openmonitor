@@ -1,16 +1,28 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { Pool } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { configureNeon } from "./neon";
 import * as schema from "./schema";
 
 export type Database = ReturnType<typeof createDb>;
 
-export function createDb(databaseUrl: string) {
-  const client = postgres(databaseUrl, {
-    max: 10,
-    idle_timeout: 20,
-    connect_timeout: 30,
+/**
+ * `max` is small on purpose. Every serverless invocation gets its own pool, so
+ * the limit that matters is Neon's account-wide connection ceiling, not the
+ * throughput of any one instance. Long-running containers (the checker's
+ * companion services, docker compose) raise it via DATABASE_POOL_MAX.
+ */
+export function createDb(
+  databaseUrl: string,
+  poolMax = Number(process.env.DATABASE_POOL_MAX ?? 5),
+) {
+  configureNeon();
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    max: poolMax,
+    idleTimeoutMillis: 20_000,
+    connectionTimeoutMillis: 30_000,
   });
-  return drizzle(client, { schema, casing: "snake_case" });
+  return drizzle(pool, { schema, casing: "snake_case" });
 }
 
 let cached: Database | undefined;

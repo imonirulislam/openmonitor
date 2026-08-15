@@ -11,7 +11,7 @@
  * still favor an external cron (only one runs to avoid duplicate work),
  * which is why this is opt-out via RETENTION_ENABLED=off.
  */
-import { db, sql } from "@openmonitor/db";
+import { affected, db, sql } from "@openmonitor/db";
 import { env } from "./env";
 
 const BATCH_SIZE = 5000;
@@ -61,7 +61,7 @@ export async function runRetentionSweep(): Promise<RetentionRunResult> {
         )
         DELETE FROM monitor_runs WHERE id IN (SELECT id FROM victims)
       `);
-      const deleted = (result as unknown as { count?: number }).count ?? 0;
+      const deleted = affected(result);
       monitorRunsDeleted += deleted;
       if (deleted < BATCH_SIZE) break;
     }
@@ -75,7 +75,7 @@ export async function runRetentionSweep(): Promise<RetentionRunResult> {
         )
         DELETE FROM events WHERE id IN (SELECT id FROM victims)
       `);
-      const deleted = (result as unknown as { count?: number }).count ?? 0;
+      const deleted = affected(result);
       eventsDeleted += deleted;
       if (deleted < BATCH_SIZE) break;
     }

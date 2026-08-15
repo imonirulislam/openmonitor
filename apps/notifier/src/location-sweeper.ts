@@ -1,4 +1,4 @@
-import { db, eq, schema, sql } from "@openmonitor/db";
+import { db, eq, rows, schema, sql } from "@openmonitor/db";
 
 /**
  * Probe-location sweeper. Emits `location.silent` when an enabled location has
@@ -27,7 +27,13 @@ export async function sweepProbeLocations(
 ): Promise<{ silenced: number; recovered: number }> {
   const conn = db();
 
-  const gone = (await conn.execute(sql`
+  const gone = rows<{
+    id: string;
+    name: string;
+    region: string;
+    last_seen_at: string | Date;
+  }>(
+    await conn.execute(sql`
     with thresholds as (
       select
         p.id,
@@ -44,12 +50,8 @@ export async function sweepProbeLocations(
       and p.silent_alerted_at is null
       and p.last_seen_at is not null
       and p.last_seen_at < now() - t.silent_after * INTERVAL '1 second'
-  `)) as unknown as Array<{
-    id: string;
-    name: string;
-    region: string;
-    last_seen_at: string | Date;
-  }>;
+  `),
+  );
 
   let silenced = 0;
   for (const row of gone) {
@@ -100,7 +102,14 @@ export async function sweepProbeLocations(
     });
   }
 
-  const back = (await conn.execute(sql`
+  const back = rows<{
+    id: string;
+    name: string;
+    region: string;
+    last_seen_at: string | Date;
+    silent_alerted_at: string | Date;
+  }>(
+    await conn.execute(sql`
     with thresholds as (
       select
         p.id,
@@ -116,13 +125,8 @@ export async function sweepProbeLocations(
     where p.silent_alerted_at is not null
       and p.last_seen_at is not null
       and p.last_seen_at >= now() - t.silent_after * INTERVAL '1 second'
-  `)) as unknown as Array<{
-    id: string;
-    name: string;
-    region: string;
-    last_seen_at: string | Date;
-    silent_alerted_at: string | Date;
-  }>;
+  `),
+  );
 
   let recovered = 0;
   for (const row of back) {

@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: open-monitor-postgres
     restart: unless-stopped
     environment:
@@ -17,6 +17,25 @@ services:
       timeout: 5s
       retries: 10
 
+  # Neon's WebSocket-to-TCP shim. @neondatabase/serverless only speaks the
+  # Postgres protocol over a WebSocket, which plain Postgres can't terminate;
+  # this unwraps it. Production talks to Neon directly and leaves NEON_WS_PROXY
+  # unset, so the only difference between here and there is one env var.
+  wsproxy:
+    image: ghcr.io/neondatabase/wsproxy:latest
+    container_name: open-monitor-wsproxy
+    restart: unless-stopped
+    environment:
+      APPEND_PORT: "postgres:5432"
+      ALLOW_ADDR_REGEX: ".*"
+    # Published so `bun run dev` on the host reaches it too, the same way it
+    # reaches Postgres on 5433.
+    ports:
+      - "5434:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Applies migrations and installs the notify_monitor_changed() trigger function,
   # then exits. Every service that reads the schema waits for this to complete, so
   # `docker compose up` works on an empty volume with no manual step. Reuses the
@@ -29,10 +48,13 @@ services:
     restart: "no"
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      NEON_WS_PROXY: wsproxy:80
       NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
+      wsproxy:
+        condition: service_started
     working_dir: /repo/packages/db
     command: ["node_modules/.bin/tsx", "src/migrate.ts"]
 
@@ -48,6 +70,7 @@ services:
     restart: "no"
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      NEON_WS_PROXY: wsproxy:80
       PROBE_TOKEN: ${PROBE_TOKEN:-omp_dev_local_change_me}
       NODE_ENV: production
     depends_on:
@@ -64,12 +87,15 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      NEON_WS_PROXY: wsproxy:80
       PROBE_API_KEY: ${PROBE_API_KEY:-change-me-probe-key}
       PORT: "5002"
       NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
+      wsproxy:
+        condition: service_started
       migrate:
         condition: service_completed_successfully
     ports:
@@ -83,6 +109,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      NEON_WS_PROXY: wsproxy:80
       NODE_ENV: production
       POLL_INTERVAL_MS: "5000"
       HEARTBEAT_SWEEP_MS: "${HEARTBEAT_SWEEP_MS:-30000}"
@@ -90,6 +117,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      wsproxy:
+        condition: service_started
       migrate:
         condition: service_completed_successfully
 
@@ -101,6 +130,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
+      NEON_WS_PROXY: wsproxy:80
       AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-32-byte-random-secret}
       AUTH_URL: http://localhost:5001
       API_URL: http://api:5002
@@ -109,6 +139,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      wsproxy:
+        condition: service_started
       api:
         condition: service_started
       migrate:
@@ -141,13 +173,14 @@ services:
     container_name: open-monitor-checker
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       API_URL: http://api:5002
       PROBE_TOKEN: ${PROBE_TOKEN:-omp_dev_local_change_me}
       CHECKER_DEFAULT_TIMEOUT_MS: "10000"
     depends_on:
       postgres:
         condition: service_healthy
+      wsproxy:
+        condition: service_started
       api:
         condition: service_started
       migrate:

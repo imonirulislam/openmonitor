@@ -1,4 +1,4 @@
-import { and, db, eq, inArray, schema, sql } from "@openmonitor/db";
+import { and, db, eq, inArray, rows, schema, sql } from "@openmonitor/db";
 import { renderSlackMessage, sendSlack } from "@openmonitor/notifications";
 
 const MAX_ATTEMPTS = 6;
@@ -14,7 +14,7 @@ export async function processBatch(): Promise<{ processed: number; failed: numbe
   // Claim a batch of pending events ready to attempt. SKIP LOCKED keeps multiple notifier
   // replicas safe; pushing next_attempt_at forward means a crashed worker's events become
   // available again after the holding window without needing a separate "in_flight" status.
-  // Use Postgres now() rather than passing a JS Date — postgres-js' raw sql.execute path
+  // Use Postgres now() rather than passing a JS Date — the driver's raw sql.execute path
   // doesn't bind Date objects.
   const claimed = await conn.execute(sql`
     update events
@@ -30,17 +30,17 @@ export async function processBatch(): Promise<{ processed: number; failed: numbe
     returning *
   `);
 
-  const rows = claimed as unknown as Array<{
+  const claimedRows = rows<{
     id: string;
     type: string;
     payload: Record<string, unknown>;
     attempts: number;
-  }>;
+  }>(claimed);
 
   let processed = 0;
   let failed = 0;
 
-  for (const event of rows) {
+  for (const event of claimedRows) {
     const payload = event.payload;
     const monitorId = (payload.monitor as { id?: string } | undefined)?.id;
     const incidentMonitorIds = Array.isArray(payload.monitorIds)

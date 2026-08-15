@@ -1,4 +1,4 @@
-import { db, eq, schema, sql } from "@openmonitor/db";
+import { db, eq, rows, schema, sql } from "@openmonitor/db";
 
 /**
  * Heartbeat sweeper. For each enabled push-based monitor, flips status to
@@ -28,15 +28,15 @@ export async function sweepHeartbeats(): Promise<{ tripped: number }> {
       ) < now()
   `);
 
-  const rows = overdue as unknown as Array<{
+  const overdueRows = rows<{
     id: string;
     workspace_id: string;
     slug: string;
     name: string;
-  }>;
+  }>(overdue);
 
   let tripped = 0;
-  for (const r of rows) {
+  for (const r of overdueRows) {
     await conn.transaction(async (tx) => {
       await tx
         .update(schema.heartbeatMonitors)

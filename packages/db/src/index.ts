@@ -15,6 +15,7 @@ export {
 export * from "./assertions";
 export * from "./client";
 export * from "./probe-token";
+export * from "./raw";
 export * from "./region-status";
 export * as schema from "./schema";
 export * from "./types";

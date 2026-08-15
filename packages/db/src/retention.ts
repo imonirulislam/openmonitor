@@ -11,9 +11,11 @@
  * minutes — Postgres holds row locks for the duration of the DELETE.
  */
 import "./load-env";
+import { Pool } from "@neondatabase/serverless";
 import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { configureNeon } from "./neon";
+import { affected } from "./raw";
 import * as schema from "./schema";
 
 const BATCH_SIZE = 5000;
@@ -25,8 +27,9 @@ async function main() {
   const runDays = Number(process.env.RETENTION_RUN_DAYS ?? 180);
   const eventDays = Number(process.env.RETENTION_EVENT_DAYS ?? 90);
 
-  const client = postgres(url, { max: 1 });
-  const db = drizzle(client, { schema, casing: "snake_case" });
+  configureNeon();
+  const pool = new Pool({ connectionString: url, max: 1 });
+  const db = drizzle(pool, { schema, casing: "snake_case" });
 
   console.log(`Retention sweep: monitor_runs > ${runDays}d, sent events > ${eventDays}d`);
 
@@ -40,7 +43,7 @@ async function main() {
       )
       DELETE FROM monitor_runs WHERE id IN (SELECT id FROM victims)
     `);
-    const deleted = (result as unknown as { count?: number }).count ?? 0;
+    const deleted = affected(result);
     totalRuns += deleted;
     if (deleted < BATCH_SIZE) break;
   }
@@ -57,13 +60,13 @@ async function main() {
       )
       DELETE FROM events WHERE id IN (SELECT id FROM victims)
     `);
-    const deleted = (result as unknown as { count?: number }).count ?? 0;
+    const deleted = affected(result);
     totalEvents += deleted;
     if (deleted < BATCH_SIZE) break;
   }
   console.log(`events: deleted ${totalEvents} rows`);
 
-  await client.end();
+  await pool.end();
 }
 
 main().catch((err) => {

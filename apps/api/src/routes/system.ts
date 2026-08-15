@@ -1,4 +1,4 @@
-import { db, schema, sql } from "@openmonitor/db";
+import { db, rows, schema, sql } from "@openmonitor/db";
 import { Hono } from "hono";
 import { env } from "../env";
 import { apiKeyAuth } from "../middleware/api-key";
@@ -24,14 +24,12 @@ systemRoutes.get("/v1/system/scheduler", async (c) => {
       (SELECT count(*) FROM events WHERE status = 'pending') AS events_pending,
       (SELECT count(*) FROM events WHERE status = 'failed') AS events_failed
   `);
-  const row = (
-    counts as unknown as Array<{
-      monitor_runs: string;
-      events: string;
-      events_pending: string;
-      events_failed: string;
-    }>
-  )[0];
+  const row = rows<{
+    monitor_runs: string;
+    events: string;
+    events_pending: string;
+    events_failed: string;
+  }>(counts)[0];
   return c.json({
     retention: getRetentionStatus(),
     counts: row

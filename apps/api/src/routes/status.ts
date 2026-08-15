@@ -5,7 +5,7 @@ import rrulePkg from "rrule";
 
 const { rrulestr } = rrulePkg as unknown as typeof import("rrule");
 
-import { and, asc, db, desc, eq, gte, inArray, schema, sql } from "@openmonitor/db";
+import { and, asc, db, desc, eq, gte, inArray, rows, schema, sql } from "@openmonitor/db";
 import { resolveStatusPage } from "../lib/resolve-page";
 import { verifyUnlockToken } from "../lib/unlock-token";
 
@@ -538,7 +538,7 @@ statusRoutes.get("/v1/monitors/:slug/history", async (c) => {
     });
   }
 
-  const out = (result as unknown as Row[]).map((r) => {
+  const out = rows<Row>(result).map((r) => {
     const failed = r.degraded + r.down;
     const events = eventsForDay(r.date);
     if (r.total === 0) {
