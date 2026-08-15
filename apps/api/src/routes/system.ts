@@ -12,7 +12,7 @@ import { getRetentionStatus, runRetentionSweep } from "../scheduler";
  */
 export const systemRoutes = new Hono();
 
-systemRoutes.use("/v1/system/*", apiKeyAuth(env.PROBE_API_KEY));
+systemRoutes.use("/v1/system/*", apiKeyAuth([env.PROBE_API_KEY, env.CRON_SECRET]));
 
 /** Returns retention scheduler config + last-run summary + db row counts. */
 systemRoutes.get("/v1/system/scheduler", async (c) => {
@@ -31,7 +31,7 @@ systemRoutes.get("/v1/system/scheduler", async (c) => {
     events_failed: string;
   }>(counts)[0];
   return c.json({
-    retention: getRetentionStatus(),
+    retention: await getRetentionStatus(),
     counts: row
       ? {
           monitorRuns: Number(row.monitor_runs),

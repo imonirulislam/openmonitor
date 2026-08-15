@@ -25,6 +25,7 @@ docker compose --profile seed up seed    # demo monitors + admin user
 | Admin | http://localhost:5001 |
 | API | http://localhost:5002 |
 | Public status page | http://localhost:5003 |
+| Notifier (health + cron) | http://localhost:5004 |
 | Postgres | localhost:5433 |
 
 Seeded login: `admin@openmonitor.local` / `changeme`.

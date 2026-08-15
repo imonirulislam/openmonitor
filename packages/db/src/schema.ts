@@ -896,6 +896,39 @@ export const maintenanceMonitorsRelations = relations(maintenanceMonitors, ({ on
   }),
 }));
 
+// ---------------------------------------------------------------------------
+// Scheduled tasks
+// ---------------------------------------------------------------------------
+
+export const scheduledTaskStatusEnum = pgEnum("scheduled_task_status", ["ok", "error"]);
+
+/**
+ * Last-run bookkeeping for background sweeps.
+ *
+ * These used to live in module-level variables in the API process, which was
+ * fine while the API was a long-running container that owned the timer. Under
+ * cron-triggered invocations there is no process to hold them: every request
+ * starts cold, so "when did retention last run" has to be durable or it reads
+ * as "never" forever.
+ *
+ * `name` is the primary key rather than a surrogate uuid. There is exactly one
+ * row per task and handlers upsert by name, so a uuid would need a unique(name)
+ * beside it and make the conflict target indirect for no gain.
+ */
+export const scheduledTaskRuns = pgTable("scheduled_task_runs", {
+  name: varchar("name", { length: 64 }).primaryKey(),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }).notNull().defaultNow(),
+  lastStatus: scheduledTaskStatusEnum("last_status").notNull(),
+  lastDurationMs: integer("last_duration_ms").notNull(),
+  // Null on success. Kept so an operator can see why a sweep stopped working
+  // without going to the logs of a container that no longer exists.
+  lastError: text("last_error"),
+  // Whatever the task counted — rows deleted, events drained. Shape is the
+  // task's own business, so it stays loose.
+  lastResult: jsonb("last_result").$type<Record<string, number>>(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const notificationChannelsRelations = relations(notificationChannels, ({ many }) => ({
   monitors: many(monitorChannels),
 }));

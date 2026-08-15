@@ -78,11 +78,17 @@ Service ports:
 | web (admin) | 5001                           |
 | api         | 5002                           |
 | status-page | 5003                           |
+| notifier    | 5004                           |
 | postgres    | 5433 (host) → 5432 (container) |
+| wsproxy     | 5434 (host) → 80 (container)   |
 
 Postgres is published on host port **5433** so it doesn't collide with a Postgres you
 may already run locally on 5432. Inside the Compose network the services still talk to
 `postgres:5432`.
+
+`wsproxy` is Neon's WebSocket-to-TCP shim. The app talks to Postgres with
+`@neondatabase/serverless`, which only speaks the Postgres protocol over a WebSocket;
+the proxy unwraps it locally so development runs the same driver as production.
 
 Default seeded admin: `admin@openmonitor.local` / `changeme`.
 

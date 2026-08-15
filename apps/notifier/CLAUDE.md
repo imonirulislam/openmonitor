@@ -1,7 +1,33 @@
 # apps/notifier — Outbox consumer
 
-Polls the `events` table, dispatches Slack messages to subscribed channels, retries on
+Drains the `events` table, dispatches Slack messages to subscribed channels, retries on
 transient failures, gives up after `MAX_ATTEMPTS`.
+
+## Two ways to drive it
+
+The same functions run either way; only the trigger differs.
+
+- **`NOTIFIER_POLL=on`** (default) — the loop in `src/index.ts` paces itself. Right for a
+  container that stays up: docker compose, Fly.
+- **`NOTIFIER_POLL=off`** — nothing is resident to hold a timer, so an external scheduler
+  POSTs the endpoints below. Right for serverless.
+
+| Method | Path           | Auth          | Purpose |
+|--------|----------------|---------------|---------|
+| GET    | `/health`      | none          | Platform health check |
+| POST   | `/cron/drain`  | `CRON_SECRET` | One outbox batch |
+| POST   | `/cron/sweep`  | `CRON_SECRET` | Heartbeats + probe locations |
+
+`CRON_SECRET` unset means `/cron/*` refuses everything — an open drain endpoint lets anyone
+burn the retry budget on every pending event.
+
+Both endpoints are safe to call concurrently, and safe to call while the loop is running:
+the claim uses `FOR UPDATE SKIP LOCKED` and the sweeps are guarded by `silent_alerted_at` /
+`current_status`, so overlapping invocations do less work rather than duplicate work. Running
+both modes at once still wastes effort, so pick one per deployment.
+
+Outcomes are recorded in `scheduled_task_runs` (`notifier.drain`, `notifier.sweep`) because a
+cron invocation is gone by the time anyone asks how it went.
 
 ## Behavior
 

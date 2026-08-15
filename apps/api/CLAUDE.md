@@ -13,6 +13,13 @@ inbound Slack webhooks.
 | GET    | `/v1/probes/monitors`             | `PROBE_API_KEY` | Checker pulls the list of enabled monitors |
 | POST   | `/v1/probes/results`              | `PROBE_API_KEY` | Checker posts probe results |
 | POST   | `/webhooks/slack`                 | Slack signing (TODO) | Slash commands / events |
+| GET    | `/v1/system/scheduler`            | `PROBE_API_KEY` or `CRON_SECRET` | Retention config + last run + row counts |
+| POST   | `/v1/system/scheduler/run`        | `PROBE_API_KEY` or `CRON_SECRET` | Run a retention sweep now |
+| GET    | `/v1/system/checker`              | `PROBE_API_KEY` or `CRON_SECRET` | Checker freshness telemetry |
+
+`/v1/system/*` takes two keys because it has two callers with separate lifecycles: the
+dashboard's System page uses `PROBE_API_KEY`, and a hosted scheduler sends `CRON_SECRET`
+(Vercel Cron attaches that header itself and can't be told to send anything else).
 
 ## Conventions
 
@@ -33,6 +40,17 @@ inbound Slack webhooks.
 3. If it writes data, do the write in a `db().transaction(...)` block and emit any events in
    the same transaction.
 4. If it accepts input, validate with `@hono/zod-validator` — never trust the request body.
+
+## Retention
+
+`src/scheduler.ts` holds both the sweep and an in-process daily timer. The timer is opt-out
+via `RETENTION_ENABLED=off` — turn it off wherever external cron drives
+`/v1/system/scheduler/run`, and on a multi-replica deployment, or every replica sweeps.
+
+Last-run state lives in `scheduled_task_runs`, not module scope. Under cron every invocation
+starts cold, and an in-memory `lastRun` would report "never" forever on a deployment that
+sweeps correctly every night. `nextRunAt` is derived from the clock rather than a resident
+timer, so it's right whether or not this process is the one that will run it.
 
 ## Environment
 

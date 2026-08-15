@@ -1,20 +1,28 @@
 /**
- * Internal daily scheduler that sweeps `monitor_runs` and `events` once per
- * day at `env.RETENTION_AT_UTC`. Mirrors the logic in
- * `packages/db/src/retention.ts` so both run the same SQL — the standalone
- * script remains usable for one-shot/manual runs from cron, and the API
- * can act as the scheduler in deployments without external cron.
+ * Retention sweep for `monitor_runs` and `events`, plus the in-process timer
+ * that fires it daily at `env.RETENTION_AT_UTC`.
  *
- * State is persisted in-memory only: on cold start we run the sweep
- * immediately if the last run is older than today's scheduled time, and
- * thereafter on a setTimeout chain. A multi-replica deployment should
- * still favor an external cron (only one runs to avoid duplicate work),
- * which is why this is opt-out via RETENTION_ENABLED=off.
+ * There are two ways to drive it, because there are two ways to deploy:
+ *
+ * - **Long-running container** — the timer below owns the schedule. Opt out
+ *   with RETENTION_ENABLED=off if you have external cron, since a multi-replica
+ *   deployment would otherwise sweep once per replica.
+ * - **Serverless** — nothing stays resident to hold a timer, so an external
+ *   scheduler POSTs `/v1/system/scheduler/run` instead. Set RETENTION_ENABLED=off
+ *   there; the sweep itself is identical either way.
+ *
+ * Last-run state lives in `scheduled_task_runs`, not in module scope. Under
+ * cron every invocation starts cold, and an in-memory `lastRun` would report
+ * "never" indefinitely on a deployment sweeping correctly every night.
+ *
+ * Mirrors the SQL in `packages/db/src/retention.ts`, kept in sync by hand so the
+ * standalone script stays runnable from a release container without the API.
  */
-import { affected, db, sql } from "@openmonitor/db";
+import { affected, db, getTaskRun, runTracked, sql } from "@openmonitor/db";
 import { env } from "./env";
 
 const BATCH_SIZE = 5000;
+export const RETENTION_TASK = "retention";
 
 export type RetentionRunResult = {
   startedAt: string;
@@ -25,19 +33,28 @@ export type RetentionRunResult = {
   error?: string;
 };
 
-let lastRun: RetentionRunResult | null = null;
-let nextRunAt: Date | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-/** Snapshot of scheduler state for the /v1/system/scheduler endpoint. */
-export function getRetentionStatus() {
+/** Scheduler config plus the durable last-run record. */
+export async function getRetentionStatus() {
+  const run = await getTaskRun(db(), RETENTION_TASK);
   return {
     enabled: env.RETENTION_ENABLED === "on",
     runDays: env.RETENTION_RUN_DAYS,
     eventDays: env.RETENTION_EVENT_DAYS,
     atUtc: env.RETENTION_AT_UTC,
-    lastRun,
-    nextRunAt: nextRunAt?.toISOString() ?? null,
+    lastRun: run
+      ? {
+          finishedAt: run.lastRunAt.toISOString(),
+          durationMs: run.lastDurationMs,
+          monitorRunsDeleted: run.lastResult?.monitorRunsDeleted ?? 0,
+          eventsDeleted: run.lastResult?.eventsDeleted ?? 0,
+          error: run.lastError ?? undefined,
+        }
+      : null,
+    // Derived from the clock, not from a resident timer — correct whether or
+    // not this process is the one that will run it.
+    nextRunAt: nextFireAt(new Date()).toISOString(),
   };
 }
 
@@ -50,8 +67,14 @@ export async function runRetentionSweep(): Promise<RetentionRunResult> {
   const startedAt = new Date();
   let monitorRunsDeleted = 0;
   let eventsDeleted = 0;
-  try {
+
+  // runTracked times the sweep, writes the outcome to scheduled_task_runs and
+  // swallows the error. A cron endpoint that 500s just gets retried against
+  // whatever broke; the next scheduled tick is the better recovery, and the
+  // failure is still visible on the System page.
+  const outcome = await runTracked(db(), RETENTION_TASK, async () => {
     const conn = db();
+    // Batched so a multi-million-row sweep doesn't hold locks for minutes.
     while (true) {
       const result = await conn.execute(sql`
         WITH victims AS (
@@ -79,33 +102,23 @@ export async function runRetentionSweep(): Promise<RetentionRunResult> {
       eventsDeleted += deleted;
       if (deleted < BATCH_SIZE) break;
     }
-    const finishedAt = new Date();
-    const result: RetentionRunResult = {
-      startedAt: startedAt.toISOString(),
-      finishedAt: finishedAt.toISOString(),
-      monitorRunsDeleted,
-      eventsDeleted,
-    };
-    lastRun = result;
+    return { monitorRunsDeleted, eventsDeleted };
+  });
+
+  const finishedAt = new Date();
+  if (outcome.ok) {
     console.log(
       `retention: monitor_runs=${monitorRunsDeleted}, events=${eventsDeleted} ` +
         `(${finishedAt.getTime() - startedAt.getTime()}ms)`,
     );
-    return result;
-  } catch (err) {
-    const finishedAt = new Date();
-    const message = err instanceof Error ? err.message : String(err);
-    const result: RetentionRunResult = {
-      startedAt: startedAt.toISOString(),
-      finishedAt: finishedAt.toISOString(),
-      monitorRunsDeleted,
-      eventsDeleted,
-      error: message,
-    };
-    lastRun = result;
-    console.error("retention sweep failed:", message);
-    return result;
   }
+  return {
+    startedAt: startedAt.toISOString(),
+    finishedAt: finishedAt.toISOString(),
+    monitorRunsDeleted,
+    eventsDeleted,
+    ...(outcome.ok ? {} : { error: outcome.error }),
+  };
 }
 
 /** Compute the next firing time at HH:MM UTC, on or after `now`. */
@@ -133,13 +146,12 @@ export function startRetentionScheduler() {
 
   const schedule = () => {
     const now = new Date();
-    nextRunAt = nextFireAt(now);
-    const delay = nextRunAt.getTime() - now.getTime();
+    const fireAt = nextFireAt(now);
     timer = setTimeout(async () => {
       await runRetentionSweep();
       schedule();
-    }, delay);
-    console.log(`retention scheduler: next run at ${nextRunAt.toISOString()}`);
+    }, fireAt.getTime() - now.getTime());
+    console.log(`retention scheduler: next run at ${fireAt.toISOString()}`);
   };
   schedule();
 

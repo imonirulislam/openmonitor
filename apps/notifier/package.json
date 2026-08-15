@@ -5,16 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "echo 'no build step \u2014 runtime is tsx; typecheck runs separately'",
+    "build": "echo 'no build step — runtime is tsx; typecheck runs separately'",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint:types": "tsgolint --tsconfig tsconfig.json"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.1",
     "@openmonitor/db": "workspace:*",
     "@openmonitor/notifications": "workspace:*",
     "dotenv": "^16.4.5",
-    "tsx": "^4.19.0"
+    "hono": "^4.13.2",
+    "tsx": "^4.19.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@openmonitor/tsconfig": "workspace:*",

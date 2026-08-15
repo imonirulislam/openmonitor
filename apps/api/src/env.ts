@@ -6,6 +6,13 @@ const schema = z.object({
   // Used to sign status-page unlock tokens. Must match between API and the
   // status-page front-end (which calls /v1/pages/unlock to mint tokens).
   PAGE_UNLOCK_SECRET: z.string().min(16).default("change-me-in-production-please"),
+  /**
+   * Accepted alongside PROBE_API_KEY on /v1/system/*, for a hosted scheduler
+   * that sends its own secret. Vercel Cron attaches
+   * `Authorization: Bearer $CRON_SECRET` and can't be told to send anything
+   * else. Unset means only PROBE_API_KEY works.
+   */
+  CRON_SECRET: z.string().min(16).optional(),
   // Slack app signing secret for /webhooks/slack signature verification.
   // Optional — when unset, the endpoint rejects all requests.
   SLACK_SIGNING_SECRET: z.string().optional(),

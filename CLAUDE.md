@@ -44,7 +44,7 @@ Slack-only notifications, Postgres single-tenant.
 | `apps/web` | Next.js 15 + Auth.js | Admin login, monitor/incident/maintenance/channel CRUD. **All admin writes happen here.** |
 | `apps/status-page` | Next.js 15 | Public status page. Read-only. Calls `apps/api` only. |
 | `apps/api` | Hono | Public read endpoints, probe ingestion (bearer-auth), Slack inbound webhook |
-| `apps/notifier` | Hono worker | Polls `events` outbox, dispatches Slack messages, retries with backoff |
+| `apps/notifier` | Hono worker | Drains `events` outbox, dispatches Slack messages, retries with backoff. Self-paced loop or cron-driven via `/cron/*` — see its CLAUDE.md |
 | `apps/checker` | Go (stdlib) | Pulls monitor list from API, runs HTTP probes, posts results back |
 
 ## The six packages
