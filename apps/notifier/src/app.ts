@@ -35,8 +35,14 @@ export function createApp() {
     await next();
   });
 
-  /** One outbox batch. Cron this at your shortest acceptable alert latency. */
-  app.post("/cron/drain", async (c) => {
+  /**
+   * One outbox batch. Call this at your shortest acceptable alert latency.
+   *
+   * GET as well as POST because hosted schedulers rarely let you choose the
+   * method — Vercel Cron always issues GET. It mutates, which a GET shouldn't,
+   * but the alternative is a second path doing the same thing.
+   */
+  app.on(["GET", "POST"], "/cron/drain", async (c) => {
     const outcome = await runTracked(db(), DRAIN_TASK, async () => {
       const { processed, failed } = await processBatch();
       return { processed, failed };
@@ -48,7 +54,7 @@ export function createApp() {
    * Heartbeats and probe locations. Slower cadence than the drain — both scan
    * every enabled row, and neither needs sub-minute resolution.
    */
-  app.post("/cron/sweep", async (c) => {
+  app.on(["GET", "POST"], "/cron/sweep", async (c) => {
     const outcome = await runTracked(db(), SWEEP_TASK, async () => {
       const { tripped } = await sweepHeartbeats();
       const { silenced, recovered } = await sweepProbeLocations(env.LOCATION_SILENT_GRACE_SECONDS);

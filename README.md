@@ -107,11 +107,18 @@ bun run db:studio    # drizzle-kit studio
 bun run gen          # turbo gen — scaffold monitors / packages / apps
 ```
 
-## Deployment (EKS)
+## Deployment
 
-Per-app Dockerfiles in `deploy/docker/`. Images install dependencies with Bun and run the
-apps on Node. Skeleton manifests in `deploy/k8s/` with TODO markers for your registry,
-ingress hosts, and secrets. See `deploy/k8s/README.md`.
+See [DEPLOYMENT.md](DEPLOYMENT.md). Every service runs either as a container or on Vercel,
+except `apps/checker` — TCP and DNS monitors need raw sockets and a chosen egress region, so
+it stays a container (Fly.io, or anywhere else that runs one).
+
+A typical low-cost setup is the two Next apps on Vercel, Postgres on Neon, and one small Fly
+machine per probe region.
+
+Per-app Dockerfiles live in `deploy/docker/`, a Fly template in `deploy/fly/`, and skeleton
+Kubernetes manifests in `deploy/k8s/` with TODO markers for your registry, ingress hosts and
+secrets — see `deploy/k8s/README.md`.
 
 ## Contributing
 

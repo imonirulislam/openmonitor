@@ -43,8 +43,13 @@ systemRoutes.get("/v1/system/scheduler", async (c) => {
   });
 });
 
-/** Trigger a retention sweep right now. Returns the run summary. */
-systemRoutes.post("/v1/system/scheduler/run", async (c) => {
+/**
+ * Trigger a retention sweep right now. Returns the run summary.
+ *
+ * GET as well as POST: the dashboard posts, but hosted schedulers issue GET and
+ * generally can't be told otherwise (Vercel Cron always does).
+ */
+systemRoutes.on(["GET", "POST"], "/v1/system/scheduler/run", async (c) => {
   const result = await runRetentionSweep();
   return c.json(result);
 });

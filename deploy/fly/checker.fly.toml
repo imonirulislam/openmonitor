@@ -1,0 +1,39 @@
+# Template for one probe location. Copy per region and edit `app` and
+# `primary_region` — one Fly app per region, because each location has its own
+# token and the server derives the region from it. A single app scaled across
+# regions would report every result under one location.
+#
+#   cp deploy/fly/checker.fly.toml deploy/fly/checker-fra.toml
+#   # edit app + primary_region, then from the repo root:
+#   fly launch --no-deploy --copy-config --config deploy/fly/checker-fra.toml
+#   fly secrets set PROBE_TOKEN=omp_… --config deploy/fly/checker-fra.toml
+#   fly deploy --config deploy/fly/checker-fra.toml
+#
+# Create the location in the dashboard first (Settings → Probe locations). The
+# token is shown once; that value is the PROBE_TOKEN secret here, and its
+# `region` is what results get attributed to.
+
+app = "openmonitor-checker-iad"
+primary_region = "iad"
+
+[build]
+  dockerfile = "../docker/checker.Dockerfile"
+
+[env]
+  API_URL = "https://api.openmonitor.app"
+  CHECKER_DEFAULT_TIMEOUT_MS = "10000"
+  # Deliberately no DATABASE_URL. Probes reach the database only through the
+  # API, so a remote region never holds database credentials — and the checker
+  # falls back to polling for its monitor list, which is the only mode that
+  # works away from the primary region anyway.
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpus = 1
+
+# No [http_service]: the checker dials out and serves nothing. Without one, Fly
+# has no traffic to autostop on, so pin the machine up — a stopped checker is a
+# region that silently reports nothing.
+[[restart]]
+  policy = "always"
