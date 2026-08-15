@@ -14,6 +14,15 @@ export type TaskRun = {
 export type TaskCounts = Record<string, number>;
 
 /**
+ * Task names. Shared constants because more than one entry point writes the
+ * same row — the retention sweep runs from the API's timer, from its cron
+ * endpoint, and from the standalone script, and all three have to agree on
+ * which row they're updating or the System page reports whichever ran last
+ * under whichever spelling.
+ */
+export const RETENTION_TASK = "retention";
+
+/**
  * Run a background sweep, time it, and record the outcome durably.
  *
  * Cron-triggered handlers have nowhere to keep this. The process that ran the

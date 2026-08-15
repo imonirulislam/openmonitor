@@ -63,7 +63,7 @@ Until someone rebuilds the snapshot chain, hand-write migrations:
    `when` a value greater than the previous entry (the hand-written ones step by 1000000).
 3. Apply with `bun run db:migrate`.
 4. **Test against an empty database**, not just your existing one — ordering bugs only show
-   up from scratch. `docker compose down -v && bun run db:migrate && bun run db:seed`.
+   up from scratch. `docker compose --profile seed down -v && bun run db:migrate && bun run db:seed`.
 
 Other rules:
 

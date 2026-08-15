@@ -90,6 +90,10 @@ production build path.
 ## Tearing down
 
 ```bash
-docker compose down            # stop, keep data
-docker compose down -v         # stop and wipe Postgres volume
+docker compose down                         # stop, keep data
+docker compose --profile seed down -v       # stop and wipe Postgres volume
 ```
+
+Include `--profile seed` when wiping. A plain `down` skips profile-gated services, leaving
+the `seed` container behind still attached to the network that just got deleted — the next
+`docker compose --profile seed up seed` then fails with `network ... not found`.

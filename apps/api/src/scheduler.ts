@@ -18,11 +18,10 @@
  * Mirrors the SQL in `packages/db/src/retention.ts`, kept in sync by hand so the
  * standalone script stays runnable from a release container without the API.
  */
-import { affected, db, getTaskRun, runTracked, sql } from "@openmonitor/db";
+import { affected, db, getTaskRun, RETENTION_TASK, runTracked, sql } from "@openmonitor/db";
 import { env } from "./env";
 
 const BATCH_SIZE = 5000;
-export const RETENTION_TASK = "retention";
 
 export type RetentionRunResult = {
   startedAt: string;

@@ -120,7 +120,7 @@ To add a migration:
    a value greater than the previous entry.
 3. `bun run db:migrate`.
 4. **Test from empty, not just against your existing database.** Ordering bugs only appear
-   on a fresh one: `docker compose down -v && bun run db:migrate && bun run db:seed`.
+   on a fresh one: `docker compose --profile seed down -v && bun run db:migrate && bun run db:seed`.
 
 Other rules:
 
