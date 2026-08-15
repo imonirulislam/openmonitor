@@ -151,29 +151,54 @@ export async function setProbeLocationEnabled(id: string, enabled: boolean) {
  * status stops counting a region that will never report again.
  */
 export async function deleteProbeLocation(id: string) {
-  const { session, location } = await requireMutableLocation(id);
+  const { location } = await requireMutableLocation(id);
 
   await db().transaction(async (tx) => {
+    // Which monitors this location covered, read before the delete — cascading
+    // the location away takes its assignment rows with it.
+    const covered = await tx
+      .select({ monitorId: schema.probeLocationMonitors.monitorId })
+      .from(schema.probeLocationMonitors)
+      .where(eq(schema.probeLocationMonitors.probeLocationId, id));
+    const coveredIds = covered.map((c) => c.monitorId);
+
     await tx.delete(schema.probeLocations).where(eq(schema.probeLocations.id, id));
+    if (coveredIds.length === 0) return;
+
     // monitor_region_status is keyed by region string, not by location id, so
     // cascade doesn't reach it. Left behind, the stale row keeps voting in the
     // reduction forever.
     //
-    // Scoped to this workspace's monitors: region names are not globally
-    // unique, so two workspaces can each have a "eu-west" and deleting one
-    // must not touch the other's rows.
+    // Scoping this to the caller's workspace would be wrong for a shared
+    // location, whose monitors span tenants — everyone else would keep a stale
+    // row. Scope to the monitors this location actually covered instead, minus
+    // any that another location still probes under the same region name, since
+    // those names aren't unique: a workspace's private "eu-west" has to survive
+    // the shared "eu-west" being removed.
+    const stillCovered = await tx
+      .select({ monitorId: schema.probeLocationMonitors.monitorId })
+      .from(schema.probeLocationMonitors)
+      .innerJoin(
+        schema.probeLocations,
+        eq(schema.probeLocations.id, schema.probeLocationMonitors.probeLocationId),
+      )
+      .where(
+        and(
+          eq(schema.probeLocations.region, location.region),
+          inArray(schema.probeLocationMonitors.monitorId, coveredIds),
+        ),
+      );
+
+    const keep = new Set(stillCovered.map((s) => s.monitorId));
+    const orphaned = coveredIds.filter((m) => !keep.has(m));
+    if (orphaned.length === 0) return;
+
     await tx
       .delete(schema.monitorRegionStatus)
       .where(
         and(
           eq(schema.monitorRegionStatus.region, location.region),
-          inArray(
-            schema.monitorRegionStatus.monitorId,
-            tx
-              .select({ id: schema.monitors.id })
-              .from(schema.monitors)
-              .where(eq(schema.monitors.workspaceId, session.user.workspaceId)),
-          ),
+          inArray(schema.monitorRegionStatus.monitorId, orphaned),
         ),
       );
   });
