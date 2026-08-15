@@ -11,7 +11,10 @@ import {
   FormCardTitle,
   Input,
   Label,
+  SectionDescription,
+  SectionHeader,
   SectionLabel,
+  SectionTitle,
   Select,
 } from "@openmonitor/ui";
 import { headers } from "next/headers";
@@ -56,6 +59,14 @@ export default async function MembersPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <SectionHeader>
+        <SectionTitle>Members</SectionTitle>
+        <SectionDescription>
+          Who can reach this workspace and what they're allowed to do. Invites expire after seven
+          days.
+        </SectionDescription>
+      </SectionHeader>
+
       {inviteUrl ? (
         <Card className="border-success/30 bg-success/5 p-4">
           <p className="font-medium text-sm">Invite link ready</p>
@@ -107,7 +118,7 @@ export default async function MembersPage({
       ) : null}
 
       <div className="flex flex-col gap-3">
-        <SectionLabel>Members ({members.length})</SectionLabel>
+        <SectionLabel>Current members ({members.length})</SectionLabel>
         <MembersTable
           rows={members.map((m) => ({
             userId: m.userId,

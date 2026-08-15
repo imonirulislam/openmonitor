@@ -11,6 +11,9 @@ import {
   Input,
   Label,
   LocalTime,
+  SectionDescription,
+  SectionHeader,
+  SectionTitle,
 } from "@openmonitor/ui";
 import { changeOwnPassword } from "~/lib/actions/users";
 import { getCurrentWorkspace } from "~/lib/workspace";
@@ -25,79 +28,87 @@ export default async function AccountSettingsPage() {
   if (!user) throw new Error("user not found");
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
-      <FormCard>
-        <FormCardHeader>
-          <FormCardTitle>Profile</FormCardTitle>
-          <FormCardDescription>Identity and current workspace role.</FormCardDescription>
-        </FormCardHeader>
-        <FormCardContent>
-          <dl className="grid grid-cols-3 gap-x-4 gap-y-3 text-sm">
-            <Detail label="Email" value={user.email} mono />
-            <Detail label="Name" value={user.name ?? "—"} />
-            <Detail label="Role here" value={ws.role} mono />
-            <Detail
-              label="Last login"
-              value={user.lastLoginAt ? <LocalTime date={user.lastLoginAt.toISOString()} /> : "—"}
-              mono
-            />
-            <Detail
-              label="Joined"
-              value={<LocalTime date={user.createdAt.toISOString()} format="LLL d, y" />}
-              mono
-            />
-          </dl>
-        </FormCardContent>
-      </FormCard>
+    <div className="flex flex-col gap-6">
+      <SectionHeader>
+        <SectionTitle>Account</SectionTitle>
+        <SectionDescription>
+          Your identity and password. These follow you across every workspace you belong to.
+        </SectionDescription>
+      </SectionHeader>
+      <div className="flex max-w-2xl flex-col gap-6">
+        <FormCard>
+          <FormCardHeader>
+            <FormCardTitle>Profile</FormCardTitle>
+            <FormCardDescription>Identity and current workspace role.</FormCardDescription>
+          </FormCardHeader>
+          <FormCardContent>
+            <dl className="grid grid-cols-3 gap-x-4 gap-y-3 text-sm">
+              <Detail label="Email" value={user.email} mono />
+              <Detail label="Name" value={user.name ?? "—"} />
+              <Detail label="Role here" value={ws.role} mono />
+              <Detail
+                label="Last login"
+                value={user.lastLoginAt ? <LocalTime date={user.lastLoginAt.toISOString()} /> : "—"}
+                mono
+              />
+              <Detail
+                label="Joined"
+                value={<LocalTime date={user.createdAt.toISOString()} format="LLL d, y" />}
+                mono
+              />
+            </dl>
+          </FormCardContent>
+        </FormCard>
 
-      <FormCard asForm action={changeOwnPassword}>
-        <FormCardHeader>
-          <FormCardTitle>Change password</FormCardTitle>
-          <FormCardDescription>
-            We don't store the new password in plaintext. Existing sessions stay valid.
-          </FormCardDescription>
-        </FormCardHeader>
-        <FormCardContent>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="currentPassword">Current password</Label>
-            <Input
-              id="currentPassword"
-              name="currentPassword"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        <FormCard asForm action={changeOwnPassword}>
+          <FormCardHeader>
+            <FormCardTitle>Change password</FormCardTitle>
+            <FormCardDescription>
+              We don't store the new password in plaintext. Existing sessions stay valid.
+            </FormCardDescription>
+          </FormCardHeader>
+          <FormCardContent>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="newPassword">New password</Label>
+              <Label htmlFor="currentPassword">Current password</Label>
               <Input
-                id="newPassword"
-                name="newPassword"
+                id="currentPassword"
+                name="currentPassword"
                 type="password"
-                autoComplete="new-password"
-                minLength={8}
+                autoComplete="current-password"
                 required
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="confirmPassword">Confirm</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                required
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="newPassword">New password</Label>
+                <Input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="confirmPassword">Confirm</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
+                />
+              </div>
             </div>
-          </div>
-        </FormCardContent>
-        <FormCardFooter>
-          <FormCardFooterInfo>Minimum 8 characters.</FormCardFooterInfo>
-          <Button type="submit">Update password</Button>
-        </FormCardFooter>
-      </FormCard>
+          </FormCardContent>
+          <FormCardFooter>
+            <FormCardFooterInfo>Minimum 8 characters.</FormCardFooterInfo>
+            <Button type="submit">Update password</Button>
+          </FormCardFooter>
+        </FormCard>
+      </div>
     </div>
   );
 }
