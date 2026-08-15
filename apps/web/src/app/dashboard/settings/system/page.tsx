@@ -5,6 +5,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  SectionDescription,
+  SectionHeader,
+  SectionTitle,
   Separator,
   withToastRedirect,
 } from "@openmonitor/ui";
@@ -90,12 +93,10 @@ export default async function SystemPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="font-medium text-base">System</h2>
-        <p className="mt-1 text-muted-foreground text-sm">
-          Internal scheduler and probe-checker telemetry.
-        </p>
-      </div>
+      <SectionHeader>
+        <SectionTitle>System</SectionTitle>
+        <SectionDescription>Internal scheduler and probe-checker telemetry.</SectionDescription>
+      </SectionHeader>
 
       {/* Retention card */}
       <Card>

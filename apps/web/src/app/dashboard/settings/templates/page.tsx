@@ -10,6 +10,7 @@ import {
   FormCardTitle,
   Input,
   Label,
+  SectionLabel,
   Textarea,
 } from "@openmonitor/ui";
 import { RowActionAction, RowActions } from "~/components/row-actions";
@@ -71,7 +72,7 @@ export default async function IncidentTemplatesPage() {
       </FormCard>
 
       <div className="flex flex-col gap-3">
-        <h2 className="font-medium text-sm tracking-tight">Saved templates</h2>
+        <SectionLabel>Saved templates</SectionLabel>
         {templates.length === 0 ? (
           <p className="text-muted-foreground text-sm">No templates yet. Create one above.</p>
         ) : (

@@ -7,6 +7,7 @@ import {
   MetricCardTitle,
   MetricCardValue,
   type MetricCardVariant,
+  SectionTitle,
   TimingPhasesChart,
 } from "@openmonitor/ui";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -248,7 +249,7 @@ export default async function OverviewPage({
 
       <section className="flex flex-col gap-4">
         <div>
-          <h2 className="font-medium text-base">Latency</h2>
+          <SectionTitle>Latency</SectionTitle>
           <p className="font-mono text-muted-foreground text-sm tracking-tight">
             Response time across all the regions
           </p>

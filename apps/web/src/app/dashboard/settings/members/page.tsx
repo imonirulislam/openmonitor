@@ -11,6 +11,7 @@ import {
   FormCardTitle,
   Input,
   Label,
+  SectionLabel,
   Select,
 } from "@openmonitor/ui";
 import { headers } from "next/headers";
@@ -106,7 +107,7 @@ export default async function MembersPage({
       ) : null}
 
       <div className="flex flex-col gap-3">
-        <h2 className="font-medium text-sm tracking-tight">Members ({members.length})</h2>
+        <SectionLabel>Members ({members.length})</SectionLabel>
         <MembersTable
           rows={members.map((m) => ({
             userId: m.userId,

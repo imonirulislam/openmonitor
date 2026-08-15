@@ -1,5 +1,5 @@
 import { db, desc, eq, schema } from "@openmonitor/db";
-import { Separator } from "@openmonitor/ui";
+import { SectionGroupTitle, Separator } from "@openmonitor/ui";
 import { IncidentsTable } from "~/components/incidents-table";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
@@ -20,7 +20,7 @@ export default async function IncidentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-xl tracking-tight">Incidents</h1>
+        <SectionGroupTitle>Incidents</SectionGroupTitle>
         <p className="mt-1 text-muted-foreground text-sm">
           Workspace-wide view. Open new reports from a status page's Status Reports tab.
         </p>

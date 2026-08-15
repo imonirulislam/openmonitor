@@ -1,14 +1,14 @@
-import { Card } from "@openmonitor/ui";
+import { Card, SectionDescription, SectionHeader, SectionTitle } from "@openmonitor/ui";
 
 export default function SubscribersTab() {
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="font-medium text-base">Subscribers</h2>
-        <p className="mt-0.5 text-muted-foreground text-sm">
+      <SectionHeader>
+        <SectionTitle>Subscribers</SectionTitle>
+        <SectionDescription>
           Email subscribers receive notifications when incidents or maintenance fire on this page.
-        </p>
-      </div>
+        </SectionDescription>
+      </SectionHeader>
       <Card className="p-8 text-center">
         <h3 className="font-semibold text-base">Subscribers coming soon</h3>
         <p className="mt-1 text-muted-foreground text-sm">

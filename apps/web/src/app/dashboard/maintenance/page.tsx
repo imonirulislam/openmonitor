@@ -10,6 +10,8 @@ import {
   Input,
   Label,
   LocalTime,
+  SectionGroupTitle,
+  SectionLabel,
   Separator,
   Textarea,
 } from "@openmonitor/ui";
@@ -31,7 +33,7 @@ export default async function MaintenancePage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-xl tracking-tight">Maintenance</h1>
+        <SectionGroupTitle>Maintenance</SectionGroupTitle>
         <p className="mt-1 text-muted-foreground text-sm">
           Schedule planned outages so customers know what to expect.
         </p>
@@ -86,7 +88,7 @@ export default async function MaintenancePage() {
       </Card>
 
       <div className="flex flex-col gap-3">
-        <h2 className="font-medium text-sm tracking-tight">Past and upcoming</h2>
+        <SectionLabel>Past and upcoming</SectionLabel>
         <ul className="flex flex-col gap-2">
           {maintenances.map((m) => (
             <li key={m.id}>

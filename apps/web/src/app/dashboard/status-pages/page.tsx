@@ -1,5 +1,5 @@
 import { db, desc, eq, schema } from "@openmonitor/db";
-import { Button, Card } from "@openmonitor/ui";
+import { Button, Card, SectionGroupTitle } from "@openmonitor/ui";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { StatusPagesTable } from "~/components/status-pages-table";
@@ -32,7 +32,7 @@ export default async function StatusPagesIndex() {
     <div className="flex flex-col gap-6">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-semibold text-xl tracking-tight">Status Pages</h1>
+          <SectionGroupTitle>Status Pages</SectionGroupTitle>
           <p className="mt-1 text-muted-foreground text-sm">Create and manage your status pages.</p>
         </div>
         <Button asChild size="sm">

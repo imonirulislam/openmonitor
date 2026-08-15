@@ -1,5 +1,5 @@
 import { db, desc, inArray, schema, sql } from "@openmonitor/db";
-import { Separator } from "@openmonitor/ui";
+import { SectionGroupTitle, Separator } from "@openmonitor/ui";
 import { AuditLogsTable, type AuditRow } from "~/components/audit-logs-table";
 
 const ROW_LIMIT = 2000;
@@ -69,7 +69,7 @@ export default async function AuditLogsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-xl tracking-tight">Audit logs</h1>
+        <SectionGroupTitle>Audit logs</SectionGroupTitle>
         <p className="mt-1 text-muted-foreground text-sm">
           All admin actions, immutable. Most recent first. Showing the latest{" "}
           <span className="font-mono">{rows.length.toLocaleString()}</span> of{" "}

@@ -1,5 +1,5 @@
 import { db, desc, eq, inArray, schema } from "@openmonitor/db";
-import { Card } from "@openmonitor/ui";
+import { Card, SectionDescription, SectionHeader, SectionTitle } from "@openmonitor/ui";
 import Link from "next/link";
 import { IncidentSheet } from "~/components/incident-sheet";
 import { StatusReportsTable } from "~/components/status-reports-table";
@@ -50,16 +50,16 @@ export default async function StatusReportsTab({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-medium text-base">Status reports</h2>
-          <p className="mt-0.5 text-muted-foreground text-sm">
+        <SectionHeader>
+          <SectionTitle>Status reports</SectionTitle>
+          <SectionDescription>
             Incidents affecting components on this page. Looking for{" "}
             <Link href={`/dashboard/status-pages/${id}/maintenances`} className="underline">
               maintenances
             </Link>
             ?
-          </p>
-        </div>
+          </SectionDescription>
+        </SectionHeader>
         <IncidentSheet action={createIncident} statusPageId={id} />
       </div>
 

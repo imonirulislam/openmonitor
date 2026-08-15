@@ -76,6 +76,7 @@ export {
   SectionGroupTitle,
   SectionHeader,
   SectionHeaderRow,
+  SectionLabel,
   SectionTitle,
 } from "./section";
 export {

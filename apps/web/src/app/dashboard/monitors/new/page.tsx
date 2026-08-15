@@ -1,4 +1,5 @@
 import { asc, db, eq, isNull, or, schema } from "@openmonitor/db";
+import { SectionGroupTitle } from "@openmonitor/ui";
 import { MonitorConfigForm, type ProbeLocationChoice } from "~/components/monitor-config-form";
 import { createMonitor } from "~/lib/actions/monitors";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
@@ -34,7 +35,7 @@ export default async function NewMonitorPage() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <header>
-        <h1 className="font-semibold text-xl tracking-tight">New monitor</h1>
+        <SectionGroupTitle>New monitor</SectionGroupTitle>
         <p className="mt-1 text-muted-foreground text-sm">
           Configure what to probe and where to probe it from. Response time and schedule are set on
           the monitor once created.

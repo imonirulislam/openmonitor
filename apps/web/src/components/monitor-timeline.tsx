@@ -1,5 +1,5 @@
 import { db, eq, schema, sql } from "@openmonitor/db";
-import { Card } from "@openmonitor/ui";
+import { Card, SectionTitle } from "@openmonitor/ui";
 import { MonitorTimelineTable, type TimelineRow } from "./monitor-timeline-table";
 
 /**
@@ -85,7 +85,7 @@ export async function MonitorTimeline({
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="font-medium text-base">Timeline</h2>
+        <SectionTitle>Timeline</SectionTitle>
         <p className="font-mono text-muted-foreground text-sm tracking-tight">
           What happened to your monitor over the last 30 days
         </p>

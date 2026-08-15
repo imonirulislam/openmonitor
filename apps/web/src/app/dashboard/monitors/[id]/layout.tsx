@@ -1,5 +1,5 @@
 import { and, db, eq, schema } from "@openmonitor/db";
-import { Badge, Separator } from "@openmonitor/ui";
+import { Badge, SectionGroupTitle, Separator } from "@openmonitor/ui";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -41,7 +41,7 @@ export default async function MonitorDetailLayout({
       </div>
       <header>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-semibold text-xl tracking-tight">{monitor.name}</h1>
+          <SectionGroupTitle>{monitor.name}</SectionGroupTitle>
           <Badge variant={STATUS_VARIANT[monitor.currentStatus]}>{monitor.currentStatus}</Badge>
           {!monitor.enabled ? <Badge variant="outline">disabled</Badge> : null}
         </div>

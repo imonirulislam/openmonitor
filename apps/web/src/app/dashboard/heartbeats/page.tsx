@@ -1,5 +1,5 @@
 import { db, desc, eq, schema } from "@openmonitor/db";
-import { Badge, Button, Card, LocalTime, Separator } from "@openmonitor/ui";
+import { Badge, Button, Card, LocalTime, SectionGroupTitle, Separator } from "@openmonitor/ui";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
@@ -16,7 +16,7 @@ export default async function HeartbeatsIndex() {
     <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="font-semibold text-xl tracking-tight">Heartbeats</h1>
+          <SectionGroupTitle>Heartbeats</SectionGroupTitle>
           <p className="mt-1 text-muted-foreground text-sm">
             Push-based monitors. Cron jobs hit a token URL on each run; we alert when pings stop.
           </p>

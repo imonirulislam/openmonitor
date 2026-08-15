@@ -12,6 +12,7 @@ import {
   Input,
   Label,
   LocalTime,
+  SectionGroupTitle,
   Textarea,
 } from "@openmonitor/ui";
 import { notFound } from "next/navigation";
@@ -41,7 +42,7 @@ export default async function HeartbeatEdit({ params }: { params: Promise<{ id: 
     <div className="flex max-w-2xl flex-col gap-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="font-semibold text-xl tracking-tight">{hb.name}</h1>
+          <SectionGroupTitle>{hb.name}</SectionGroupTitle>
           <p className="mt-1 font-mono text-muted-foreground text-xs">{hb.slug}</p>
         </div>
         <Badge

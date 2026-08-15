@@ -11,6 +11,9 @@ import {
   FormCardTitle,
   Input,
   Label,
+  SectionDescription,
+  SectionHeader,
+  SectionTitle,
 } from "@openmonitor/ui";
 import { CopyButton } from "~/components/copy-button";
 import {
@@ -84,15 +87,15 @@ export default async function ProbeLocationsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="font-medium text-base">Probe locations</h2>
-        <p className="mt-0.5 text-muted-foreground text-sm">
+      <SectionHeader>
+        <SectionTitle>Probe locations</SectionTitle>
+        <SectionDescription>
           Each location runs a checker and reports results under its own region. The token
           identifies the location, so a checker can't report as a region it isn't. Shared locations
           belong to this deployment and can be selected by any workspace; monitors choose their
           regions on the monitor form.
-        </p>
-      </div>
+        </SectionDescription>
+      </SectionHeader>
 
       {created && token ? (
         <Card className="border-primary/40 bg-primary/5 p-4">

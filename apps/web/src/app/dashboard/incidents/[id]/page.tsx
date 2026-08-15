@@ -8,6 +8,8 @@ import {
   CardTitle,
   LocalTime,
   MarkdownView,
+  SectionGroupTitle,
+  SectionLabel,
   Select,
   Separator,
   Textarea,
@@ -43,7 +45,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     <div className="flex flex-col gap-6">
       <header>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-semibold text-xl tracking-tight">{incident.title}</h1>
+          <SectionGroupTitle>{incident.title}</SectionGroupTitle>
           <IncidentSeverityBadge severity={incident.severity} />
           <IncidentStatusBadge status={incident.status} />
         </div>
@@ -72,7 +74,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
       <Separator />
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-medium text-sm tracking-tight">Timeline</h2>
+        <SectionLabel>Timeline</SectionLabel>
         <ol className="space-y-4 border-border border-l pl-4">
           {updates.map((u) => (
             <li key={u.id}>

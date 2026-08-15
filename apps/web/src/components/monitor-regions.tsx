@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, cn } from "@openmonitor/ui";
+import { Button, Card, cn, SectionTitle } from "@openmonitor/ui";
 import Link from "next/link";
 import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, YAxis } from "recharts";
@@ -64,7 +64,7 @@ export function MonitorRegions({
     return (
       <section className="flex flex-col gap-4">
         <div>
-          <h2 className="font-medium text-base">Regions</h2>
+          <SectionTitle>Regions</SectionTitle>
           <p className="font-mono text-muted-foreground text-sm tracking-tight">
             Every selected region's latency trend
           </p>
@@ -85,7 +85,7 @@ export function MonitorRegions({
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="font-medium text-base">Regions</h2>
+        <SectionTitle>Regions</SectionTitle>
         <p className="font-mono text-muted-foreground text-sm tracking-tight">
           Every selected region's latency trend
         </p>

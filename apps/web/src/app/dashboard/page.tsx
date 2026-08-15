@@ -1,5 +1,5 @@
 import { and, db, desc, eq, gte, schema } from "@openmonitor/db";
-import { SectionMetaTitle, Separator } from "@openmonitor/ui";
+import { SectionGroupTitle, SectionMetaTitle, Separator } from "@openmonitor/ui";
 import { ActivityIcon, HeartPulseIcon, PanelTopIcon, WrenchIcon, ZapIcon } from "lucide-react";
 import { OverviewStatCard } from "~/components/overview-cards";
 import { RecentIncidentsPanel, RecentMaintenancePanel } from "~/components/overview-panels";
@@ -64,7 +64,7 @@ export default async function OverviewPage() {
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl tracking-tight">Overview</h1>
+        <SectionGroupTitle>Overview</SectionGroupTitle>
         <p className="text-muted-foreground text-sm">Welcome to your dashboard.</p>
       </header>
 
