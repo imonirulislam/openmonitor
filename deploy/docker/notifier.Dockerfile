@@ -7,6 +7,7 @@ COPY package.json bun.lock* ./
 COPY turbo.json tsconfig.base.json ./
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY packages/db/package.json ./packages/db/
+COPY packages/clickhouse/package.json ./packages/clickhouse/
 COPY packages/notifications/package.json ./packages/notifications/
 COPY apps/notifier/package.json ./apps/notifier/
 # See web.Dockerfile for why the default isolated linker and no --frozen-lockfile.

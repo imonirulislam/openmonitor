@@ -1,4 +1,4 @@
-import { db, eq, schema, sql } from "@openmonitor/db";
+import { rows as chRows, db, eq, schema, sql } from "@openmonitor/db";
 import { Card, SectionTitle } from "@openmonitor/ui";
 import { MonitorTimelineTable, type TimelineRow } from "./monitor-timeline-table";
 
@@ -68,7 +68,7 @@ export async function MonitorTimeline({
       ORDER BY created_at DESC
       LIMIT 200
     `);
-    incidentEvents = rows as unknown as typeof incidentEvents;
+    incidentEvents = chRows<(typeof incidentEvents)[number]>(rows);
   }
 
   type RawEvent = {
@@ -77,7 +77,7 @@ export async function MonitorTimeline({
     payload: unknown;
     created_at: string | Date;
   };
-  const merged: TimelineRow[] = [...(monitorEvents as unknown as RawEvent[]), ...incidentEvents]
+  const merged: TimelineRow[] = [...chRows<RawEvent>(monitorEvents), ...incidentEvents]
     .map((row) => toTimelineRow(row))
     .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
     .slice(0, 200);

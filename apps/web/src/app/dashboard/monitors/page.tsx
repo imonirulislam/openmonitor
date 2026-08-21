@@ -1,4 +1,5 @@
-import { and, db, desc, eq, gte, inArray, schema, sql } from "@openmonitor/db";
+import { p95ByMonitor as p95Latency } from "@openmonitor/clickhouse";
+import { db, desc, eq, inArray, schema, sql } from "@openmonitor/db";
 import {
   Button,
   MetricCardButton,
@@ -84,46 +85,10 @@ export default async function MonitorsPage({
   // Per-monitor p95 latency over the last 24h. percentile_cont returns null
   // when the monitor has no successful samples in the window — we surface
   // null in the table cell.
-  const p95Rows =
-    monitorIds.length > 0
-      ? await conn
-          .select({
-            monitorId: schema.monitorRuns.monitorId,
-            p95: sql<
-              number | null
-            >`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-          })
-          .from(schema.monitorRuns)
-          .where(
-            and(
-              inArray(schema.monitorRuns.monitorId, monitorIds),
-              gte(schema.monitorRuns.checkedAt, since24h),
-            ),
-          )
-          .groupBy(schema.monitorRuns.monitorId)
-      : [];
-  const p95ByMonitor = new Map<string, number | null>();
-  for (const r of p95Rows) p95ByMonitor.set(r.monitorId, r.p95);
-
-  // Workspace-wide p95 for the metric card display.
-  const [globalP95Row] =
-    monitorIds.length > 0
-      ? await conn
-          .select({
-            p95: sql<
-              number | null
-            >`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-          })
-          .from(schema.monitorRuns)
-          .innerJoin(schema.monitors, eq(schema.monitors.id, schema.monitorRuns.monitorId))
-          .where(
-            and(
-              eq(schema.monitors.workspaceId, workspaceId),
-              gte(schema.monitorRuns.checkedAt, since24h),
-            ),
-          )
-      : [];
-  const globalP95 = globalP95Row?.p95 ?? null;
+  // One round trip for both the per-monitor column and the workspace-wide
+  // metric card. The overall figure is computed over every row rather than
+  // averaged from the per-monitor ones — a percentile of percentiles isn't one.
+  const { perMonitor: p95ByMonitor, overall: globalP95 } = await p95Latency(monitorIds, since24h);
 
   // Apply filter then sort.
   const filtered = activeStatus

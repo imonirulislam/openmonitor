@@ -17,6 +17,51 @@ services:
       timeout: 5s
       retries: 10
 
+  # Holds monitor_runs — the only table that grows with time. Measured on real
+  # data a probe result costs ~2 bytes here against ~326 in Postgres, which is
+  # what makes 90 days of history across several regions fit in a free-tier
+  # database. Everything relational stays in Postgres.
+  clickhouse:
+    image: clickhouse/clickhouse-server:24-alpine
+    container_name: open-monitor-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_SKIP_USER_SETUP: "1"
+    ports:
+      - "5435:8123"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      # 127.0.0.1, not localhost: inside the container that resolves to ::1
+      # first and the server only binds IPv4 here, so the check would fail
+      # against a server that is up and serving.
+      test: ["CMD-SHELL", "wget -qO- 127.0.0.1:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Browser for ClickHouse — tables, ad-hoc SQL, storage per column.
+  # Dev only: opt in with `docker compose --profile tools up ch-ui`, so a
+  # deployment never exposes an unauthenticated query console by accident.
+  ch-ui:
+    profiles: ["tools"]
+    image: ghcr.io/caioricciuti/ch-ui:latest
+    container_name: open-monitor-ch-ui
+    restart: unless-stopped
+    environment:
+      VITE_CLICKHOUSE_URL: http://localhost:5435
+      VITE_CLICKHOUSE_USER: default
+      VITE_CLICKHOUSE_PASS: ""
+    ports:
+      - "5436:5521"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
   # Neon's WebSocket-to-TCP shim. @neondatabase/serverless only speaks the
   # Postgres protocol over a WebSocket, which plain Postgres can't terminate;
   # this unwraps it. Production talks to Neon directly and leaves NEON_WS_PROXY
@@ -49,14 +94,24 @@ services:
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       NEON_WS_PROXY: wsproxy:80
+      CLICKHOUSE_URL: http://clickhouse:8123
       NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
+      clickhouse:
+        condition: service_healthy
       wsproxy:
         condition: service_started
-    working_dir: /repo/packages/db
-    command: ["node_modules/.bin/tsx", "src/migrate.ts"]
+    working_dir: /repo
+    # Both stores. Postgres runs its numbered migration chain; ClickHouse has a
+    # single append-only table applied with CREATE IF NOT EXISTS.
+    command:
+      - sh
+      - -c
+      - |
+        cd /repo/packages/db && node_modules/.bin/tsx src/migrate.ts
+        cd /repo/packages/clickhouse && node_modules/.bin/tsx src/migrate.ts
 
   # Demo data — opt in with: docker compose --profile seed up seed
   # Kept out of the default `up` so a real deployment never gets a known-password
@@ -71,6 +126,7 @@ services:
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       NEON_WS_PROXY: wsproxy:80
+      CLICKHOUSE_URL: http://clickhouse:8123
       PROBE_TOKEN: ${PROBE_TOKEN:-omp_dev_local_change_me}
       NODE_ENV: production
     depends_on:
@@ -88,12 +144,15 @@ services:
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       NEON_WS_PROXY: wsproxy:80
+      CLICKHOUSE_URL: http://clickhouse:8123
       PROBE_API_KEY: ${PROBE_API_KEY:-change-me-probe-key}
       CRON_SECRET: ${CRON_SECRET:-change-me-cron-secret-32-chars-min}
       PORT: "5002"
       NODE_ENV: production
     depends_on:
       postgres:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
       wsproxy:
         condition: service_started
@@ -111,6 +170,7 @@ services:
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       NEON_WS_PROXY: wsproxy:80
+      CLICKHOUSE_URL: http://clickhouse:8123
       NODE_ENV: production
       PORT: "5004"
       # Container deployment: this process paces itself. Set to "off" and drive
@@ -124,6 +184,8 @@ services:
       - "5004:5004"
     depends_on:
       postgres:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
       wsproxy:
         condition: service_started
@@ -139,6 +201,7 @@ services:
     environment:
       DATABASE_URL: postgres://openmonitor:openmonitor@postgres:5432/open_monitor
       NEON_WS_PROXY: wsproxy:80
+      CLICKHOUSE_URL: http://clickhouse:8123
       # Who may manage shared probe locations. Empty means nobody.
       OPERATOR_EMAILS: ${OPERATOR_EMAILS-admin@openmonitor.local}
       AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-32-byte-random-secret}
@@ -148,6 +211,8 @@ services:
       NODE_ENV: production
     depends_on:
       postgres:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
       wsproxy:
         condition: service_started
@@ -188,6 +253,8 @@ services:
       CHECKER_DEFAULT_TIMEOUT_MS: "10000"
     depends_on:
       postgres:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
       wsproxy:
         condition: service_started
@@ -286,3 +353,4 @@ services:
 
 volumes:
   postgres-data:
+  clickhouse-data:

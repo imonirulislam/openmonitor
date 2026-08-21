@@ -7,7 +7,6 @@ import type {
   incidentUpdates,
   maintenances,
   monitorRegionStatus,
-  monitorRuns,
   monitors,
   notificationChannels,
   probeLocationMonitors,
@@ -32,9 +31,6 @@ export type NewStatusPage = InferInsertModel<typeof statusPages>;
 
 export type Monitor = InferSelectModel<typeof monitors>;
 export type NewMonitor = InferInsertModel<typeof monitors>;
-
-export type MonitorRun = InferSelectModel<typeof monitorRuns>;
-export type NewMonitorRun = InferInsertModel<typeof monitorRuns>;
 
 export type MonitorRegionStatus = InferSelectModel<typeof monitorRegionStatus>;
 export type NewMonitorRegionStatus = InferInsertModel<typeof monitorRegionStatus>;

@@ -1,4 +1,5 @@
-import { and, db, eq, gte, schema, sql } from "@openmonitor/db";
+import { uptimeSince } from "@openmonitor/clickhouse";
+import { and, db, eq, schema } from "@openmonitor/db";
 import { type Context, Hono } from "hono";
 import { resolveStatusPage } from "../lib/resolve-page";
 
@@ -55,18 +56,7 @@ badgeRoutes.get("/v1/monitors/:slug/badge.svg", async (c) => {
 
   // Uptime over last 90d.
   const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  const [agg] = await conn
-    .select({
-      total: sql<number>`count(*)::int`,
-      ok: sql<number>`sum(case when status = 'up' then 1 else 0 end)::int`,
-    })
-    .from(schema.monitorRuns)
-    .where(
-      and(eq(schema.monitorRuns.monitorId, monitor.id), gte(schema.monitorRuns.checkedAt, since)),
-    );
-
-  const total = agg?.total ?? 0;
-  const ok = agg?.ok ?? 0;
+  const { total, ok } = await uptimeSince(monitor.id, since);
   if (total === 0) return svg(c, badgeSvg("uptime", "no data", "neutral"));
   const uptime = (ok / total) * 100;
   const tone = uptime >= 99.5 ? "good" : uptime >= 95 ? "warn" : "bad";

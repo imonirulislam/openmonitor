@@ -1,5 +1,5 @@
 /**
- * Retention sweep for `monitor_runs` and `events`, plus the in-process timer
+ * Retention sweep for the `events` outbox, plus the in-process timer
  * that fires it daily at `env.RETENTION_AT_UTC`.
  *
  * There are two ways to drive it, because there are two ways to deploy:
@@ -15,6 +15,10 @@
  * cron every invocation starts cold, and an in-memory `lastRun` would report
  * "never" indefinitely on a deployment sweeping correctly every night.
  *
+ * Probe results are no longer swept here — they live in ClickHouse, where
+ * retention is a TTL on the table. `RETENTION_RUN_DAYS` still names that
+ * window, but it is applied at DDL time by @openmonitor/clickhouse.
+ *
  * Mirrors the SQL in `packages/db/src/retention.ts`, kept in sync by hand so the
  * standalone script stays runnable from a release container without the API.
  */
@@ -26,7 +30,6 @@ const BATCH_SIZE = 5000;
 export type RetentionRunResult = {
   startedAt: string;
   finishedAt: string;
-  monitorRunsDeleted: number;
   eventsDeleted: number;
   /** Populated when the sweep failed; never thrown out of the scheduler. */
   error?: string;
@@ -46,7 +49,6 @@ export async function getRetentionStatus() {
       ? {
           finishedAt: run.lastRunAt.toISOString(),
           durationMs: run.lastDurationMs,
-          monitorRunsDeleted: run.lastResult?.monitorRunsDeleted ?? 0,
           eventsDeleted: run.lastResult?.eventsDeleted ?? 0,
           error: run.lastError ?? undefined,
         }
@@ -64,7 +66,6 @@ export async function getRetentionStatus() {
  */
 export async function runRetentionSweep(): Promise<RetentionRunResult> {
   const startedAt = new Date();
-  let monitorRunsDeleted = 0;
   let eventsDeleted = 0;
 
   // runTracked times the sweep, writes the outcome to scheduled_task_runs and
@@ -73,20 +74,7 @@ export async function runRetentionSweep(): Promise<RetentionRunResult> {
   // failure is still visible on the System page.
   const outcome = await runTracked(db(), RETENTION_TASK, async () => {
     const conn = db();
-    // Batched so a multi-million-row sweep doesn't hold locks for minutes.
-    while (true) {
-      const result = await conn.execute(sql`
-        WITH victims AS (
-          SELECT id FROM monitor_runs
-          WHERE checked_at < now() - (${env.RETENTION_RUN_DAYS}::int * INTERVAL '1 day')
-          LIMIT ${BATCH_SIZE}
-        )
-        DELETE FROM monitor_runs WHERE id IN (SELECT id FROM victims)
-      `);
-      const deleted = affected(result);
-      monitorRunsDeleted += deleted;
-      if (deleted < BATCH_SIZE) break;
-    }
+    // Batched so a large sweep doesn't hold locks for minutes.
     while (true) {
       const result = await conn.execute(sql`
         WITH victims AS (
@@ -101,20 +89,18 @@ export async function runRetentionSweep(): Promise<RetentionRunResult> {
       eventsDeleted += deleted;
       if (deleted < BATCH_SIZE) break;
     }
-    return { monitorRunsDeleted, eventsDeleted };
+    return { eventsDeleted };
   });
 
   const finishedAt = new Date();
   if (outcome.ok) {
     console.log(
-      `retention: monitor_runs=${monitorRunsDeleted}, events=${eventsDeleted} ` +
-        `(${finishedAt.getTime() - startedAt.getTime()}ms)`,
+      `retention: events=${eventsDeleted} (${finishedAt.getTime() - startedAt.getTime()}ms)`,
     );
   }
   return {
     startedAt: startedAt.toISOString(),
     finishedAt: finishedAt.toISOString(),
-    monitorRunsDeleted,
     eventsDeleted,
     ...(outcome.ok ? {} : { error: outcome.error }),
   };

@@ -1,7 +1,13 @@
 /**
- * Retention sweeper. Trims tables that grow without bound:
+ * Retention sweeper for the events outbox.
  *
- *   - monitor_runs older than RETENTION_RUN_DAYS (default 180)
+ * Probe results used to be swept here too. They live in ClickHouse now, where
+ * retention is a TTL on the table and expired parts are dropped during
+ * background merges — so `RETENTION_RUN_DAYS` is applied at DDL time by
+ * @openmonitor/clickhouse, not by this script.
+ *
+ * Trims what still grows without bound in Postgres:
+ *
  *   - events older than RETENTION_EVENT_DAYS (default 90) AND already 'sent'
  *
  * Idempotent. Run from cron, e.g.:
@@ -40,9 +46,8 @@ async function main() {
   const pool = new Pool({ connectionString: url, max: 1 });
   const db = drizzle(pool, { schema, casing: "snake_case" });
 
-  console.log(`Retention sweep: monitor_runs > ${runDays}d, sent events > ${eventDays}d`);
+  console.log(`Retention sweep: sent events > ${eventDays}d`);
 
-  let totalRuns = 0;
   let totalEvents = 0;
 
   // Recorded under the same task name the API uses. Whichever path actually
@@ -50,19 +55,6 @@ async function main() {
   // that swept fine but left the dashboard reporting "never" is exactly the
   // confusion the table exists to prevent.
   const outcome = await runTracked(db, RETENTION_TASK, async () => {
-    while (true) {
-      const result = await db.execute(sql`
-        WITH victims AS (
-          SELECT id FROM monitor_runs
-          WHERE checked_at < now() - (${runDays}::int * INTERVAL '1 day')
-          LIMIT ${BATCH_SIZE}
-        )
-        DELETE FROM monitor_runs WHERE id IN (SELECT id FROM victims)
-      `);
-      const deleted = affected(result);
-      totalRuns += deleted;
-      if (deleted < BATCH_SIZE) break;
-    }
     while (true) {
       const result = await db.execute(sql`
         WITH victims AS (
@@ -77,10 +69,9 @@ async function main() {
       totalEvents += deleted;
       if (deleted < BATCH_SIZE) break;
     }
-    return { monitorRunsDeleted: totalRuns, eventsDeleted: totalEvents };
+    return { eventsDeleted: totalEvents };
   });
 
-  console.log(`monitor_runs: deleted ${totalRuns} rows`);
   console.log(`events: deleted ${totalEvents} rows`);
 
   await pool.end();

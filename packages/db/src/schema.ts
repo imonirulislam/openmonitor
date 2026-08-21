@@ -366,58 +366,6 @@ export const monitors = pgTable(
   ],
 );
 
-export const monitorRuns = pgTable(
-  "monitor_runs",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    monitorId: uuid("monitor_id")
-      .notNull()
-      .references(() => monitors.id, { onDelete: "cascade" }),
-    // Denormalized for query speed — common case is "last 24h of runs for
-    // workspace X" without joining.
-    workspaceId: uuid("workspace_id")
-      .notNull()
-      .references(() => workspaces.id, { onDelete: "cascade" }),
-    status: monitorStatusEnum("status").notNull(),
-    statusCode: integer("status_code"),
-    latencyMs: integer("latency_ms"),
-    // Per-phase latencies captured by net/http/httptrace in the Go checker.
-    // All nullable — old rows + non-HTTP probes (heartbeat, future TCP/DNS)
-    // leave them null. For HTTP probes:
-    //   dns        : DNSDone - DNSStart  (0 when reused from cache)
-    //   connect    : ConnectDone - ConnectStart (0 on connection reuse)
-    //   tls        : TLSHandshakeDone - TLSHandshakeStart (0 on plain HTTP)
-    //   ttfb       : GotFirstResponseByte - (TLSDone | ConnectDone | reqStart)
-    //   transfer   : end - GotFirstResponseByte
-    // Sum may differ slightly from latencyMs because of unmeasured request
-    // body write — small enough to ignore on the chart.
-    latencyDnsMs: integer("latency_dns_ms"),
-    latencyConnectMs: integer("latency_connect_ms"),
-    latencyTlsMs: integer("latency_tls_ms"),
-    latencyTtfbMs: integer("latency_ttfb_ms"),
-    latencyTransferMs: integer("latency_transfer_ms"),
-    region: varchar("region", { length: 50 }).notNull().default("local"),
-    error: text("error"),
-    checkedAt: timestamp("checked_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    index("monitor_runs_monitor_checked_idx").on(t.monitorId, t.checkedAt),
-    index("monitor_runs_workspace_checked_idx").on(t.workspaceId, t.checkedAt),
-    index("monitor_runs_checked_idx").on(t.checkedAt),
-  ],
-);
-
-/**
- * Latest known status of one monitor as seen from one region.
- *
- * `monitors.current_status` is a single scalar, so with more than one probe
- * location every region overwrites it — status flaps, `consecutive_failures`
- * counts interleaved regions, and transition events fire per probe instead of
- * per real change. This table holds the per-region truth; the global status is
- * reduced from it using `monitors.region_policy`.
- *
- * One row per (monitor, region). Upserted on every probe ingest.
- */
 export const monitorRegionStatus = pgTable(
   "monitor_region_status",
   {
@@ -459,7 +407,7 @@ export const probeLocations = pgTable(
     workspaceId: uuid("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
     // Human label, e.g. "EU West (Frankfurt)".
     name: varchar("name", { length: 100 }).notNull(),
-    // Stored on every monitor_runs row; unique per workspace.
+    // Stored on every probe result; unique per workspace.
     region: varchar("region", { length: 50 }).notNull(),
     // Same scrypt format as packages/auth/src/password.ts.
     tokenHash: varchar("token_hash", { length: 255 }).notNull(),
@@ -809,7 +757,6 @@ export const monitorsRelations = relations(monitors, ({ many, one }) => ({
     fields: [monitors.workspaceId],
     references: [workspaces.id],
   }),
-  runs: many(monitorRuns),
   incidents: many(incidentMonitors),
   channels: many(monitorChannels),
   pageComponents: many(pageComponents),
@@ -839,13 +786,6 @@ export const probeLocationMonitorsRelations = relations(probeLocationMonitors, (
   }),
   monitor: one(monitors, {
     fields: [probeLocationMonitors.monitorId],
-    references: [monitors.id],
-  }),
-}));
-
-export const monitorRunsRelations = relations(monitorRuns, ({ one }) => ({
-  monitor: one(monitors, {
-    fields: [monitorRuns.monitorId],
     references: [monitors.id],
   }),
 }));

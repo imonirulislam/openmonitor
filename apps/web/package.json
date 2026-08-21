@@ -15,6 +15,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.9.1",
     "@openmonitor/auth": "workspace:*",
+    "@openmonitor/clickhouse": "workspace:*",
     "@openmonitor/db": "workspace:*",
     "@openmonitor/ui": "workspace:*",
     "@tanstack/react-table": "^8.20.5",

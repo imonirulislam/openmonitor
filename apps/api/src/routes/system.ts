@@ -1,3 +1,4 @@
+import { countRuns } from "@openmonitor/clickhouse";
 import { db, rows, schema, sql } from "@openmonitor/db";
 import { Hono } from "hono";
 import { env } from "../env";
@@ -19,22 +20,22 @@ systemRoutes.get("/v1/system/scheduler", async (c) => {
   const conn = db();
   const counts = await conn.execute(sql`
     SELECT
-      (SELECT count(*) FROM monitor_runs) AS monitor_runs,
       (SELECT count(*) FROM events) AS events,
       (SELECT count(*) FROM events WHERE status = 'pending') AS events_pending,
       (SELECT count(*) FROM events WHERE status = 'failed') AS events_failed
   `);
   const row = rows<{
-    monitor_runs: string;
     events: string;
     events_pending: string;
     events_failed: string;
   }>(counts)[0];
+  // Probe results live in ClickHouse, so this count is a second round trip.
+  const monitorRuns = await countRuns();
   return c.json({
     retention: await getRetentionStatus(),
     counts: row
       ? {
-          monitorRuns: Number(row.monitor_runs),
+          monitorRuns,
           events: Number(row.events),
           eventsPending: Number(row.events_pending),
           eventsFailed: Number(row.events_failed),

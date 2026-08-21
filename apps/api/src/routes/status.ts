@@ -5,7 +5,8 @@ import rrulePkg from "rrule";
 
 const { rrulestr } = rrulePkg as unknown as typeof import("rrule");
 
-import { and, asc, db, desc, eq, gte, inArray, rows, schema, sql } from "@openmonitor/db";
+import { dailyBuckets, latencyBuckets } from "@openmonitor/clickhouse";
+import { and, asc, db, desc, eq, gte, inArray, schema, sql } from "@openmonitor/db";
 import { resolveStatusPage } from "../lib/resolve-page";
 import { verifyUnlockToken } from "../lib/unlock-token";
 
@@ -396,46 +397,16 @@ statusRoutes.get("/v1/monitors/:slug/history", async (c) => {
   // We surface per-status counts so the public-page tracker can render each
   // day as a proportional stacked bar (matches openstatus). `failed` is kept
   // for back-compat with older clients; it equals `down + degraded`.
-  const result = await conn.execute(sql`
-    WITH all_days AS (
-      SELECT (
-        ((now() AT TIME ZONE ${tz})::date) - (g)::int
-      ) AS day_local
-      FROM generate_series(0, ${days - 1}) AS g
-    ),
-    bucketed AS (
-      SELECT
-        date_trunc('day', checked_at AT TIME ZONE ${tz})::date AS day_local,
-        count(*)::int AS total,
-        sum(case when status = 'up'       then 1 else 0 end)::int AS ok,
-        sum(case when status = 'degraded' then 1 else 0 end)::int AS degraded,
-        sum(case when status = 'down'     then 1 else 0 end)::int AS down,
-        sum(case when status = 'unknown'  then 1 else 0 end)::int AS unknown
-      FROM monitor_runs
-      WHERE monitor_id = ${monitor.id}
-        AND checked_at AT TIME ZONE ${tz} >= ((now() AT TIME ZONE ${tz})::date - ${days - 1} * INTERVAL '1 day')
-      GROUP BY 1
-    )
-    SELECT
-      to_char(a.day_local, 'YYYY-MM-DD') AS date,
-      coalesce(b.total, 0)::int    AS total,
-      coalesce(b.ok, 0)::int       AS ok,
-      coalesce(b.degraded, 0)::int AS degraded,
-      coalesce(b.down, 0)::int     AS down,
-      coalesce(b.unknown, 0)::int  AS unknown
-    FROM all_days a
-    LEFT JOIN bucketed b USING (day_local)
-    ORDER BY a.day_local ASC
-  `);
-
-  type Row = {
-    date: string;
-    total: number;
-    ok: number;
-    degraded: number;
-    down: number;
-    unknown: number;
-  };
+  // Buckets come from ClickHouse, in the requested timezone.
+  //
+  // Applying the timezone at read time is why there's no rollup table here: a
+  // pre-aggregated day would have to pick one timezone, and every page
+  // configured for another would render days of 23 or 25 hours on its tracker.
+  //
+  // Per-status counts let the public tracker draw each day as a proportional
+  // stacked bar (matches openstatus). `failed` is derived below and kept for
+  // back-compat with older clients; it equals `down + degraded`.
+  const buckets = await dailyBuckets(monitor.id, days, tz);
 
   // Pull incidents + maintenances overlapping the window, linked to this
   // monitor. We compute per-day membership in JS — there are at most ~180
@@ -538,7 +509,7 @@ statusRoutes.get("/v1/monitors/:slug/history", async (c) => {
     });
   }
 
-  const out = rows<Row>(result).map((r) => {
+  const out = buckets.map((r) => {
     const failed = r.degraded + r.down;
     const events = eventsForDay(r.date);
     if (r.total === 0) {
@@ -610,21 +581,9 @@ statusRoutes.get("/v1/monitors/:slug/latency", async (c) => {
 
   if (!monitor) return c.json({ error: "monitor not found" }, 404);
 
-  const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-  const result = await conn
-    .select({
-      bucket: sql<string>`to_char(date_trunc('hour', checked_at) + (extract(minute from checked_at)::int / 10) * interval '10 minutes', 'YYYY-MM-DD"T"HH24:MI:00Z')`,
-      avg: sql<number>`coalesce(round(avg(latency_ms))::int, 0)`,
-      p95: sql<number>`coalesce((percentile_cont(0.95) within group (order by latency_ms))::int, 0)`,
-      ok: sql<number>`sum(case when status = 'up' then 1 else 0 end)::int`,
-      total: sql<number>`count(*)::int`,
-    })
-    .from(schema.monitorRuns)
-    .where(
-      and(eq(schema.monitorRuns.monitorId, monitor.id), gte(schema.monitorRuns.checkedAt, since)),
-    )
-    .groupBy(sql`1`)
-    .orderBy(sql`1`);
+  // p95 is the one aggregate a rollup couldn't serve — percentiles aren't
+  // additive — so this reads raw rows. ClickHouse computes it natively.
+  const result = await latencyBuckets(monitor.id, hours);
 
   return c.json({
     monitor: { id: monitor.id, slug: monitor.slug, name: monitor.name },

@@ -1,4 +1,9 @@
-import { and, db, eq, gte, schema, sql } from "@openmonitor/db";
+import {
+  phaseBuckets as fetchPhaseBuckets,
+  latencyStats,
+  regionLatency,
+} from "@openmonitor/clickhouse";
+import { and, db, eq, schema } from "@openmonitor/db";
 import {
   Card,
   MetricCard,
@@ -62,40 +67,7 @@ export default async function OverviewPage({
   // runs; the trend is hourly means so the sparkline has a stable number of
   // points regardless of probe interval. Runs whose region no longer has a
   // location still show up — dropping them would silently hide history.
-  const regionStats = (await conn.execute(sql`
-    WITH runs AS (
-      SELECT region, latency_ms, date_trunc('hour', checked_at) AS hour
-      FROM monitor_runs
-      -- ISO string + explicit cast: a JS Date interpolated into a raw sql
-      -- template reaches the driver unserialized and throws ERR_INVALID_ARG_TYPE.
-      WHERE monitor_id = ${id}
-        AND checked_at >= ${since.toISOString()}::timestamptz
-        AND latency_ms IS NOT NULL
-    ),
-    hourly AS (
-      SELECT region, hour, avg(latency_ms) AS mean FROM runs GROUP BY region, hour
-    )
-    SELECT
-      r.region,
-      percentile_cont(0.5)  WITHIN GROUP (ORDER BY r.latency_ms) AS p50,
-      percentile_cont(0.9)  WITHIN GROUP (ORDER BY r.latency_ms) AS p90,
-      percentile_cont(0.99) WITHIN GROUP (ORDER BY r.latency_ms) AS p99,
-      min(r.latency_ms) AS min,
-      max(r.latency_ms) AS max,
-      (SELECT array_agg(round(h.mean) ORDER BY h.hour)
-         FROM hourly h WHERE h.region = r.region) AS trend
-    FROM runs r
-    GROUP BY r.region
-    ORDER BY r.region
-  `)) as unknown as Array<{
-    region: string;
-    p50: string | number | null;
-    p90: string | number | null;
-    p99: string | number | null;
-    min: number | null;
-    max: number | null;
-    trend: Array<string | number> | null;
-  }>;
+  const regionStats = await regionLatency(id, since);
 
   const regionStatuses = await conn
     .select({
@@ -112,50 +84,22 @@ export default async function OverviewPage({
     .where(eq(schema.probeLocations.workspaceId, workspaceId));
   const nameByRegion = new Map(locationNames.map((l) => [l.region, l.name]));
 
-  const num = (v: string | number | null | undefined) => Math.round(Number(v ?? 0));
   const regions: RegionRow[] = regionStats.map((r) => ({
     code: r.region,
     name: nameByRegion.get(r.region) ?? r.region,
     status: statusByRegion.get(r.region) ?? "unknown",
-    trend: (r.trend ?? []).map((n) => Number(n)),
-    p50: num(r.p50),
-    p90: num(r.p90),
-    p99: num(r.p99),
-    min: num(r.min),
-    max: num(r.max),
+    trend: r.trend,
+    p50: r.p50,
+    p90: r.p90,
+    p99: r.p99,
+    min: r.min,
+    max: r.max,
   }));
 
   // Aggregate stats over the 24h window — counts by status + all five
   // latency percentiles in one round-trip.
-  const [stats] = await conn
-    .select({
-      total: sql<number>`count(*)::int`,
-      ok: sql<number>`sum(case when ${schema.monitorRuns.status} = 'up' then 1 else 0 end)::int`,
-      degraded: sql<number>`sum(case when ${schema.monitorRuns.status} = 'degraded' then 1 else 0 end)::int`,
-      failing: sql<number>`sum(case when ${schema.monitorRuns.status} = 'down' then 1 else 0 end)::int`,
-      p50: sql<
-        number | null
-      >`(percentile_cont(0.5) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-      p75: sql<
-        number | null
-      >`(percentile_cont(0.75) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-      p90: sql<
-        number | null
-      >`(percentile_cont(0.9) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-      p95: sql<
-        number | null
-      >`(percentile_cont(0.95) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-      p99: sql<
-        number | null
-      >`(percentile_cont(0.99) within group (order by ${schema.monitorRuns.latencyMs}))::int`,
-    })
-    .from(schema.monitorRuns)
-    .where(and(eq(schema.monitorRuns.monitorId, id), gte(schema.monitorRuns.checkedAt, since)));
-
-  const total = stats?.total ?? 0;
-  const ok = stats?.ok ?? 0;
-  const degraded = stats?.degraded ?? 0;
-  const failing = stats?.failing ?? 0;
+  const stats = await latencyStats(id, since);
+  const { total, ok, degraded, failing } = stats;
   const uptimePct = total === 0 ? null : (ok / total) * 100;
 
   // Per-bucket latency aggregates over the 24h window. `bucketMinutes` and
@@ -164,24 +108,7 @@ export default async function OverviewPage({
   // works without hand-rolled cases for each option. Phase percentiles use
   // the same quantile as the total to keep the chart coherent.
   const bucketSeconds = bucketMinutes * 60;
-  const buckets = await conn
-    .select({
-      bucket: sql<string>`to_char(to_timestamp(floor(extract(epoch from checked_at) / ${bucketSeconds})::bigint * ${bucketSeconds}), 'YYYY-MM-DD"T"HH24:MI:00Z')`,
-      avg: sql<number>`coalesce(round(avg(latency_ms))::int, 0)`,
-      p95: sql<number>`coalesce((percentile_cont(0.95) within group (order by latency_ms))::int, 0)`,
-      ok: sql<number>`sum(case when status = 'up' then 1 else 0 end)::int`,
-      total: sql<number>`count(*)::int`,
-      dns: sql<number>`coalesce((percentile_cont(${quantileNumber}) within group (order by latency_dns_ms))::int, 0)`,
-      connect: sql<number>`coalesce((percentile_cont(${quantileNumber}) within group (order by latency_connect_ms))::int, 0)`,
-      tls: sql<number>`coalesce((percentile_cont(${quantileNumber}) within group (order by latency_tls_ms))::int, 0)`,
-      ttfb: sql<number>`coalesce((percentile_cont(${quantileNumber}) within group (order by latency_ttfb_ms))::int, 0)`,
-      transfer: sql<number>`coalesce((percentile_cont(${quantileNumber}) within group (order by latency_transfer_ms))::int, 0)`,
-      phaseSamples: sql<number>`count(latency_ttfb_ms)::int`,
-    })
-    .from(schema.monitorRuns)
-    .where(and(eq(schema.monitorRuns.monitorId, id), gte(schema.monitorRuns.checkedAt, since)))
-    .groupBy(sql`1`)
-    .orderBy(sql`1`);
+  const buckets = await fetchPhaseBuckets(id, since, bucketSeconds, quantileNumber);
 
   // If we have any rows with phase instrumentation in the window, prefer the
   // stacked phases view; otherwise fall back to the legacy avg/p95 chart so

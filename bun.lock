@@ -23,6 +23,7 @@
         "@hono/node-server": "^1.13.0",
         "@hono/zod-validator": "^0.4.0",
         "@openmonitor/auth": "workspace:*",
+        "@openmonitor/clickhouse": "workspace:*",
         "@openmonitor/db": "workspace:*",
         "dotenv": "^16.4.5",
         "hono": "^4.6.0",
@@ -88,6 +89,7 @@
         "@dnd-kit/utilities": "^3.2.2",
         "@hookform/resolvers": "^3.9.1",
         "@openmonitor/auth": "workspace:*",
+        "@openmonitor/clickhouse": "workspace:*",
         "@openmonitor/db": "workspace:*",
         "@openmonitor/ui": "workspace:*",
         "@tanstack/react-table": "^8.20.5",
@@ -140,11 +142,26 @@
         "typescript": "^5.6.3",
       },
     },
+    "packages/clickhouse": {
+      "name": "@openmonitor/clickhouse",
+      "version": "0.0.0",
+      "dependencies": {
+        "@clickhouse/client": "^1.23.1",
+        "dotenv": "^16.4.5",
+        "tsx": "^4.19.0",
+      },
+      "devDependencies": {
+        "@openmonitor/tsconfig": "workspace:*",
+        "@types/node": "^22.0.0",
+        "typescript": "^5.6.3",
+      },
+    },
     "packages/db": {
       "name": "@openmonitor/db",
       "version": "0.0.0",
       "dependencies": {
         "@neondatabase/serverless": "^1.1.0",
+        "@openmonitor/clickhouse": "workspace:*",
         "drizzle-orm": "^0.36.0",
         "zod": "^3.23.8",
       },
@@ -245,6 +262,8 @@
     "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.5.7", "", { "os": "win32", "cpu": "arm64" }, "sha512-Oq4x0CCwP4jirrcTywXs5kOGZ4v5vuEP+gWrbtjApOA2CL9F3F9GlIdQIci8AKSCa/zURanMRpX/4wQ7Am6hHg=="],
 
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.5.7", "", { "os": "win32", "cpu": "x64" }, "sha512-V+0wu/nrj2S+MhP4EQ0uHNolP0IALEsz45pg0WoKkHfDeh0+ItHwP/p7bX5RPoMOl9NkpHYWdYPhIcy2mACHvQ=="],
+
+    "@clickhouse/client": ["@clickhouse/client@1.23.1", "", {}, "sha512-vs3/Zc1dHvT171btW5nMoPsPCJ6QVJ5pp7obxzO5sjqwFx/jjz9wwCAqcFOdc2DhprugDBaVn+4dVY8hG3A9nw=="],
 
     "@cspotcode/source-map-support": ["@cspotcode/source-map-support@0.8.1", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.9" } }, "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw=="],
 
@@ -429,6 +448,8 @@
     "@openmonitor/api-client": ["@openmonitor/api-client@workspace:packages/api-client"],
 
     "@openmonitor/auth": ["@openmonitor/auth@workspace:packages/auth"],
+
+    "@openmonitor/clickhouse": ["@openmonitor/clickhouse@workspace:packages/clickhouse"],
 
     "@openmonitor/db": ["@openmonitor/db@workspace:packages/db"],
 
@@ -964,7 +985,7 @@
 
     "header-case": ["header-case@1.0.1", "", { "dependencies": { "no-case": "^2.2.0", "upper-case": "^1.1.3" } }, "sha512-i0q9mkOeSuhXw6bGgiQCCBgY/jlZuV/7dZXyZ9c6LcBrqwvT8eT719E9uxE5LiZftdl+z81Ugbg/VvXV4OJOeQ=="],
 
-    "hono": ["hono@4.13.1", "", {}, "sha512-kdJoFVv2xmayw6cY09H7AbMJMt8Jn5jdlEdXsP7AGBdF2DIptVlKlOLKXP41yPip4/a3yQPv9gVcJYI8YY04dw=="],
+    "hono": ["hono@4.13.2", "", {}, "sha512-JydRilDRkYBQMt9qR9U92mXxmbGqsqSn/IKOrh4e7/gEbn+0zSr8igTu0obwJoNGN4sez28DIql7FBHWydoJpA=="],
 
     "html-url-attributes": ["html-url-attributes@3.0.1", "", {}, "sha512-ol6UPyBWqsrO6EJySPz2O7ZSr856WDrEzM5zMqp+FJJLGMW35cLYmmZnl0vztAZxRUoNZJFTCohfjuIJ8I4QBQ=="],
 
@@ -1516,9 +1537,9 @@
 
     "@jridgewell/remapping/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
-    "@openmonitor/notifier/@hono/node-server": ["@hono/node-server@2.1.1", "", { "peerDependencies": { "hono": "^4" } }, "sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg=="],
+    "@openmonitor/clickhouse/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
 
-    "@openmonitor/notifier/hono": ["hono@4.13.2", "", {}, "sha512-JydRilDRkYBQMt9qR9U92mXxmbGqsqSn/IKOrh4e7/gEbn+0zSr8igTu0obwJoNGN4sez28DIql7FBHWydoJpA=="],
+    "@openmonitor/notifier/@hono/node-server": ["@hono/node-server@2.1.1", "", { "peerDependencies": { "hono": "^4" } }, "sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg=="],
 
     "@openmonitor/notifier/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 

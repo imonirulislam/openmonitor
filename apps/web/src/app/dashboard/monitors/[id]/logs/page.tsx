@@ -1,4 +1,5 @@
-import { db, desc, eq, schema, sql } from "@openmonitor/db";
+import { countRunsFor, recentRuns } from "@openmonitor/clickhouse";
+import { db, eq, schema } from "@openmonitor/db";
 import { notFound } from "next/navigation";
 import { MonitorLogsTable } from "~/components/monitor-logs-table";
 
@@ -17,18 +18,7 @@ export default async function MonitorLogsPage({ params }: { params: Promise<{ id
     .limit(1);
   if (!monitor) notFound();
 
-  const [countRow] = await conn
-    .select({ totalCount: sql<number>`count(*)::int` })
-    .from(schema.monitorRuns)
-    .where(eq(schema.monitorRuns.monitorId, id));
-  const totalCount = countRow?.totalCount ?? 0;
-
-  const runs = await conn
-    .select()
-    .from(schema.monitorRuns)
-    .where(eq(schema.monitorRuns.monitorId, id))
-    .orderBy(desc(schema.monitorRuns.checkedAt))
-    .limit(ROW_LIMIT);
+  const [totalCount, runs] = await Promise.all([countRunsFor(id), recentRuns(id, ROW_LIMIT)]);
 
   const truncated = (totalCount ?? 0) > runs.length;
 
@@ -39,22 +29,8 @@ export default async function MonitorLogsPage({ params }: { params: Promise<{ id
         <span className="font-mono">{(totalCount ?? 0).toLocaleString()}</span> probe results.
         {truncated ? " Older entries omitted." : null}
       </p>
-      <MonitorLogsTable
-        rows={runs.map((r) => ({
-          id: r.id,
-          checkedAt: r.checkedAt.toISOString(),
-          status: r.status,
-          statusCode: r.statusCode,
-          latencyMs: r.latencyMs,
-          region: r.region,
-          error: r.error,
-          dns: r.latencyDnsMs,
-          connect: r.latencyConnectMs,
-          tls: r.latencyTlsMs,
-          ttfb: r.latencyTtfbMs,
-          transfer: r.latencyTransferMs,
-        }))}
-      />
+      {/* recentRuns already returns the table's row shape. */}
+      <MonitorLogsTable rows={runs} />
     </div>
   );
 }

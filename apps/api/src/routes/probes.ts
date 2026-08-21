@@ -1,4 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
+import { insertRuns } from "@openmonitor/clickhouse";
 import { and, db, eq, inArray, ne, reduceRegionStatuses, schema, sql } from "@openmonitor/db";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -79,22 +80,6 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
   const threshold = monitor.autoIncidentThreshold ?? 0;
 
   await conn.transaction(async (tx) => {
-    await tx.insert(schema.monitorRuns).values({
-      monitorId: body.monitorId,
-      workspaceId: monitor.workspaceId,
-      status: body.status,
-      statusCode: body.statusCode,
-      latencyMs: body.latencyMs,
-      latencyDnsMs: body.latencyDnsMs ?? null,
-      latencyConnectMs: body.latencyConnectMs ?? null,
-      latencyTlsMs: body.latencyTlsMs ?? null,
-      latencyTtfbMs: body.latencyTtfbMs ?? null,
-      latencyTransferMs: body.latencyTransferMs ?? null,
-      region,
-      error: body.error,
-      checkedAt,
-    });
-
     // Record what THIS region saw. Its failure counter is per-region, so a
     // sustained outage in one location isn't masked by healthy probes elsewhere
     // interleaving and resetting a shared counter.
@@ -373,6 +358,39 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
       }
     }
   });
+
+  // The raw result goes to ClickHouse, outside the transaction above.
+  //
+  // It can't be inside it — they're different stores — and it doesn't need to
+  // be. Everything the outbox rule protects lives in Postgres: the per-region
+  // status, the derived status, the counters and the events row all commit
+  // together. This table is telemetry that only ever gets read in aggregate,
+  // so a failure here costs a point on a chart, not an alert.
+  //
+  // Which is also why it doesn't fail the request. The probe *was* processed;
+  // a 500 would make the checker re-post and double-count the failure counter
+  // that drives auto-incidents.
+  try {
+    await insertRuns([
+      {
+        monitorId: body.monitorId,
+        workspaceId: monitor.workspaceId,
+        region,
+        status: body.status,
+        statusCode: body.statusCode,
+        latencyMs: body.latencyMs,
+        latencyDnsMs: body.latencyDnsMs,
+        latencyConnectMs: body.latencyConnectMs,
+        latencyTlsMs: body.latencyTlsMs,
+        latencyTtfbMs: body.latencyTtfbMs,
+        latencyTransferMs: body.latencyTransferMs,
+        error: body.error,
+        checkedAt,
+      },
+    ]);
+  } catch (err) {
+    console.error("clickhouse insert failed (probe still recorded):", err);
+  }
 
   return c.json({ ok: true });
 });

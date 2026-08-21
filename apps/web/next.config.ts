@@ -7,7 +7,12 @@ loadEnv({ path: path.resolve(import.meta.dirname, "../../.env") });
 
 const config: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@openmonitor/ui", "@openmonitor/auth", "@openmonitor/db"],
+  transpilePackages: [
+    "@openmonitor/ui",
+    "@openmonitor/auth",
+    "@openmonitor/db",
+    "@openmonitor/clickhouse",
+  ],
   experimental: {
     serverActions: { bodySizeLimit: "1mb" },
   },

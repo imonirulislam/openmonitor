@@ -1,0 +1,12 @@
+-- Probe results moved to ClickHouse.
+--
+-- Measured on real data a row cost 326 bytes here (144 of heap, 182 of index,
+-- on a uuid primary key nothing looked up by) against ~2 bytes columnar. That
+-- difference is what lets several regions of history fit in a free-tier
+-- database. Retention is a TTL on the ClickHouse table now, so the sweep that
+-- used to batch-delete from this one is gone too.
+--
+-- Dropped rather than migrated: this is history that regenerates from the next
+-- probe onward, and carrying it across would have meant a bulk export for data
+-- that ages out in 180 days anyway.
+DROP TABLE IF EXISTS "monitor_runs";

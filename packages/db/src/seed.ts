@@ -1,6 +1,7 @@
 import "./load-env";
 import { randomBytes, scrypt as scryptCb } from "node:crypto";
 import { promisify } from "node:util";
+import { insertRuns, type ProbeRun, truncateRuns } from "@openmonitor/clickhouse";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { createDb } from "./client";
 import { hashProbeToken } from "./probe-token";
@@ -11,7 +12,6 @@ import {
   maintenanceMonitors,
   maintenances,
   monitorRegionStatus,
-  monitorRuns,
   monitors,
   pageComponents,
   probeLocationMonitors,
@@ -309,9 +309,9 @@ async function main() {
   }
 
   // ---------- Probe history (90 days, hourly) ----------
-  // Wipe any existing seeded probe history first so re-running the seed is
-  // idempotent.
-  await db.delete(monitorRuns);
+  // Probe results live in ClickHouse. Wipe first so re-running the seed is
+  // idempotent rather than stacking another 90 days on top.
+  await truncateRuns();
 
   // Per-monitor down/degraded days. Every monitor has at least one of each
   // somewhere in the 90-day window so the dashboards show real status
@@ -346,7 +346,7 @@ async function main() {
     api: 4,
   };
 
-  type RunRow = typeof monitorRuns.$inferInsert;
+  type RunRow = ProbeRun;
   const runs: RunRow[] = [];
   const now = new Date();
   const lastRunPerMonitor = new Map<string, RunRow>();
@@ -405,11 +405,9 @@ async function main() {
     }
   }
 
-  // Insert in batches to avoid oversized parameter lists.
-  const BATCH = 1000;
-  for (let i = 0; i < runs.length; i += BATCH) {
-    await db.insert(monitorRuns).values(runs.slice(i, i + BATCH));
-  }
+  // One insert; ClickHouse takes the whole set happily. `wait` so the rows are
+  // queryable the moment the seed prints its summary.
+  await insertRuns(runs, { wait: true });
 
   // Update each monitor's currentStatus + lastCheckedAt from its latest run, and
   // mirror it into monitor_region_status for the region these synthetic runs were
@@ -418,7 +416,7 @@ async function main() {
   for (const [monitorId, last] of lastRunPerMonitor) {
     await db
       .update(monitors)
-      .set({ currentStatus: last.status!, lastCheckedAt: last.checkedAt })
+      .set({ currentStatus: last.status, lastCheckedAt: last.checkedAt })
       .where(eq(monitors.id, monitorId));
 
     // Deliberately "local", not the "seed" label the synthetic runs carry: the
@@ -430,14 +428,14 @@ async function main() {
       .values({
         monitorId,
         region: "local",
-        status: last.status!,
+        status: last.status,
         consecutiveFailures: 0,
         lastCheckedAt: last.checkedAt,
       })
       .onConflictDoUpdate({
         target: [monitorRegionStatus.monitorId, monitorRegionStatus.region],
         set: {
-          status: last.status!,
+          status: last.status,
           lastCheckedAt: last.checkedAt,
           consecutiveFailures: 0,
           updatedAt: new Date(),

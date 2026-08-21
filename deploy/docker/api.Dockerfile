@@ -8,6 +8,7 @@ COPY turbo.json tsconfig.base.json ./
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY packages/db/package.json ./packages/db/
 COPY packages/auth/package.json ./packages/auth/
+COPY packages/clickhouse/package.json ./packages/clickhouse/
 COPY apps/api/package.json ./apps/api/
 # See web.Dockerfile for why the default isolated linker and no --frozen-lockfile.
 # Only the manifests this service needs are copied, so the install stays small.

@@ -26,9 +26,8 @@ type RetentionResp = {
     eventDays: number;
     atUtc: string;
     lastRun: {
-      startedAt: string;
       finishedAt: string;
-      monitorRunsDeleted: number;
+      durationMs: number;
       eventsDeleted: number;
       error?: string;
     } | null;
@@ -103,10 +102,10 @@ export default async function SystemPage() {
         <CardHeader>
           <CardTitle>Retention sweeper</CardTitle>
           <CardDescription>
-            Daily cleanup of <span className="font-mono">monitor_runs</span> and{" "}
-            <span className="font-mono">events</span>. Runs in-process when{" "}
-            <span className="font-mono">RETENTION_ENABLED=on</span>; you can also invoke it manually
-            from this page.
+            Daily cleanup of the <span className="font-mono">events</span> outbox. Runs in-process
+            when <span className="font-mono">RETENTION_ENABLED=on</span>; you can also invoke it
+            manually from this page. Probe results aren't swept here — ClickHouse expires them with
+            a TTL after <span className="font-mono">RETENTION_RUN_DAYS</span>.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -134,20 +133,10 @@ export default async function SystemPage() {
                 {retention.retention.lastRun ? (
                   <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
                     <Stat
-                      label="Started"
-                      value={new Date(retention.retention.lastRun.startedAt).toLocaleString()}
+                      label="Finished"
+                      value={new Date(retention.retention.lastRun.finishedAt).toLocaleString()}
                     />
-                    <Stat
-                      label="Duration"
-                      value={`${
-                        new Date(retention.retention.lastRun.finishedAt).getTime() -
-                        new Date(retention.retention.lastRun.startedAt).getTime()
-                      } ms`}
-                    />
-                    <Stat
-                      label="monitor_runs deleted"
-                      value={retention.retention.lastRun.monitorRunsDeleted.toLocaleString()}
-                    />
+                    <Stat label="Duration" value={`${retention.retention.lastRun.durationMs} ms`} />
                     <Stat
                       label="events deleted"
                       value={retention.retention.lastRun.eventsDeleted.toLocaleString()}
@@ -159,9 +148,7 @@ export default async function SystemPage() {
                     ) : null}
                   </dl>
                 ) : (
-                  <p className="mt-1 text-muted-foreground text-xs">
-                    No runs yet since the API process started.
-                  </p>
+                  <p className="mt-1 text-muted-foreground text-xs">No runs recorded yet.</p>
                 )}
               </div>
               <Separator />
@@ -170,7 +157,7 @@ export default async function SystemPage() {
                 {retention.counts ? (
                   <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
                     <Stat
-                      label="monitor_runs"
+                      label="probe results"
                       value={retention.counts.monitorRuns.toLocaleString()}
                     />
                     <Stat label="events" value={retention.counts.events.toLocaleString()} />
