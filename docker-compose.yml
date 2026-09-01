@@ -45,19 +45,22 @@ services:
       retries: 20
 
   # Browser for ClickHouse — tables, ad-hoc SQL, storage per column.
-  # Dev only: opt in with `docker compose --profile tools up ch-ui`, so a
-  # deployment never exposes an unauthenticated query console by accident.
+  #
+  #   docker compose --profile tools up -d ch-ui   →  http://localhost:5436
+  #
+  # On first run, add a connection pointing at http://clickhouse:8123 (user
+  # `default`, no password). It keeps that in its own state, so this is once
+  # per volume — it ignores the env vars its README suggests.
+  #
+  # Dev only, hence the profile: it is an unauthenticated query console and
+  # has no business being reachable from a deployment.
   ch-ui:
     profiles: ["tools"]
     image: ghcr.io/caioricciuti/ch-ui:latest
     container_name: open-monitor-ch-ui
     restart: unless-stopped
-    environment:
-      VITE_CLICKHOUSE_URL: http://localhost:5435
-      VITE_CLICKHOUSE_USER: default
-      VITE_CLICKHOUSE_PASS: ""
     ports:
-      - "5436:5521"
+      - "5436:3488"
     depends_on:
       clickhouse:
         condition: service_healthy

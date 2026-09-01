@@ -16,7 +16,7 @@ cp .env.example .env
 # Edit .env if needed — defaults work for local docker-compose Postgres.
 
 # 3. Start Postgres
-docker compose up -d postgres
+docker compose up -d postgres clickhouse
 
 # 4. Run migrations
 bun run db:migrate

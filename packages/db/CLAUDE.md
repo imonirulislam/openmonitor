@@ -1,6 +1,10 @@
-# packages/db — Database
+# packages/db — Relational database
 
-Drizzle ORM + Postgres. Single source of truth for schema and types.
+Drizzle ORM + Postgres. Single source of truth for relational schema and types.
+
+**Probe results are not here.** `monitor_runs` lives in `@openmonitor/clickhouse`, where a row
+costs ~2 bytes against ~326 here. Anything append-only, written once per probe and read only
+in aggregate belongs there; anything you join, update or delete single rows of belongs here.
 
 ## Driver
 

@@ -30,6 +30,12 @@ dashboard's System page uses `PROBE_API_KEY`, and a hosted scheduler sends `CRON
   you've decided to move auth into the API too.
 - **State changes that fire notifications insert into `events` in the same transaction**
   as the state change. See `routes/probes.ts` for the pattern. The notifier handles delivery.
+- **Probe ingestion writes two stores.** The per-region status, derived status, counters and
+  the events row commit together in Postgres; the raw result then goes to ClickHouse outside
+  that transaction. That insert is allowed to fail — it's logged, not returned, because a 500
+  would make the checker re-post and double-count the failure counter behind auto-incidents.
+  Never move a *decision* into ClickHouse for the same reason it's outside the transaction.
+- **Queries over probe results go through `@openmonitor/clickhouse`**, not raw SQL here.
 - **No auth middleware on public endpoints.** Don't add caching or rate limits here either —
   put them at the ingress/CDN layer in front of the status page.
 

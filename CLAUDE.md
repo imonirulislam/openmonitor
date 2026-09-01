@@ -47,11 +47,12 @@ Slack-only notifications, Postgres single-tenant.
 | `apps/notifier` | Hono worker | Drains `events` outbox, dispatches Slack messages, retries with backoff. Self-paced loop or cron-driven via `/cron/*` — see its CLAUDE.md |
 | `apps/checker` | Go (stdlib) | Pulls monitor list from API, runs HTTP probes, posts results back |
 
-## The six packages
+## The seven packages
 
 | Package | Purpose |
 |---|---|
-| `@openmonitor/db` | Drizzle schema (Postgres). Single source of truth for tables, types, and the events outbox. |
+| `@openmonitor/db` | Drizzle schema (Postgres). Single source of truth for relational tables, types, and the events outbox. |
+| `@openmonitor/clickhouse` | Probe results (`monitor_runs`) and the queries over them. The only table that grows with time. |
 | `@openmonitor/auth` | Auth.js v5 config. Credentials provider for v1; OIDC provider stubs commented in. |
 | `@openmonitor/notifications` | Slack Block Kit templates + sender. Pure functions — no DB, no scheduling. |
 | `@openmonitor/api-client` | Typed fetch client used by `status-page` (and any future external consumer). |
@@ -80,10 +81,19 @@ means "there's a server action in `apps/web/src/lib/actions/`."
 `apps/status-page` calls `apps/api` for everything. This keeps the public surface
 deployable independently and means a DB outage doesn't surface as a TypeScript import error.
 
-### 4. Schema lives in one place
+### 4. Schema lives in one place per store
 
-All tables are in `packages/db/src/schema.ts`. Don't define ad-hoc tables in app code.
-Migrations land in `packages/db/drizzle/` and are checked in.
+Relational tables are in `packages/db/src/schema.ts`; migrations land in
+`packages/db/drizzle/` and are checked in. Probe results are in
+`packages/clickhouse/src/schema.ts`. Don't define ad-hoc tables in app code.
+
+The split is by shape, not by size: anything append-only, written once per probe and read
+only in aggregate belongs in ClickHouse, where a row costs ~2 bytes against ~326 in Postgres.
+Everything you'd join, update or delete a single row of belongs in Postgres.
+
+Queries over probe results go through typed functions in `packages/clickhouse/src/runs.ts`
+rather than raw SQL at the call site — five apps reached into `monitor_runs` directly before,
+and that's what made moving it expensive.
 
 ### 5. Validate at the boundary, trust the inside
 

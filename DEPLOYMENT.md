@@ -10,6 +10,7 @@ most deployments mix them.
 | `apps/notifier` | `docker compose` / Fly | Vercel + an external pinger (see below) |
 | `apps/checker` | Fly / any container host | **not possible** |
 | Postgres | `docker compose` | Neon |
+| ClickHouse | `docker compose` | a small VM, or managed |
 
 The checker is the one thing with no serverless option. TCP and DNS monitors need raw
 sockets, and multi-region probing needs *chosen* egress regions — serverless platforms give
@@ -66,9 +67,11 @@ Hono route internally.
 Shared by every project that talks to the database:
 
 ```
-DATABASE_URL   Neon POOLED connection string — the host with "-pooler" in it.
-               The unpooled endpoint gives each invocation its own connection
-               and you will hit Neon's ceiling.
+DATABASE_URL     Neon POOLED connection string — the host with "-pooler" in it.
+                 The unpooled endpoint gives each invocation its own connection
+                 and you will hit Neon's ceiling.
+CLICKHOUSE_URL   Your ClickHouse HTTP endpoint. Needed by `web` and `api`; the
+                 notifier and status-page don't read probe results.
 ```
 
 Leave `NEON_WS_PROXY` **unset**. It exists for local development, where a plain Postgres
@@ -76,9 +79,9 @@ container can't terminate the WebSocket the Neon driver speaks.
 
 | Project | Also needs |
 |---|---|
-| `web` | `AUTH_SECRET`, `AUTH_URL`, `API_URL`, `PROBE_API_KEY`, `OPERATOR_EMAILS`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STATUS_PAGE_URL` |
+| `web` | `AUTH_SECRET`, `AUTH_URL`, `API_URL`, `PROBE_API_KEY`, `OPERATOR_EMAILS`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STATUS_PAGE_URL`, `CLICKHOUSE_URL` |
 | `status-page` | `API_URL` (server-side calls), `NEXT_PUBLIC_API_URL` (browser). Optional branding: `NEXT_PUBLIC_STATUS_TITLE`, `NEXT_PUBLIC_STATUS_DESCRIPTION`, `NEXT_PUBLIC_DEFAULT_PAGE`, `NEXT_PUBLIC_DEFAULT_WORKSPACE` |
-| `api` | `PROBE_API_KEY`, `PAGE_UNLOCK_SECRET`, `CRON_SECRET`, `RETENTION_ENABLED=off`, `SLACK_SIGNING_SECRET` |
+| `api` | `PROBE_API_KEY`, `PAGE_UNLOCK_SECRET`, `CRON_SECRET`, `RETENTION_ENABLED=off`, `SLACK_SIGNING_SECRET`, `CLICKHOUSE_URL` |
 | `notifier` | `CRON_SECRET`, `NOTIFIER_POLL=off` |
 
 Two of those are easy to miss and fail quietly rather than loudly:
@@ -106,6 +109,12 @@ DATABASE_URL="postgresql://…-pooler…/neondb?sslmode=require" bun run db:migr
 ```
 
 Write migrations by hand — **do not run `db:generate`**. See `packages/db/CLAUDE.md`.
+
+ClickHouse has its own one-liner, safe to re-run:
+
+```bash
+CLICKHOUSE_URL="https://…" bun run --filter @openmonitor/clickhouse migrate
+```
 
 ---
 
@@ -140,6 +149,34 @@ means the token doesn't match a location, which is almost always a copy/paste tr
 
 ---
 
+## ClickHouse
+
+Probe results go here rather than Postgres. Measured on real data a row costs ~2 bytes
+against ~326 in Postgres, which is the difference between months of multi-region history
+fitting in a free-tier database and not. Retention is a TTL on the table, so there's nothing
+to schedule.
+
+Sizing is undemanding: it is one append-only table, written once per probe and read in
+aggregate. At four monitors across five regions that's ~250 KB/day. A 1 GB VM is plenty, and
+the dataset stays in tens of megabytes for years.
+
+Options, cheapest first:
+
+- **Self-host on a free VM.** Oracle Cloud's always-free tier (4 ARM cores, 24 GB, no expiry)
+  runs ClickHouse comfortably and can host the checker and notifier alongside it. Genuinely
+  $0, at the cost of running a machine.
+- **Self-host on a small paid VM** — Hetzner, Fly, a $5 droplet. Same picture, less
+  babysitting.
+- **Tinybird** has a free-forever 10 GB tier and is ClickHouse underneath; it's what
+  openstatus uses. Its API is datasources-and-pipes rather than SQL over HTTP, so
+  `@openmonitor/clickhouse` would need a second implementation — and you couldn't run it
+  locally, which is the tradeoff this repo has deliberately avoided elsewhere.
+- **ClickHouse Cloud** has no permanent free tier — a 30-day trial, then paid.
+
+Whatever you pick, set `CLICKHOUSE_URL` and lock the endpoint down. It has no auth by
+default, and the compose setup leaves it that way because it isn't exposed. A public one
+must at minimum have a password and be reachable only from your app tier.
+
 ## Self-hosting everything
 
 `docker compose up --build` runs the whole stack, migrations included. See
@@ -167,8 +204,14 @@ Roughly, for a small deployment:
 | Vercel Hobby | $0 (see the cron caveat above) |
 | Neon free | $0 — 0.5 GB, autosuspends when idle |
 | Fly, one checker | ~$2/month per region |
+| ClickHouse on Oracle always-free | $0 |
 | Cloudflare DNS | $0 |
 
-The first thing to outgrow is usually Neon's 0.5 GB, and `monitor_runs` is what fills it. The
-retention sweep trims rows older than `RETENTION_RUN_DAYS` (default 180) — lower it before
-adding storage.
+Postgres now holds only relational data — monitors, incidents, users, the outbox — which
+doesn't grow with probe volume, so Neon's 0.5 GB is no longer the binding constraint. What
+grows is probe results, and those are in ClickHouse at ~2 bytes a row.
+
+The practical floor for a fully free deployment is: Vercel Hobby for the two Next apps,
+Neon free for Postgres, and one Oracle always-free VM running ClickHouse, the checker and the
+notifier. That last machine also solves the cron problem from the top of this document — with
+`NOTIFIER_POLL=on` the notifier paces itself and needs no external scheduler.
