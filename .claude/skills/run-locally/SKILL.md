@@ -13,13 +13,14 @@ bun install
 
 # 2. Copy env
 cp .env.example .env
-# Edit .env if needed — defaults work for local docker-compose Postgres.
+# Edit .env if needed — defaults work for the local docker-compose datastores.
 
-# 3. Start Postgres
+# 3. Start the datastores
 docker compose up -d postgres clickhouse
 
-# 4. Run migrations
+# 4. Run migrations — Postgres schema, then the ClickHouse table
 bun run db:migrate
+bun run --filter @openmonitor/clickhouse migrate
 
 # 5. Seed admin user + example monitors
 bun run db:seed
