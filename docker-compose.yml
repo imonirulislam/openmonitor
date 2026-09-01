@@ -48,17 +48,27 @@ services:
   #
   #   docker compose --profile tools up -d ch-ui   →  http://localhost:5436
   #
-  # On first run, add a connection pointing at http://clickhouse:8123 (user
-  # `default`, no password). It keeps that in its own state, so this is once
-  # per volume — it ignores the env vars its README suggests.
+  # Sign in with username `default` and no password — the login *is* a
+  # ClickHouse connection test, so those are ClickHouse's credentials, not
+  # ch-ui's.
   #
-  # Dev only, hence the profile: it is an unauthenticated query console and
-  # has no business being reachable from a deployment.
+  # No volume on purpose. ch-ui persists connections in /app/data, and a stale
+  # one pointing at the wrong host survives config changes and fails login with
+  # "connection refused". Keeping state in the container layer means
+  # `docker compose rm -f ch-ui` is a clean reset.
+  #
+  # Dev only, hence the profile: it is a query console reaching a ClickHouse
+  # that has no password, and has no business being reachable from a deployment.
   ch-ui:
     profiles: ["tools"]
     image: ghcr.io/caioricciuti/ch-ui:latest
     container_name: open-monitor-ch-ui
     restart: unless-stopped
+    environment:
+      # The embedded connection ch-ui creates on first run. Must be the compose
+      # service name: its own localhost is the ch-ui container, not ClickHouse.
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CONNECTION_NAME: OpenMonitor
     ports:
       - "5436:3488"
     depends_on:
