@@ -1,6 +1,6 @@
 "use server";
 
-import { and, db, eq, schema } from "@openmonitor/db";
+import { and, db, eq, isReservedSlug, schema } from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
@@ -19,7 +19,10 @@ const slugSchema = z
   .string()
   .min(2)
   .max(80)
-  .regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, and dashes only");
+  .regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, and dashes only")
+  // A workspace slug becomes a hostname under STATUS_PAGE_ROOT_DOMAIN, and a
+  // page slug becomes a path segment. Both can collide with something we own.
+  .refine((slug) => !isReservedSlug(slug), "That slug is reserved");
 
 const renameSchema = z.object({
   name: z.string().min(1).max(200),

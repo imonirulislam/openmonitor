@@ -149,6 +149,36 @@ means the token doesn't match a location, which is almost always a copy/paste tr
 
 ---
 
+## Status page URLs
+
+Four shapes, resolved in this order:
+
+| URL | Resolution |
+|---|---|
+| `status.acme.com` | Exact match on the page's `custom_domain`. A customer's own domain always wins. |
+| `acme.openmonitor.app` | Workspace `acme`, page `default`. Needs `STATUS_PAGE_ROOT_DOMAIN`. |
+| `acme.openmonitor.app/reports` | Workspace from the host, page from the path. |
+| `openmonitor.app/acme/reports` | Path only — works with no wildcard DNS. |
+
+A subdomain **pins** the workspace: it overrides a `?workspace=` parameter rather
+than deferring to it, so `acme.openmonitor.app` can't be made to render another
+tenant's page. `www` and the apex fall through to path routing, and labels
+nested deeper than one level are rejected — a wildcard certificate only covers
+one level, so anything deeper couldn't have reached you over TLS anyway.
+
+Set `STATUS_PAGE_ROOT_DOMAIN` on the **api** project. Unset disables subdomain
+resolution entirely, which is what a single-tenant self-host wants.
+
+You need wildcard DNS (`*.openmonitor.app`) and a wildcard certificate. On
+Vercel, **wildcard domains are a Pro feature** — on Hobby, put Cloudflare in
+front with a proxied wildcard record, or serve the status page from Cloudflare
+Pages.
+
+Workspace and page slugs are checked against a reserved list
+(`packages/db/src/reserved-slugs.ts`) so nobody can register `app`, `api` or
+`mail` and own that hostname on your domain. Extend it before you launch if you
+plan to use other labels.
+
 ## ClickHouse
 
 Probe results go here rather than Postgres. Measured on real data a row costs ~2 bytes

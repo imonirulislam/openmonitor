@@ -17,6 +17,7 @@ export * from "./client";
 export * from "./probe-token";
 export * from "./raw";
 export * from "./region-status";
+export * from "./reserved-slugs";
 export * from "./scheduled-tasks";
 export * as schema from "./schema";
 export * from "./types";

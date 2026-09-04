@@ -160,6 +160,9 @@ services:
       CLICKHOUSE_URL: http://clickhouse:8123
       PROBE_API_KEY: ${PROBE_API_KEY:-change-me-probe-key}
       CRON_SECRET: ${CRON_SECRET:-change-me-cron-secret-32-chars-min}
+      # Serves <workspace>.$STATUS_PAGE_ROOT_DOMAIN. Unset it for a
+      # single-tenant self-host, which has no wildcard DNS to match.
+      STATUS_PAGE_ROOT_DOMAIN: ${STATUS_PAGE_ROOT_DOMAIN-openmonitor.app}
       PORT: "5002"
       NODE_ENV: production
     depends_on:

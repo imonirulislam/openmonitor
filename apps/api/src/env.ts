@@ -32,6 +32,13 @@ const schema = z.object({
     .string()
     .regex(/^\d{2}:\d{2}$/)
     .default("04:00"),
+  /**
+   * Root domain for per-workspace status pages, e.g. "openmonitor.app" so that
+   * acme.openmonitor.app serves the `acme` workspace. Needs wildcard DNS and a
+   * wildcard certificate. Unset disables subdomain resolution entirely, which
+   * is what a single-tenant self-host wants.
+   */
+  STATUS_PAGE_ROOT_DOMAIN: z.string().min(3).optional(),
   PORT: z.coerce.number().int().positive().default(5002),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
