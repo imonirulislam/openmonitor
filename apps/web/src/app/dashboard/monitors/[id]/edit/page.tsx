@@ -20,9 +20,13 @@ import {
   updateMonitorResponseTime,
   updateMonitorSchedule,
 } from "~/lib/actions/monitors";
+import { monitorIdFrom } from "~/lib/resolve-entity";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function EditMonitorPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
+  const workspaceId = await getCurrentWorkspaceId();
+  const id = await monitorIdFrom(idOrSlug, workspaceId);
   const [monitor] = await db()
     .select()
     .from(schema.monitors)

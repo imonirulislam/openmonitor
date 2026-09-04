@@ -1,6 +1,16 @@
 import { zValidator } from "@hono/zod-validator";
 import { insertRuns } from "@openmonitor/clickhouse";
-import { and, db, eq, inArray, ne, reduceRegionStatuses, schema, sql } from "@openmonitor/db";
+import {
+  and,
+  db,
+  eq,
+  inArray,
+  ne,
+  nextIncidentNumber,
+  reduceRegionStatuses,
+  schema,
+  sql,
+} from "@openmonitor/db";
 import { Hono } from "hono";
 import { z } from "zod";
 import { probeAuth } from "../middleware/probe-auth";
@@ -247,6 +257,7 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
         .insert(schema.incidents)
         .values({
           workspaceId: monitor.workspaceId,
+          number: await nextIncidentNumber(tx, monitor.workspaceId),
           title: `${monitor.name} is down`,
           status: "investigating",
           severity: "major",

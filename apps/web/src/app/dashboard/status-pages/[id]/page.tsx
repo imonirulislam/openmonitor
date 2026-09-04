@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { statusPageIdFrom } from "~/lib/resolve-entity";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 /** Tab landing — bounce to status-reports (the openstatus default). */
 export default async function StatusPageDetailIndex({
@@ -6,6 +8,8 @@ export default async function StatusPageDetailIndex({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  redirect(`/dashboard/status-pages/${id}/status-reports`);
+  const { id: idOrSlug } = await params;
+  const workspaceId = await getCurrentWorkspaceId();
+  const id = await statusPageIdFrom(idOrSlug, workspaceId);
+  redirect(`/dashboard/status-pages/${idOrSlug}/status-reports`);
 }

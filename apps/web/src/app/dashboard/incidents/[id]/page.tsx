@@ -17,9 +17,13 @@ import {
 import { notFound } from "next/navigation";
 import { IncidentSeverityBadge, IncidentStatusBadge } from "~/components/incident-badges";
 import { postIncidentUpdate } from "~/lib/actions/incidents";
+import { incidentIdFrom } from "~/lib/resolve-entity";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
+  const workspaceId = await getCurrentWorkspaceId();
+  const id = await incidentIdFrom(idOrSlug, workspaceId);
   const conn = db();
 
   const [incident] = await conn

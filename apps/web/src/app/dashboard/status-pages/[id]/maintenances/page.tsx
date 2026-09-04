@@ -4,9 +4,13 @@ import Link from "next/link";
 import { MaintenanceSheet } from "~/components/maintenance-sheet";
 import { MaintenancesTable } from "~/components/maintenances-table";
 import { createMaintenance } from "~/lib/actions/maintenance";
+import { statusPageIdFrom } from "~/lib/resolve-entity";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function MaintenancesTab({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
+  const workspaceId = await getCurrentWorkspaceId();
+  const id = await statusPageIdFrom(idOrSlug, workspaceId);
   const conn = db();
 
   // IDs of monitors linked to this page — used to filter the maintenances list
@@ -49,7 +53,7 @@ export default async function MaintenancesTab({ params }: { params: Promise<{ id
           <SectionTitle>Maintenances</SectionTitle>
           <SectionDescription>
             Planned outages affecting components on this page. Looking for{" "}
-            <Link href={`/dashboard/status-pages/${id}/status-reports`} className="underline">
+            <Link href={`/dashboard/status-pages/${idOrSlug}/status-reports`} className="underline">
               status reports
             </Link>
             ?

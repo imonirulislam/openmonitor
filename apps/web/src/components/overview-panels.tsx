@@ -24,7 +24,7 @@ export function RecentIncidentsPanel({ rows }: { rows: Incident[] }) {
         {rows.map((i) => (
           <li key={i.id}>
             <Link
-              href={`/dashboard/incidents/${i.id}`}
+              href={`/dashboard/incidents/${i.number}`}
               className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
             >
               <div className="min-w-0 flex-1">

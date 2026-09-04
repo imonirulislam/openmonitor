@@ -31,6 +31,7 @@ export default async function IncidentsPage() {
       <IncidentsTable
         rows={incidents.map((i) => ({
           id: i.id,
+          number: i.number,
           title: i.title,
           status: i.status,
           severity: i.severity,

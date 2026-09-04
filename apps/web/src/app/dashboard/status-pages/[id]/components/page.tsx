@@ -5,6 +5,7 @@ import {
   PageComponentsForm,
 } from "~/components/page-components-form";
 import { updatePageComponentsTree } from "~/lib/actions/page-components";
+import { statusPageIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function StatusPageComponents({
@@ -12,8 +13,9 @@ export default async function StatusPageComponents({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
   const workspaceId = await getCurrentWorkspaceId();
+  const id = await statusPageIdFrom(idOrSlug, workspaceId);
   const conn = db();
 
   const components = await conn

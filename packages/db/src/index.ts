@@ -14,6 +14,7 @@ export {
 } from "drizzle-orm";
 export * from "./assertions";
 export * from "./client";
+export * from "./incident-number";
 export * from "./probe-token";
 export * from "./raw";
 export * from "./region-status";

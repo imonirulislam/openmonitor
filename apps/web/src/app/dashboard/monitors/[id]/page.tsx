@@ -27,6 +27,7 @@ import {
 } from "~/components/latency-chart-options";
 import { MonitorRegions, type RegionRow } from "~/components/monitor-regions";
 import { MonitorTimeline } from "~/components/monitor-timeline";
+import { monitorIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 const QUANTILE_TO_NUMBER: Record<Quantile, number> = {
@@ -44,7 +45,7 @@ export default async function OverviewPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ q?: string; r?: string }>;
 }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
   const sp = await searchParams;
   // Pin URL params to the allowlists so a tampered query doesn't leak into
   // the SQL — defaults match openstatus's chart (P50 / 30 minutes).
@@ -53,6 +54,7 @@ export default async function OverviewPage({
   const quantileNumber = QUANTILE_TO_NUMBER[quantile];
   const bucketMinutes = Number.parseInt(resolution, 10);
   const workspaceId = await getCurrentWorkspaceId();
+  const id = await monitorIdFrom(idOrSlug, workspaceId);
   const conn = db();
   const [monitor] = await conn
     .select()
@@ -191,7 +193,7 @@ export default async function OverviewPage({
         </Card>
       </section>
 
-      <MonitorRegions regions={regions} monitorId={id} />
+      <MonitorRegions regions={regions} monitorId={idOrSlug} />
 
       <MonitorTimeline monitorId={id} workspaceId={workspaceId} />
     </div>

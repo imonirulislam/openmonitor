@@ -545,6 +545,10 @@ async function main() {
     },
   ];
 
+  // Numbers are assigned in seed order. The seed owns the workspace and runs
+  // serially, so it doesn't need nextIncidentNumber's advisory lock.
+  let incidentNumber = 0;
+
   for (const inc of pastIncidentsSeed) {
     const startedAt = new Date(now);
     startedAt.setDate(startedAt.getDate() - inc.daysAgo);
@@ -555,6 +559,7 @@ async function main() {
       .insert(incidents)
       .values({
         workspaceId,
+        number: ++incidentNumber,
         title: inc.title,
         severity: inc.severity,
         status: "resolved",
@@ -591,6 +596,7 @@ async function main() {
     .insert(incidents)
     .values({
       workspaceId,
+      number: ++incidentNumber,
       title: "Elevated public API latency",
       severity: "minor",
       status: "monitoring",

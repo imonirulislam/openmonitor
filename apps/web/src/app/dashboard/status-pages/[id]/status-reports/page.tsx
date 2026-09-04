@@ -4,9 +4,13 @@ import Link from "next/link";
 import { IncidentSheet } from "~/components/incident-sheet";
 import { StatusReportsTable } from "~/components/status-reports-table";
 import { createIncident } from "~/lib/actions/incidents";
+import { statusPageIdFrom } from "~/lib/resolve-entity";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function StatusReportsTab({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
+  const workspaceId = await getCurrentWorkspaceId();
+  const id = await statusPageIdFrom(idOrSlug, workspaceId);
   const conn = db();
 
   // Monitors linked to this status page; we surface incidents that affect any
@@ -31,6 +35,7 @@ export default async function StatusReportsTab({ params }: { params: Promise<{ i
       ? await conn
           .selectDistinct({
             id: schema.incidents.id,
+            number: schema.incidents.number,
             title: schema.incidents.title,
             status: schema.incidents.status,
             severity: schema.incidents.severity,
@@ -54,7 +59,7 @@ export default async function StatusReportsTab({ params }: { params: Promise<{ i
           <SectionTitle>Status reports</SectionTitle>
           <SectionDescription>
             Incidents affecting components on this page. Looking for{" "}
-            <Link href={`/dashboard/status-pages/${id}/maintenances`} className="underline">
+            <Link href={`/dashboard/status-pages/${idOrSlug}/maintenances`} className="underline">
               maintenances
             </Link>
             ?
@@ -69,6 +74,7 @@ export default async function StatusReportsTab({ params }: { params: Promise<{ i
         <StatusReportsTable
           rows={incidents.map((i) => ({
             id: i.id,
+            number: i.number,
             title: i.title,
             status: i.status,
             severity: i.severity,

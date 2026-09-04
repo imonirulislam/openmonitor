@@ -24,11 +24,13 @@ import {
   updateStatusPageBranding,
   updateStatusPageLinks,
 } from "~/lib/actions/status-pages";
+import { statusPageIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspace } from "~/lib/workspace";
 
 export default async function StatusPageSettings({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
   const ws = await getCurrentWorkspace();
+  const id = await statusPageIdFrom(idOrSlug, ws.workspaceId);
   const [page] = await db()
     .select()
     .from(schema.statusPages)

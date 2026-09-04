@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MonitorTabs } from "~/components/monitor-tabs";
+import { monitorIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 const STATUS_VARIANT: Record<string, "success" | "destructive" | "warning" | "default"> = {
@@ -20,8 +21,9 @@ export default async function MonitorDetailLayout({
   children: React.ReactNode;
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
   const workspaceId = await getCurrentWorkspaceId();
+  const id = await monitorIdFrom(idOrSlug, workspaceId);
   const [monitor] = await db()
     .select()
     .from(schema.monitors)
@@ -48,7 +50,7 @@ export default async function MonitorDetailLayout({
         <p className="mt-1 font-mono text-muted-foreground text-xs">{monitor.url}</p>
       </header>
 
-      <MonitorTabs monitorId={id} />
+      <MonitorTabs monitorId={idOrSlug} />
       <Separator />
 
       {children}

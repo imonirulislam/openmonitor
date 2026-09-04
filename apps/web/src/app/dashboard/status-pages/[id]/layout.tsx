@@ -4,6 +4,7 @@ import { ExternalLinkIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { StatusPageTabs } from "~/components/status-page-tabs";
+import { statusPageIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function StatusPageDetailLayout({
@@ -13,8 +14,9 @@ export default async function StatusPageDetailLayout({
   params: Promise<{ id: string }>;
   children: ReactNode;
 }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
   const workspaceId = await getCurrentWorkspaceId();
+  const id = await statusPageIdFrom(idOrSlug, workspaceId);
 
   const [page] = await db()
     .select({
@@ -54,7 +56,7 @@ export default async function StatusPageDetailLayout({
         </a>
       </header>
 
-      <StatusPageTabs pageId={id} />
+      <StatusPageTabs pageId={idOrSlug} />
 
       {children}
     </div>

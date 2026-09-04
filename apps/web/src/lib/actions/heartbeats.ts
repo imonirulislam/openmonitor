@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logAudit } from "~/lib/audit";
+import { heartbeatSlug } from "~/lib/resolve-entity";
 import { getCurrentWorkspace } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
 
@@ -72,10 +73,11 @@ export async function createHeartbeat(formData: FormData) {
 
 export async function updateHeartbeat(id: string, formData: FormData) {
   const ws = await requireEditor();
+  const addr = await heartbeatSlug(id);
   const parsed = parseOrFlash(
     writeSchema,
     Object.fromEntries(formData),
-    `/dashboard/heartbeats/${id}`,
+    `/dashboard/heartbeats/${addr}`,
   );
   const enabled = formData.get("enabled") === "true";
 
@@ -99,13 +101,14 @@ export async function updateHeartbeat(id: string, formData: FormData) {
     targetLabel: parsed.name,
   });
 
-  revalidatePath(`/dashboard/heartbeats/${id}`);
+  revalidatePath(`/dashboard/heartbeats/${addr}`);
   redirect(withToastRedirect("/dashboard/heartbeats", "Heartbeat saved"));
 }
 
 /** Mint a new token, invalidating the old one. */
 export async function rotateHeartbeatToken(id: string) {
   const ws = await requireEditor();
+  const addr = await heartbeatSlug(id);
   await db()
     .update(schema.heartbeatMonitors)
     .set({ token: generateToken(), updatedAt: new Date() })
@@ -115,8 +118,8 @@ export async function rotateHeartbeatToken(id: string) {
     targetType: "monitor",
     targetId: id,
   });
-  revalidatePath(`/dashboard/heartbeats/${id}`);
-  redirect(withToastRedirect(`/dashboard/heartbeats/${id}`, "Token rotated", "info"));
+  revalidatePath(`/dashboard/heartbeats/${addr}`);
+  redirect(withToastRedirect(`/dashboard/heartbeats/${addr}`, "Token rotated", "info"));
 }
 
 export async function deleteHeartbeat(id: string) {

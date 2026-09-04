@@ -471,6 +471,12 @@ export const incidents = pgTable(
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
+    /**
+     * Per-workspace sequential number, so an incident can be addressed and
+     * talked about as "#42" instead of a uuid. Allocated by
+     * `nextIncidentNumber` under an advisory lock — see there for why.
+     */
+    number: integer("number").notNull(),
     title: varchar("title", { length: 300 }).notNull(),
     status: incidentStatusEnum("status").notNull().default("investigating"),
     severity: incidentSeverityEnum("severity").notNull().default("minor"),
@@ -486,7 +492,10 @@ export const incidents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("incidents_workspace_idx").on(t.workspaceId, t.startedAt)],
+  (t) => [
+    index("incidents_workspace_idx").on(t.workspaceId, t.startedAt),
+    uniqueIndex("incidents_workspace_number_unique").on(t.workspaceId, t.number),
+  ],
 );
 
 export const incidentUpdates = pgTable(

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logAudit } from "~/lib/audit";
+import { statusPageSlug } from "~/lib/resolve-entity";
 import { getCurrentWorkspace } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
 
@@ -65,6 +66,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export async function updatePageComponentsTree(pageId: string, formData: FormData) {
   const ws = await requireEditor();
+  const addr = await statusPageSlug(pageId);
   await assertPageInWorkspace(pageId, ws.workspaceId);
 
   const raw = formData.get("tree");
@@ -74,7 +76,7 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
   } catch {
     throw new Error("invalid tree payload");
   }
-  const tree = parseOrFlash(treeSchema, parsedJson, `/dashboard/status-pages/${pageId}/components`);
+  const tree = parseOrFlash(treeSchema, parsedJson, `/dashboard/status-pages/${addr}/components`);
 
   await db().transaction(async (tx) => {
     const existingComponents = await tx
@@ -247,6 +249,6 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
     },
   });
 
-  revalidatePath(`/dashboard/status-pages/${pageId}/components`);
-  redirect(withToastRedirect(`/dashboard/status-pages/${pageId}/components`, "Components saved"));
+  revalidatePath(`/dashboard/status-pages/${addr}/components`);
+  redirect(withToastRedirect(`/dashboard/status-pages/${addr}/components`, "Components saved"));
 }

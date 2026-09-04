@@ -35,7 +35,7 @@ export default async function HeartbeatsIndex() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <Link
-                  href={`/dashboard/heartbeats/${h.id}`}
+                  href={`/dashboard/heartbeats/${h.slug}`}
                   className="font-semibold text-base hover:underline"
                 >
                   {h.name}

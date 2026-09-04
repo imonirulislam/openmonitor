@@ -1,12 +1,13 @@
 "use server";
 
-import { and, db, eq, inArray, schema } from "@openmonitor/db";
+import { and, db, eq, inArray, nextIncidentNumber, schema } from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "~/auth";
 import { logAudit } from "~/lib/audit";
+import { incidentNumber } from "~/lib/resolve-entity";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 const createIncidentSchema = z.object({
@@ -51,7 +52,7 @@ export async function createIncident(formData: FormData) {
     "/dashboard/status-pages",
   );
 
-  const incidentId = await db().transaction(async (tx) => {
+  const created = await db().transaction(async (tx) => {
     // Sanity-check: every linked monitor must belong to the current workspace.
     if (parsed.monitorIds.length > 0) {
       const valid = await tx
@@ -72,12 +73,13 @@ export async function createIncident(formData: FormData) {
       .insert(schema.incidents)
       .values({
         workspaceId: session.user.workspaceId,
+        number: await nextIncidentNumber(tx, session.user.workspaceId),
         title: parsed.title,
         severity: parsed.severity,
         status: parsed.status,
         createdBy: session.user.id,
       })
-      .returning({ id: schema.incidents.id });
+      .returning({ id: schema.incidents.id, number: schema.incidents.number });
     if (!incident) throw new Error("failed to create incident");
 
     await tx.insert(schema.incidentUpdates).values({
@@ -122,8 +124,10 @@ export async function createIncident(formData: FormData) {
       },
     });
 
-    return incident.id;
+    return incident;
   });
+  const incidentId = created.id;
+  const addr = String(created.number);
 
   await logAudit({
     action: "incident.created",
@@ -133,18 +137,19 @@ export async function createIncident(formData: FormData) {
     metadata: { severity: parsed.severity, status: parsed.status },
   });
   revalidatePath("/dashboard/incidents");
-  redirect(withToastRedirect(`/dashboard/incidents/${incidentId}`, `Opened “${parsed.title}”`));
+  redirect(withToastRedirect(`/dashboard/incidents/${addr}`, `Opened “${parsed.title}”`));
 }
 
 export async function postIncidentUpdate(incidentId: string, formData: FormData) {
   const session = await requireEditor();
+  const addr = await incidentNumber(incidentId);
   const parsed = parseOrFlash(
     updateSchema,
     {
       status: formData.get("status"),
       message: formData.get("message"),
     },
-    `/dashboard/incidents/${incidentId}`,
+    `/dashboard/incidents/${addr}`,
   );
 
   await db().transaction(async (tx) => {
@@ -205,11 +210,11 @@ export async function postIncidentUpdate(incidentId: string, formData: FormData)
     targetId: incidentId,
     metadata: { status: parsed.status },
   });
-  revalidatePath(`/dashboard/incidents/${incidentId}`);
+  revalidatePath(`/dashboard/incidents/${addr}`);
   revalidatePath("/dashboard/incidents");
   redirect(
     withToastRedirect(
-      `/dashboard/incidents/${incidentId}`,
+      `/dashboard/incidents/${addr}`,
       parsed.status === "resolved" ? "Incident resolved" : "Update posted",
     ),
   );

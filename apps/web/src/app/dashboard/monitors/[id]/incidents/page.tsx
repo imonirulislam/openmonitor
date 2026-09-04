@@ -1,13 +1,17 @@
 import { db, desc, eq, schema } from "@openmonitor/db";
 import { notFound } from "next/navigation";
 import { IncidentsTable } from "~/components/incidents-table";
+import { monitorIdFrom } from "~/lib/resolve-entity";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function MonitorIncidentsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
+  const workspaceId = await getCurrentWorkspaceId();
+  const id = await monitorIdFrom(idOrSlug, workspaceId);
   const conn = db();
   const [monitor] = await conn
     .select({ id: schema.monitors.id })
@@ -19,6 +23,7 @@ export default async function MonitorIncidentsPage({
   const rows = await conn
     .select({
       id: schema.incidents.id,
+      number: schema.incidents.number,
       title: schema.incidents.title,
       status: schema.incidents.status,
       severity: schema.incidents.severity,
@@ -34,6 +39,7 @@ export default async function MonitorIncidentsPage({
     <IncidentsTable
       rows={rows.map((i) => ({
         id: i.id,
+        number: i.number,
         title: i.title,
         status: i.status,
         severity: i.severity,

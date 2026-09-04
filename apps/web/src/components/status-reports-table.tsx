@@ -8,6 +8,7 @@ import { IncidentSeverityBadge, IncidentStatusBadge } from "./incident-badges";
 
 export type StatusReportRow = {
   id: string;
+  number: number;
   title: string;
   status: "investigating" | "identified" | "monitoring" | "resolved";
   severity: "minor" | "major" | "critical";
@@ -21,7 +22,7 @@ const columns: ColumnDef<StatusReportRow>[] = [
     header: "Title",
     cell: ({ row }) => (
       <Link
-        href={`/dashboard/incidents/${row.original.id}`}
+        href={`/dashboard/incidents/${row.original.number}`}
         className="font-medium hover:underline"
       >
         {row.original.title}

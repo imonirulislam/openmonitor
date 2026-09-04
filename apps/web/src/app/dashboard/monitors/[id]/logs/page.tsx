@@ -2,6 +2,8 @@ import { countRunsFor, recentRuns } from "@openmonitor/clickhouse";
 import { db, eq, schema } from "@openmonitor/db";
 import { notFound } from "next/navigation";
 import { MonitorLogsTable } from "~/components/monitor-logs-table";
+import { monitorIdFrom } from "~/lib/resolve-entity";
+import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 // How many probes to ship to the client. Sized to comfortably hold ~24h of
 // probes for a 60s monitor (1,440 rows) with headroom. For longer windows,
@@ -9,7 +11,9 @@ import { MonitorLogsTable } from "~/components/monitor-logs-table";
 const ROW_LIMIT = 2000;
 
 export default async function MonitorLogsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
+  const workspaceId = await getCurrentWorkspaceId();
+  const id = await monitorIdFrom(idOrSlug, workspaceId);
   const conn = db();
   const [monitor] = await conn
     .select({ id: schema.monitors.id })

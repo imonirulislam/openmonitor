@@ -18,11 +18,13 @@ import {
 import { notFound } from "next/navigation";
 import { CopyButton } from "~/components/copy-button";
 import { deleteHeartbeat, rotateHeartbeatToken, updateHeartbeat } from "~/lib/actions/heartbeats";
+import { heartbeatIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function HeartbeatEdit({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
   const workspaceId = await getCurrentWorkspaceId();
+  const id = await heartbeatIdFrom(idOrSlug, workspaceId);
   const [hb] = await db()
     .select()
     .from(schema.heartbeatMonitors)
