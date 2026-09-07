@@ -1,0 +1,5 @@
+@import "@openmonitor/ui/globals.css";
+
+/* No overrides. The marketing site is the front door to the dashboard, so it
+   uses the shared tokens as-is — the status page's sharp corners are its own
+   deliberate departure, not the house style. */

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marketing
+  namespace: open-monitor
+  labels: { app: marketing }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: marketing } }
+  template:
+    metadata: { labels: { app: marketing } }
+    spec:
+      containers:
+        - name: marketing
+          image: REGISTRY/open-monitor-marketing:latest
+          ports:
+            - containerPort: 5005
+          # No datastore and no API. The marketing site renders static pages and
+          # links out, so it keeps serving through an outage of everything else.
+          env:
+            - { name: NODE_ENV, value: production }
+            # TODO: replace with your public hostnames
+            - { name: NEXT_PUBLIC_APP_URL, value: "https://app.example.com" }
+            - { name: NEXT_PUBLIC_STATUS_PAGE_URL, value: "https://status.example.com" }
+            - { name: NEXT_PUBLIC_REPO_URL, value: "https://github.com/imonirulislam/openmonitor" }
+          readinessProbe:
+            httpGet: { path: /, port: 5005 }
+            initialDelaySeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 250m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: marketing
+  namespace: open-monitor
+spec:
+  selector: { app: marketing }
+  ports:
+    - port: 80
+      targetPort: 5005

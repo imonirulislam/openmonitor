@@ -37,10 +37,11 @@ Slack-only notifications, Postgres single-tenant.
                               [ Slack channels ]
 ```
 
-## The five apps
+## The six apps
 
 | App | Stack | What it owns |
 |---|---|---|
+| `apps/marketing` | Next.js 15 | Public landing page on the root domain. Talks to **nothing** — no DB, no API. |
 | `apps/web` | Next.js 15 + Auth.js | Admin login, monitor/incident/maintenance/channel CRUD. **All admin writes happen here.** |
 | `apps/status-page` | Next.js 15 | Public status page. Read-only. Calls `apps/api` only. |
 | `apps/api` | Hono | Public read endpoints, probe ingestion (bearer-auth), Slack inbound webhook |
@@ -76,10 +77,13 @@ gets retried at the HTTP layer.
 there unless we deliberately move auth into the API too. Until then, "the admin can do X"
 means "there's a server action in `apps/web/src/lib/actions/`."
 
-### 3. Status-page must not touch the database
+### 3. The public-facing apps must not touch the database
 
 `apps/status-page` calls `apps/api` for everything. This keeps the public surface
 deployable independently and means a DB outage doesn't surface as a TypeScript import error.
+
+`apps/marketing` goes further and calls nothing at all. Both exist to be readable while the
+rest of the system is broken, so neither may share a failure mode with it.
 
 ### 4. Schema lives in one place per store
 

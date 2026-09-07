@@ -7,6 +7,7 @@ Inspired by [openstatusHQ/openstatus](https://github.com/openstatusHQ/openstatus
 
 ```
 apps/
+  marketing    Next.js 15 — public landing page (no datastore, no API)
   web          Next.js 15 — admin dashboard (auth-protected)
   status-page  Next.js 15 — public status page (cacheable)
   api          Hono — public read API, probe ingestion, slack receiver
@@ -77,6 +78,7 @@ Service ports:
 
 | Service     | Port                           |
 |-------------|--------------------------------|
+| marketing   | 5005                           |
 | web (admin) | 5001                           |
 | api         | 5002                           |
 | status-page | 5003                           |

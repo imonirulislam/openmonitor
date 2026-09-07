@@ -37,6 +37,28 @@
         "typescript": "^5.6.3",
       },
     },
+    "apps/marketing": {
+      "name": "@openmonitor/marketing",
+      "version": "0.0.0",
+      "dependencies": {
+        "@openmonitor/ui": "workspace:*",
+        "lucide-react": "^0.460.0",
+        "next": "^15.0.3",
+        "next-themes": "^0.4.4",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "devDependencies": {
+        "@openmonitor/tsconfig": "workspace:*",
+        "@tailwindcss/postcss": "^4.0.0",
+        "@types/node": "^22.0.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "postcss": "^8.4.49",
+        "tailwindcss": "^4.0.0",
+        "typescript": "^5.6.3",
+      },
+    },
     "apps/notifier": {
       "name": "@openmonitor/notifier",
       "version": "0.0.0",
@@ -452,6 +474,8 @@
     "@openmonitor/clickhouse": ["@openmonitor/clickhouse@workspace:packages/clickhouse"],
 
     "@openmonitor/db": ["@openmonitor/db@workspace:packages/db"],
+
+    "@openmonitor/marketing": ["@openmonitor/marketing@workspace:apps/marketing"],
 
     "@openmonitor/notifications": ["@openmonitor/notifications@workspace:packages/notifications"],
 
@@ -1538,6 +1562,8 @@
     "@jridgewell/remapping/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@openmonitor/clickhouse/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
+
+    "@openmonitor/marketing/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
 
     "@openmonitor/notifier/@hono/node-server": ["@hono/node-server@2.1.1", "", { "peerDependencies": { "hono": "^4" } }, "sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg=="],
 

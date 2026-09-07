@@ -257,6 +257,22 @@ services:
     ports:
       - "5003:5003"
 
+  # Marketing site. Deliberately has no DATABASE_URL, no CLICKHOUSE_URL and no
+  # dependency on the api — it is static pages plus outbound links, so it stays
+  # up when everything it advertises is down.
+  marketing:
+    build:
+      context: .
+      dockerfile: deploy/docker/marketing.Dockerfile
+    container_name: open-monitor-marketing
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:5001}
+      NEXT_PUBLIC_STATUS_PAGE_URL: ${NEXT_PUBLIC_STATUS_PAGE_URL:-http://localhost:5003}
+    ports:
+      - "5005:5005"
+
   checker:
     build:
       context: .

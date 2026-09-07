@@ -5,6 +5,7 @@ most deployments mix them.
 
 | | Containers | Serverless |
 |---|---|---|
+| `apps/marketing` | `docker compose` | Vercel |
 | `apps/web`, `apps/status-page` | `docker compose` | Vercel |
 | `apps/api` | `docker compose` / Fly | Vercel |
 | `apps/notifier` | `docker compose` / Fly | Vercel + an external pinger (see below) |
@@ -48,11 +49,26 @@ The API's retention cron *is* Hobby-compatible: once a day is exactly right for 
 
 ## Vercel
 
-Four projects, one per app, all pointing at the same repository.
+Five projects, one per app, all pointing at the same repository.
 
-For each: **Root Directory** = the app's folder (`apps/web`, `apps/status-page`, `apps/api`,
-`apps/notifier`), and leave "Include source files outside of the Root Directory" enabled —
-the apps import workspace packages from `packages/`.
+For each: **Root Directory** = the app's folder (`apps/marketing`, `apps/web`,
+`apps/status-page`, `apps/api`, `apps/notifier`), and leave "Include source files outside of
+the Root Directory" enabled — the apps import workspace packages from `packages/`.
+
+Hostnames, and which are per-tenant:
+
+| Host | Project | Per-tenant? |
+|---|---|---|
+| `openmonitor.app` | `marketing` | no |
+| `app.openmonitor.app` | `web` — one host for every workspace | no |
+| `acme.openmonitor.app` | `status-page` | **yes**, via `STATUS_PAGE_ROOT_DOMAIN` |
+| `status.acme.com` | `status-page` | yes, customer's own domain |
+
+The dashboard is a *single* subdomain, not one per workspace. Per-tenant app hosts would mean
+either a session cookie scoped to `*.openmonitor.app` — throwing away the isolation the
+subdomains exist for — or re-authenticating per workspace. The workspace already comes from a
+cookie, so signup provisions no DNS: a new workspace's status page resolves the moment the row
+exists, because the wildcard already covers it.
 
 Every `vercel.json` pins `"regions": ["iad1"]`. Put your Neon project in the matching region
 (`us-east-1` for `iad1`). Every query is a round trip; a function in `fra1` talking to a
@@ -79,6 +95,7 @@ container can't terminate the WebSocket the Neon driver speaks.
 
 | Project | Also needs |
 |---|---|
+| `marketing` | `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_STATUS_PAGE_URL`, `NEXT_PUBLIC_REPO_URL`. No datastore variables — it has no datastore. |
 | `web` | `AUTH_SECRET`, `AUTH_URL`, `API_URL`, `PROBE_API_KEY`, `OPERATOR_EMAILS`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STATUS_PAGE_URL`, `CLICKHOUSE_URL` |
 | `status-page` | `API_URL` (server-side calls), `NEXT_PUBLIC_API_URL` (browser). Optional branding: `NEXT_PUBLIC_STATUS_TITLE`, `NEXT_PUBLIC_STATUS_DESCRIPTION`, `NEXT_PUBLIC_DEFAULT_PAGE`, `NEXT_PUBLIC_DEFAULT_WORKSPACE` |
 | `api` | `PROBE_API_KEY`, `PAGE_UNLOCK_SECRET`, `CRON_SECRET`, `RETENTION_ENABLED=off`, `SLACK_SIGNING_SECRET`, `CLICKHOUSE_URL` |
