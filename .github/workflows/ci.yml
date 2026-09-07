@@ -1,0 +1,42 @@
+name: CI
+
+# Also callable, so deploy.yml can gate on it rather than duplicating the gates.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: typecheck · lint · test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test
+      # lint:types is deliberately not a gate — it's informational and exits 0
+      # even when it finds things. See CONTRIBUTING.md.
+
+  checker:
+    name: go build · vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/checker/go.mod
+          cache-dependency-path: apps/checker/go.sum
+      - run: go build ./...
+        working-directory: apps/checker
+      - run: go vet ./...
+        working-directory: apps/checker

@@ -1,0 +1,53 @@
+name: Deploy to Vercel
+description: Build and deploy one app in this monorepo to a Vercel project.
+
+inputs:
+  app:
+    description: Directory under apps/ — also the Root Directory of the Vercel project.
+    required: true
+  project-id:
+    description: VERCEL_PROJECT_ID for this app. Each app is its own Vercel project.
+    required: true
+  org-id:
+    required: true
+  token:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # `vercel build` runs the app's own build, which needs the workspace, so the
+    # whole repo is checked out and bun installs from the root. This is the same
+    # reason Vercel projects need "Include files outside the Root Directory".
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: 1.3.14
+    - run: bun install --frozen-lockfile
+      shell: bash
+
+    - name: Pull project settings
+      shell: bash
+      working-directory: apps/${{ inputs.app }}
+      env:
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+      run: bunx vercel@latest pull --yes --environment=production --token="${{ inputs.token }}"
+
+    # Build here rather than on Vercel, then upload the output. Keeps the build
+    # on the same runner that just passed CI, and means the deploy step is a
+    # file upload that either works or doesn't.
+    - name: Build
+      shell: bash
+      working-directory: apps/${{ inputs.app }}
+      env:
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+      run: bunx vercel@latest build --prod --token="${{ inputs.token }}"
+
+    - name: Deploy
+      shell: bash
+      working-directory: apps/${{ inputs.app }}
+      env:
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+      run: bunx vercel@latest deploy --prebuilt --prod --token="${{ inputs.token }}"

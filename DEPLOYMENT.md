@@ -78,6 +78,62 @@ The two Hono apps have no framework preset. They work through the `api/index.ts`
 plus the rewrite in their `vercel.json`, which sends every path to that one function and lets
 Hono route internally.
 
+### Creating the projects
+
+Each app is its own Vercel project. Link them from the app directory, not the repo root —
+`vercel link` treats the directory you run it in as the project root, which is what makes
+`apps/marketing` the Root Directory without setting it in the dashboard:
+
+```bash
+cd apps/marketing && bunx vercel link      # repeat for status-page, web, api
+```
+
+That writes `apps/<app>/.vercel/project.json` with the org and project ids. It's gitignored
+— per-developer state, and CI passes the same ids as environment variables. Read them back
+with:
+
+```bash
+cat apps/marketing/.vercel/project.json
+```
+
+If you create the projects in the dashboard instead, set **Root Directory** to the app's
+folder yourself and leave "Include source files outside of the Root Directory" enabled — the
+apps import workspace packages from `packages/`.
+
+### CI/CD
+
+`.github/workflows/deploy.yml` deploys on push to `main`. It exists rather than using
+Vercel's Git integration for one reason: **Vercel does not run migrations**, and `web` and
+`api` must never serve against a schema older than their code. The workflow migrates first,
+then deploys `api`, then `web`.
+
+> **Turn off Vercel's automatic Git deploys** for these projects, or every push deploys
+> twice — once from Vercel, once from Actions, with no ordering between them and no migration
+> in the Vercel one. Project Settings → Git → either disconnect the repository or set the
+> Ignored Build Step to `exit 0`.
+
+Only the apps a push actually affects get deployed. Each app's filter covers its dependency
+closure, so a change under `packages/ui` redeploys marketing, web and status-page, and a
+change to the root manifests or `bun.lock` redeploys everything.
+
+Repository secrets:
+
+| Secret | Used by |
+|---|---|
+| `VERCEL_TOKEN`, `VERCEL_ORG_ID` | every deploy |
+| `VERCEL_PROJECT_ID_MARKETING` | marketing |
+| `VERCEL_PROJECT_ID_STATUS_PAGE` | status-page |
+| `VERCEL_PROJECT_ID_WEB` | web |
+| `VERCEL_PROJECT_ID_API` | api |
+| `DATABASE_URL`, `CLICKHOUSE_URL` | the migrate job |
+
+`DATABASE_URL` here needs to reach Postgres from a GitHub runner, so it's the Neon
+connection string. The runner also needs to reach ClickHouse — if that's on a private VM,
+either open it to GitHub's ranges or run migrations from somewhere that can.
+
+`.github/workflows/ci.yml` runs typecheck, lint, tests and the Go build on every pull
+request, and the deploy workflow gates on it.
+
 ### Environment variables
 
 Shared by every project that talks to the database:

@@ -1,0 +1,158 @@
+name: Deploy
+
+# Production deploys only. If you also connect Vercel's Git integration, both
+# will fire on every push — see the note in DEPLOYMENT.md.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  # Which apps does this push actually affect? A change under packages/ affects
+  # every app that depends on it, so each app's filter includes its own
+  # dependency closure. Root manifests affect everything.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      marketing: ${{ steps.filter.outputs.marketing }}
+      status-page: ${{ steps.filter.outputs.status-page }}
+      web: ${{ steps.filter.outputs.web }}
+      api: ${{ steps.filter.outputs.api }}
+      schema: ${{ steps.filter.outputs.schema }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Diff against the previous commit
+        id: filter
+        run: |
+          set -euo pipefail
+
+          # `github.event.before` is all-zeros on a branch's first push and
+          # unreliable after a force-push. Fall back to the parent commit, and
+          # if even that is unavailable, deploy everything rather than silently
+          # skipping a release.
+          BEFORE="${{ github.event.before || '' }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            BEFORE="$(git rev-parse HEAD~1 2>/dev/null || true)"
+          fi
+
+          if [ -z "$BEFORE" ]; then
+            echo "No comparable base commit — deploying everything."
+            CHANGED='ALL'
+          else
+            CHANGED="$(git diff --name-only "$BEFORE" "${{ github.sha }}")"
+            echo "Changed files:"; echo "$CHANGED"
+          fi
+
+          # Root files that invalidate every app.
+          ROOT='^(package\.json|bun\.lock|turbo\.json|tsconfig\.base\.json|\.github/)'
+
+          matches() {
+            [ "$CHANGED" = "ALL" ] && return 0
+            echo "$CHANGED" | grep -qE "$ROOT" && return 0
+            echo "$CHANGED" | grep -qE "$1"
+          }
+
+          UI='^packages/(ui|tsconfig)/'
+          DATA='^packages/(db|clickhouse|auth)/'
+
+          matches "^apps/marketing/|$UI"                        && echo "marketing=true"   >> "$GITHUB_OUTPUT" || echo "marketing=false"   >> "$GITHUB_OUTPUT"
+          matches "^apps/status-page/|^packages/api-client/|$UI" && echo "status-page=true" >> "$GITHUB_OUTPUT" || echo "status-page=false" >> "$GITHUB_OUTPUT"
+          matches "^apps/web/|$UI|$DATA"                        && echo "web=true"         >> "$GITHUB_OUTPUT" || echo "web=false"         >> "$GITHUB_OUTPUT"
+          matches "^apps/api/|$DATA"                            && echo "api=true"         >> "$GITHUB_OUTPUT" || echo "api=false"         >> "$GITHUB_OUTPUT"
+          # Migrations are cheap and idempotent, so err towards running them.
+          matches "^packages/(db|clickhouse)/"                  && echo "schema=true"      >> "$GITHUB_OUTPUT" || echo "schema=false"      >> "$GITHUB_OUTPUT"
+
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  # Vercel does not run migrations, and web/api must never serve against a
+  # schema older than their code. This is the main reason deploys live here
+  # rather than in Vercel's own Git integration.
+  migrate:
+    needs: [changes, ci]
+    if: needs.changes.outputs.schema == 'true' || needs.changes.outputs.web == 'true' || needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - name: Postgres migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: bun run db:migrate
+      - name: ClickHouse schema
+        env:
+          CLICKHOUSE_URL: ${{ secrets.CLICKHOUSE_URL }}
+          RETENTION_RUN_DAYS: ${{ vars.RETENTION_RUN_DAYS || '180' }}
+        run: bun run --filter @openmonitor/clickhouse migrate
+
+  # marketing and status-page hold no schema, so they don't wait for migrate.
+  marketing:
+    needs: [changes, ci]
+    if: needs.changes.outputs.marketing == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/vercel-deploy
+        with:
+          app: marketing
+          project-id: ${{ secrets.VERCEL_PROJECT_ID_MARKETING }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          token: ${{ secrets.VERCEL_TOKEN }}
+
+  status-page:
+    needs: [changes, ci]
+    if: needs.changes.outputs.status-page == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/vercel-deploy
+        with:
+          app: status-page
+          project-id: ${{ secrets.VERCEL_PROJECT_ID_STATUS_PAGE }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          token: ${{ secrets.VERCEL_TOKEN }}
+
+  # `always()` so these still run when migrate was skipped as unnecessary;
+  # the result check is what makes a *failed* migration block the deploy.
+  api:
+    needs: [changes, ci, migrate]
+    if: always() && needs.changes.outputs.api == 'true' && needs.ci.result == 'success' && needs.migrate.result != 'failure'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/vercel-deploy
+        with:
+          app: api
+          project-id: ${{ secrets.VERCEL_PROJECT_ID_API }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          token: ${{ secrets.VERCEL_TOKEN }}
+
+  # After api, so the dashboard never calls an API that hasn't shipped yet.
+  web:
+    needs: [changes, ci, migrate, api]
+    if: always() && needs.changes.outputs.web == 'true' && needs.ci.result == 'success' && needs.migrate.result != 'failure' && needs.api.result != 'failure'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/vercel-deploy
+        with:
+          app: web
+          project-id: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          token: ${{ secrets.VERCEL_TOKEN }}

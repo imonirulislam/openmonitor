@@ -47,3 +47,9 @@ coverage/
 
 # Reference checkout — read-only, ignored
 _reference
+
+# Vercel CLI. `vercel link` writes project.json (org + project ids) and
+# `vercel build` writes .vercel/output — per-developer state and build
+# artefacts, neither of which belongs in the repo. CI passes the ids as
+# environment variables instead.
+.vercel
