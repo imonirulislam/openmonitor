@@ -1,0 +1,5 @@
+# Only ClickHouse is proxied. Everything else on this box either talks outbound
+# (checker, notifier) or is reachable on the compose network.
+{$CLICKHOUSE_HOSTNAME} {
+	reverse_proxy clickhouse:8123
+}

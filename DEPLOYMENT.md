@@ -205,8 +205,16 @@ platforms, not VMs** — compose doesn't transfer, you'd split this into a servi
 volume for ClickHouse. Fly is still the right home for *extra checker regions*, where it's one
 container, no volume, and `deploy/fly/checker.fly.toml` already exists.
 
-Then set `CLICKHOUSE_URL`, `CLICKHOUSE_USER` and `CLICKHOUSE_PASSWORD` on the `web` and `api`
-Vercel projects, pointing at this box on 8123.
+ClickHouse is fronted by Caddy, which gets a Let's Encrypt certificate for
+`CLICKHOUSE_HOSTNAME` on first start — point an A record at the box and open 80/443. Then set
+`CLICKHOUSE_URL=https://<that hostname>` plus `CLICKHOUSE_USER` and `CLICKHOUSE_PASSWORD` on
+the `web` and `api` Vercel projects.
+
+TLS isn't optional here: Vercel has no stable egress IP on Hobby, so you can't allowlist, and
+ClickHouse authenticates with HTTP Basic — over plain HTTP the password crosses the internet
+in the clear on every query.
+
+`ch-ui` is bound to loopback. Reach it with `ssh -L 5436:127.0.0.1:5436 user@your-vm`.
 
 Sizing: 2 OCPU / 12 GB and the **default ~50 GB boot volume at Balanced performance**. The
 whole footprint is under 20 GB — ClickHouse data stays in tens of megabytes for years, the

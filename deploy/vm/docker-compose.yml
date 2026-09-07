@@ -27,15 +27,51 @@ services:
     # the cgroup limit, so capping the container is enough to leave room for the
     # notifier, the checker and the OS on a 12 GB box.
     mem_limit: 6g
-    # Published because Vercel has to reach it. Firewall it to Vercel's egress
-    # and your own address — a password is the floor, not the whole answer.
-    ports:
-      - "8123:8123"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- 127.0.0.1:8123/ping || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 20
+
+  # ClickHouse browser. Bound to loopback, so it is not reachable from the
+  # internet — get to it over an SSH tunnel:
+  #
+  #   ssh -L 5436:127.0.0.1:5436 user@your-vm    then http://localhost:5436
+  #
+  # Its sign-in is a ClickHouse connection test, so the database password gates
+  # it, but it also has a public-dashboard feature. A tunnel costs nothing and
+  # removes the question. To publish it instead, give it a hostname in the
+  # Caddyfile and put `basic_auth` in front.
+  ch-ui:
+    image: ghcr.io/caioricciuti/ch-ui:latest
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CONNECTION_NAME: OpenMonitor
+    ports:
+      - "127.0.0.1:5436:3488"
+    mem_limit: 256m
+    depends_on:
+      clickhouse: { condition: service_healthy }
+
+  # TLS for ClickHouse. Vercel functions have no stable egress IP on Hobby, so
+  # an IP allowlist isn't available and 8123 would otherwise be open to the
+  # internet with the password sent as plaintext HTTP Basic. Caddy gets a
+  # Let's Encrypt certificate for CLICKHOUSE_HOSTNAME automatically.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_HOSTNAME: ${CLICKHOUSE_HOSTNAME}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      clickhouse: { condition: service_healthy }
 
   migrate:
     build:
@@ -90,3 +126,5 @@ services:
 
 volumes:
   clickhouse-data:
+  caddy-data:
+  caddy-config:
