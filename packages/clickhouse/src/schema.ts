@@ -61,14 +61,18 @@ export async function ensureSchema(url: string, retentionDays = 180): Promise<vo
   // runs anything, so a client scoped to a database that doesn't exist yet
   // fails on the statement that would have created it. Bootstrap through
   // `default`, then reconnect to do the rest.
-  const bootstrap = createClient({ url, database: "default" });
+  const auth = {
+    username: process.env.CLICKHOUSE_USER ?? "default",
+    password: process.env.CLICKHOUSE_PASSWORD ?? "",
+  };
+  const bootstrap = createClient({ url, database: "default", ...auth });
   try {
     await bootstrap.command({ query: `CREATE DATABASE IF NOT EXISTS ${database}` });
   } finally {
     await bootstrap.close();
   }
 
-  const client = createClient({ url, database });
+  const client = createClient({ url, database, ...auth });
   try {
     await client.command({ query: MONITOR_RUNS_DDL(retentionDays) });
   } finally {

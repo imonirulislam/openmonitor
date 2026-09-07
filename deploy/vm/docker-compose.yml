@@ -1,0 +1,86 @@
+# The one VM: ClickHouse, notifier and a checker.
+#
+# Postgres is Neon and the web apps are on Vercel, so neither is here. Run from
+# a clone of the repo on the VM:
+#
+#   cp deploy/vm/.env.example deploy/vm/.env   # fill it in
+#   docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d --build
+#
+# Co-location is deliberate: it keeps the box busy enough to survive Oracle's
+# idle reclamation, and NOTIFIER_POLL=on means no external scheduler.
+
+name: openmonitor-vm
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24-alpine
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    # Published because Vercel has to reach it. Firewall it to Vercel's egress
+    # and your own address — a password is the floor, not the whole answer.
+    ports:
+      - "8123:8123"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 127.0.0.1:8123/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/api.Dockerfile
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      RETENTION_RUN_DAYS: ${RETENTION_RUN_DAYS:-180}
+    depends_on:
+      clickhouse: { condition: service_healthy }
+    working_dir: /repo
+    command:
+      - sh
+      - -c
+      - |
+        cd /repo/packages/db && node_modules/.bin/tsx src/migrate.ts
+        cd /repo/packages/clickhouse && node_modules/.bin/tsx src/migrate.ts
+
+  notifier:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/notifier.Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      # No NEON_WS_PROXY: Neon terminates the WebSocket itself. The proxy is a
+      # local-development shim for plain Postgres.
+      NODE_ENV: production
+      # Self-pacing, so there is no cron to configure.
+      NOTIFIER_POLL: "on"
+      SLACK_DEFAULT_WEBHOOK_URL: ${SLACK_DEFAULT_WEBHOOK_URL:-}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  checker:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/checker.Dockerfile
+    restart: unless-stopped
+    environment:
+      # The public API on Vercel. No DATABASE_URL — probes reach the database
+      # only through it, so this box holds no Postgres credentials for them.
+      API_URL: ${API_URL}
+      PROBE_TOKEN: ${PROBE_TOKEN}
+      CHECKER_DEFAULT_TIMEOUT_MS: "10000"
+
+volumes:
+  clickhouse-data:

@@ -19,6 +19,10 @@ export function createChClient(url: string): ClickHouseClient {
   return createClient({
     url,
     database: process.env.CLICKHOUSE_DATABASE ?? "openmonitor",
+    // Local compose runs with no password. A ClickHouse that anything else can
+    // reach needs one.
+    username: process.env.CLICKHOUSE_USER ?? "default",
+    password: process.env.CLICKHOUSE_PASSWORD ?? "",
     clickhouse_settings: {
       // ClickHouse writes a part per INSERT and merges them in the background.
       // A probe result per request would produce parts faster than merges

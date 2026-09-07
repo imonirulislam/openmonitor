@@ -175,6 +175,26 @@ To verify a region, watch **Last seen** on the probe locations page; it should t
 check interval. `401 unauthorized` in the checker log means the token doesn't match a location,
 almost always a truncated paste.
 
+## The one VM
+
+ClickHouse, the notifier and one checker on a single box. `deploy/vm/docker-compose.yml`
+runs exactly those three against Neon:
+
+```bash
+git clone https://github.com/imonirulislam/openmonitor && cd openmonitor
+cp deploy/vm/.env.example deploy/vm/.env    # fill in Neon URL, ClickHouse password, probe token
+docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d --build
+```
+
+Put it in the region nearest your Neon project and Vercel functions — Ashburn for
+`us-east-1`/`iad1` — since the api writes every probe result to ClickHouse.
+
+Then set `CLICKHOUSE_URL`, `CLICKHOUSE_USER` and `CLICKHOUSE_PASSWORD` on the `web` and `api`
+Vercel projects, pointing at this box on 8123.
+
+Port 8123 has to be reachable from Vercel, so firewall it to Vercel's egress plus your own
+address. The password is the floor, not the whole answer.
+
 ## Self-hosting everything
 
 `docker compose up --build` runs the lot, migrations included. Ports and the seed step are in
