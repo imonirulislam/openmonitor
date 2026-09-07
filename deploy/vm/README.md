@@ -1,0 +1,157 @@
+# The VM
+
+ClickHouse, notifier, checker, Caddy and ch-ui on one box. Postgres is Neon; the web apps are
+on Vercel.
+
+Written for Ubuntu 24.04. Do the hardening before the deploy — the compose stack opens 80 and
+443 to the world.
+
+## 1. A user that isn't root
+
+```bash
+adduser om && usermod -aG sudo om
+mkdir -p /home/om/.ssh && cp ~/.ssh/authorized_keys /home/om/.ssh/
+chown -R om:om /home/om/.ssh && chmod 700 /home/om/.ssh && chmod 600 /home/om/.ssh/authorized_keys
+```
+
+## 2. SSH
+
+**Open a second terminal and confirm `ssh om@host` works before touching sshd.** Getting this
+wrong on a fresh VPS means a rescue console.
+
+```bash
+sudo tee /etc/ssh/sshd_config.d/99-hardening.conf <<'EOF'
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+EOF
+sudo systemctl restart ssh
+```
+
+## 3. Firewall
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow OpenSSH
+sudo ufw allow 80,443/tcp     # Caddy: certificate issuance and ClickHouse over TLS
+sudo ufw enable
+```
+
+Nothing else needs opening. ClickHouse isn't published, and ch-ui binds to loopback.
+
+## 4. Unattended upgrades and fail2ban
+
+```bash
+sudo apt install -y unattended-upgrades fail2ban
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+
+## 5. Rootless Docker
+
+Use Docker's own repository, not Ubuntu's `docker.io` — the rootless setup tool ships in
+`docker-ce-rootless-extras`, which `docker.io` doesn't include.
+
+If a rootful Docker is already installed, remove it first:
+
+```bash
+sudo systemctl disable --now docker.service docker.socket containerd 2>/dev/null || true
+sudo apt purge -y docker.io docker-ce docker-ce-cli docker-ce-rootless-extras \
+  containerd containerd.io docker-buildx-plugin docker-compose-plugin runc
+sudo apt autoremove -y && sudo rm -rf /var/lib/docker /var/lib/containerd /etc/docker
+```
+
+```bash
+sudo apt update && sudo apt install -y ca-certificates curl uidmap dbus-user-session
+sudo install -m0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/keyrings/docker.asc >/dev/null
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+sudo systemctl disable --now docker.service docker.socket   # rootful daemon stays off
+```
+
+Then as the unprivileged user, never with sudo:
+
+```bash
+sudo loginctl enable-linger om            # keep the user session alive after logout
+dockerd-rootless-setuptool.sh install
+echo "export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock" >> ~/.bashrc
+export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
+```
+
+`permission denied ... /var/run/docker.sock` means `DOCKER_HOST` isn't set and the client is
+reaching for the rootful socket.
+
+Three things this stack needs on top:
+
+```bash
+# Caddy binds 80 and 443. Rootless can't touch ports below 1024 by default.
+echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/99-rootless-ports.conf
+sudo sysctl --system
+
+# ClickHouse asks for 262144 open files; a rootless container inherits the
+# user's limit, which is ~1024.
+sudo tee /etc/security/limits.d/99-om.conf <<'EOF'
+om soft nofile 1048576
+om hard nofile 1048576
+EOF
+```
+
+`mem_limit` needs cgroup v2 delegation. Verify rather than assume — without it the limits are
+ignored silently rather than failing:
+
+```bash
+docker info | grep -iE 'rootless|cgroup version'   # expect rootless, Cgroup Version: 2
+docker info 2>&1 | grep -i 'limit'                 # any "No memory limit support" is a problem
+```
+
+Log out and back in for the group, linger and limits changes to apply.
+
+## 6. Deploy
+
+```bash
+git clone https://github.com/imonirulislam/openmonitor && cd openmonitor
+cp deploy/vm/.env.example deploy/vm/.env && $EDITOR deploy/vm/.env
+docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d --build
+```
+
+Point an A record at the box for `CLICKHOUSE_HOSTNAME` **before** starting, or Caddy's first
+certificate attempt fails and it backs off.
+
+Then set on the `web` and `api` Vercel projects:
+
+```
+CLICKHOUSE_URL=https://<CLICKHOUSE_HOSTNAME>
+CLICKHOUSE_USER=…
+CLICKHOUSE_PASSWORD=…
+```
+
+## 7. Check it
+
+```bash
+docker compose -f deploy/vm/docker-compose.yml ps
+curl -u "$CLICKHOUSE_USER:$CLICKHOUSE_PASSWORD" https://<hostname>/ping     # Ok.
+curl -o /dev/null -w '%{http_code}\n' https://<hostname>/ping               # 403 without auth
+docker compose -f deploy/vm/docker-compose.yml logs checker | tail
+```
+
+`Settings → Probe locations` should show **Last seen** ticking within one check interval.
+`401 unauthorized` in the checker log means the probe token doesn't match a location.
+
+ch-ui: `ssh -L 5436:127.0.0.1:5436 om@host`, then <http://localhost:5436>. Sign in with the
+ClickHouse credentials.
+
+## Rootless and probe timings
+
+Rootless outbound traffic goes through pasta/slirp4netns rather than the host stack, which
+adds a small fixed overhead to every connection. Availability results are unaffected;
+*absolute* latency reads slightly high. It's consistent, so trends and comparisons stay
+meaningful — but don't compare these numbers against a probe running rootful elsewhere.
+
+If probe latency matters more than isolation, run the checker on a separate rootful host and
+keep the datastore here.
