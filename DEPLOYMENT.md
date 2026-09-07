@@ -208,6 +208,12 @@ container, no volume, and `deploy/fly/checker.fly.toml` already exists.
 Then set `CLICKHOUSE_URL`, `CLICKHOUSE_USER` and `CLICKHOUSE_PASSWORD` on the `web` and `api`
 Vercel projects, pointing at this box on 8123.
 
+Sizing: 2 OCPU / 12 GB and the **default ~50 GB boot volume at Balanced performance**. The
+whole footprint is under 20 GB — ClickHouse data stays in tens of megabytes for years, the
+rest is Docker images and the OS. Don't take a bigger volume or higher VPU for the sake of it;
+both bill, and on Oracle the "Always Free Eligible" badge is what tells you a config is
+actually free, not the cost estimate.
+
 Port 8123 has to be reachable from Vercel, so firewall it to Vercel's egress plus your own
 address. The password is the floor, not the whole answer.
 
