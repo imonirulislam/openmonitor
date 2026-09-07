@@ -22,8 +22,10 @@ cat apps/marketing/.vercel/project.json # org + project ids, for CI secrets
 Creating projects in the dashboard instead? Set **Root Directory** to the app folder and keep
 "Include source files outside of the Root Directory" on — the apps import from `packages/`.
 
-Every `vercel.json` pins `iad1`. Put Neon in `us-east-1` to match; the status page makes
-several queries per render and each one is a round trip.
+Every `vercel.json` pins `sin1`, matching Neon in `ap-southeast-1` and the VM in Singapore.
+Keep all three together — the status page makes several queries per render and each one is a
+round trip. Moving deployment means changing the five `vercel.json` files, the Neon project
+(its region is fixed at creation) and the VM, together.
 
 The two Hono apps have no framework preset. They run through `api/index.ts` plus a rewrite
 that sends every path to that one function.
@@ -193,8 +195,10 @@ cp deploy/vm/.env.example deploy/vm/.env    # fill in Neon URL, ClickHouse passw
 docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d --build
 ```
 
-Put it in the region nearest your Neon project and Vercel functions — Ashburn for
-`us-east-1`/`iad1` — since the api writes every probe result to ClickHouse.
+Put it in the same region as Neon and the Vercel functions — Singapore for
+`ap-southeast-1`/`sin1` — since the api writes every probe result to ClickHouse. On Oracle
+this is the tenancy's home region, chosen at signup and unchangeable, so it's the fixed point
+everything else should be matched to.
 
 Any VM works: Oracle always-free, Hetzner CX22, a droplet. **Fly and Railway are container
 platforms, not VMs** — compose doesn't transfer, you'd split this into a service each plus a
