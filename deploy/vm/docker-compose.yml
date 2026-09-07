@@ -23,6 +23,10 @@ services:
       - clickhouse-data:/var/lib/clickhouse
     ulimits:
       nofile: { soft: 262144, hard: 262144 }
+    # ClickHouse sizes itself to the host and would take ~90% of RAM. It reads
+    # the cgroup limit, so capping the container is enough to leave room for the
+    # notifier, the checker and the OS on a 12 GB box.
+    mem_limit: 6g
     # Published because Vercel has to reach it. Firewall it to Vercel's egress
     # and your own address — a password is the floor, not the whole answer.
     ports:
@@ -67,6 +71,7 @@ services:
       # Self-pacing, so there is no cron to configure.
       NOTIFIER_POLL: "on"
       SLACK_DEFAULT_WEBHOOK_URL: ${SLACK_DEFAULT_WEBHOOK_URL:-}
+    mem_limit: 512m
     depends_on:
       migrate: { condition: service_completed_successfully }
 
@@ -81,6 +86,7 @@ services:
       API_URL: ${API_URL}
       PROBE_TOKEN: ${PROBE_TOKEN}
       CHECKER_DEFAULT_TIMEOUT_MS: "10000"
+    mem_limit: 256m
 
 volumes:
   clickhouse-data:
