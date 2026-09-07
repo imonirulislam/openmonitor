@@ -109,7 +109,8 @@ One append-only table, ~250 KB/day at four monitors across five regions. A 1 GB 
   percentile over 7 days). A box running only a checker is that idle, so co-locate ClickHouse
   and the notifier or it will vanish.
 - **GCE always-free e2-micro** (us-west1/central1/east1): no idle policy, one US region.
-- **Any small paid VM** — Hetzner, Fly, a $5 droplet.
+- **Any small paid VM** — Hetzner CX22 (~$4.59/mo, Ashburn) is the obvious one: real VM,
+  `deploy/vm/docker-compose.yml` runs unchanged, no idle policy.
 - **Tinybird** free tier is 10 GB and is ClickHouse underneath, but its API is
   datasources-and-pipes, so `@openmonitor/clickhouse` would need a second implementation and
   couldn't run locally.
@@ -188,6 +189,11 @@ docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d -
 
 Put it in the region nearest your Neon project and Vercel functions — Ashburn for
 `us-east-1`/`iad1` — since the api writes every probe result to ClickHouse.
+
+Any VM works: Oracle always-free, Hetzner CX22, a droplet. **Fly and Railway are container
+platforms, not VMs** — compose doesn't transfer, you'd split this into a service each plus a
+volume for ClickHouse. Fly is still the right home for *extra checker regions*, where it's one
+container, no volume, and `deploy/fly/checker.fly.toml` already exists.
 
 Then set `CLICKHOUSE_URL`, `CLICKHOUSE_USER` and `CLICKHOUSE_PASSWORD` on the `web` and `api`
 Vercel projects, pointing at this box on 8123.
