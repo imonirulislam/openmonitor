@@ -64,12 +64,20 @@ export default async function OverviewPage({
   if (!monitor) notFound();
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const bucketSeconds = bucketMinutes * 60;
 
-  // Per-region latency for the Regions panel. Percentiles come from the raw
-  // runs; the trend is hourly means so the sparkline has a stable number of
-  // points regardless of probe interval. Runs whose region no longer has a
-  // location still show up — dropping them would silently hide history.
-  const regionStats = await regionLatency(id, since);
+  // All three ClickHouse reads at once — they don't depend on each other, and
+  // serially they cost three round trips, which is the whole page load when
+  // ClickHouse isn't in the same region as this function.
+  //
+  // regionStats: per-region percentiles plus an hourly-mean sparkline.
+  // stats:       status counts and the five latency percentiles over 24h.
+  // buckets:     per-phase latency, bucketed by the chart's r= control.
+  const [regionStats, stats, buckets] = await Promise.all([
+    regionLatency(id, since),
+    latencyStats(id, since),
+    fetchPhaseBuckets(id, since, bucketSeconds, quantileNumber),
+  ]);
 
   const regionStatuses = await conn
     .select({
@@ -98,19 +106,8 @@ export default async function OverviewPage({
     max: r.max,
   }));
 
-  // Aggregate stats over the 24h window — counts by status + all five
-  // latency percentiles in one round-trip.
-  const stats = await latencyStats(id, since);
   const { total, ok, degraded, failing } = stats;
   const uptimePct = total === 0 ? null : (ok / total) * 100;
-
-  // Per-bucket latency aggregates over the 24h window. `bucketMinutes` and
-  // `quantileNumber` come from the URL-driven chart controls (q + r). Bucket
-  // start is computed as `floor(epoch / N) * N` so any minute resolution
-  // works without hand-rolled cases for each option. Phase percentiles use
-  // the same quantile as the total to keep the chart coherent.
-  const bucketSeconds = bucketMinutes * 60;
-  const buckets = await fetchPhaseBuckets(id, since, bucketSeconds, quantileNumber);
 
   // If we have any rows with phase instrumentation in the window, prefer the
   // stacked phases view; otherwise fall back to the legacy avg/p95 chart so
