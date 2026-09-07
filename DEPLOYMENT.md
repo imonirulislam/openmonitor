@@ -168,6 +168,12 @@ fly deploy --config deploy/fly/checker-fra.toml
 with no inbound traffic Fly has nothing to wake it on, and a stopped checker is a region that
 silently reports nothing.
 
+**Don't run a checker on an oversubscribed VPS** — Contabo and similar. CPU steal is recorded
+as the monitored service being slow, so you get phantom `degraded` results and auto-incidents
+for outages that never happened. A prober is one of the few workloads where a noisy neighbour
+corrupts the output rather than just slowing it down. Predictable CPU matters more than core
+count; Fly's smallest machine is fine.
+
 **There is no free multi-region checker.** Free tiers give one instance in one region; extra
 regions are ~$2/month each on Fly, which is what openstatus pays. Starting with one is fine —
 `regionPolicy` defaults to `any`, so adding regions later doesn't change existing monitors.
