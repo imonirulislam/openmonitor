@@ -1,64 +1,41 @@
 # packages/clickhouse — Probe results
 
-Holds `monitor_runs`, and nothing else. Everything relational stays in `@openmonitor/db`.
+Holds `monitor_runs` and nothing else. Relational data stays in `@openmonitor/db`.
 
-## Why it exists
+Measured, same rows: **2.08 bytes** here against **326** in Postgres (144 heap + 182 index).
+That's what makes multi-region history fit a free tier. `region` costs 0.006 bytes/row, so
+adding a region is nearly free — in Postgres it multiplied the whole row.
 
-`monitor_runs` was the only table that grew with time, and it grew faster than a free-tier
-Postgres could hold. Measured on real data:
+## Gotchas
 
-| | bytes/row | 5 regions × 4 monitors, 180 days |
-|---|---|---|
-| Postgres | 326 (144 heap + 182 index) | 1,428 MB |
-| ClickHouse | 2.08 | 9.4 MB |
+- **`formatDateTime` is not strftime.** `%M` is the month *name*, `%F` renders a mangled date.
+  Minutes are `%i`. Use `%Y-%m-%dT%H:%i:%SZ`.
+- **Inserts are async** (`async_insert=1, wait_for_async_insert=0`) — a part per probe would
+  outrun merges and the server starts rejecting writes. Rows are queryable within ~1s; pass
+  `{ wait: true }` when you need them immediately, as the seed does.
+- **No NULLs.** Columns are non-nullable for compression; `0` means "not measured" and
+  `recentRuns` maps it back to `null`.
+- **No `id` column.** `recentRuns` synthesises a React key from `checked_at` + `region`.
+- **`WITH … AS alias` can't be referenced inside a subquery** in the same statement. Inline it.
+- **Retention is a TTL**, applied at DDL time from `RETENTION_RUN_DAYS`. Changing it needs
+  `ALTER TABLE … MODIFY TTL`, not a restart. There is no sweep job.
 
-The categorical columns are what make per-region probing affordable — `region` costs 0.006
-bytes/row and `status` 0.017, where in Postgres another region multiplied the whole row.
+## Conventions
 
-This is the split openstatus makes with Tinybird, which is ClickHouse underneath.
+Queries go in `src/runs.ts` as typed functions — don't export the client. Keeping the SQL in
+one file is what made moving off Postgres contained instead of a hunt through five apps.
+Parameterise with `{name:Type}` and `query_params`.
 
-## Consequences worth knowing
+No rollup table, deliberately: daily buckets apply the status page's timezone at read time.
+Pre-aggregating would freeze one timezone and give every other page 23- or 25-hour days.
 
-- **Retention is a TTL on the table.** ClickHouse drops expired parts during background
-  merges. There is no sweep job and no cron entry for probe results. `RETENTION_RUN_DAYS`
-  is applied at DDL time in `src/schema.ts`; changing it needs an `ALTER TABLE … MODIFY TTL`,
-  not just a restart.
-- **No rollup table, deliberately.** Daily buckets apply the status page's timezone at read
-  time over raw rows. Pre-aggregating would mean freezing one timezone, and every page
-  configured for another would show days of 23 or 25 hours on its tracker.
-- **Inserts are async.** `async_insert=1, wait_for_async_insert=0` — a part per probe would
-  outrun the merges and the server would start rejecting writes with "too many parts". Rows
-  are queryable within about a second. Pass `{ wait: true }` when the caller needs them
-  immediately, as the seed does.
-- **No NULLs.** Columns are non-nullable for compression; `0` is the "not measured"
-  sentinel and `recentRuns` maps it back to `null` for the UI.
-- **No `id` column.** ClickHouse has no sequences and a UUID per row would cost more than
-  the rest of the row. `recentRuns` synthesises a React key from `checked_at` + `region`.
-- **`formatDateTime` is not strftime.** `%M` is the month *name* and `%F` renders a mangled
-  date. Minutes are `%i`. Use `%Y-%m-%dT%H:%i:%SZ`.
-
-## Adding a query
-
-Put it in `src/runs.ts` as a typed function rather than exporting the client. Callers get a
-shaped result and the SQL stays in one file — which is what made porting off Postgres a
-contained change rather than a hunt through five apps.
-
-Parameterise with `{name:Type}` and `query_params`. Note that a `WITH … AS alias` cannot be
-referenced from inside a subquery in the same statement; inline the expression instead.
-
-## Schema changes
-
-`src/schema.ts` applies `CREATE TABLE IF NOT EXISTS` — there's no numbered migration chain,
-because there is one append-only table that nothing references, so the interesting migrations
-don't arise. If that stops being true, add a real chain rather than growing `ensureSchema`.
-
-`bun run --filter @openmonitor/clickhouse migrate` applies it; the compose `migrate` service
-runs it after the Postgres migrations.
+`src/schema.ts` is `CREATE TABLE IF NOT EXISTS` — one append-only table nothing references, so
+there's no migration chain to maintain. Add a real one if that stops being true.
 
 ## Local
 
-`docker compose up -d clickhouse` — HTTP on host port 5435. To browse it:
-
 ```bash
-docker compose --profile tools up -d ch-ui    # http://localhost:5436
+docker compose up -d clickhouse                 # HTTP on 5435
+docker compose --profile tools up -d ch-ui      # browser on 5436
+bun run --filter @openmonitor/clickhouse migrate
 ```
