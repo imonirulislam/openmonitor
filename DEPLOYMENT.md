@@ -38,6 +38,21 @@ that sends every path to that one function.
 
 ### Environment
 
+These belong to the **Vercel project**, not GitHub. A GitHub secret only reaches steps that
+map it into `env:` — `vercel build` reads what `vercel pull` fetched from the project, and
+deployed functions read the project's env at runtime. Neither can see GitHub, so a value
+that exists only as a GitHub secret produces `Error: DATABASE_URL must be set` at build.
+
+```bash
+export DATABASE_URL='postgresql://…-pooler…?sslmode=require'
+export CLICKHOUSE_URL='https://clickhouse.openmonitor.app' ADMIN_EMAIL='you@example.com'
+./deploy/vercel-env.sh            # print
+./deploy/vercel-env.sh --apply    # set
+```
+
+GitHub needs only `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_*`, and — for the
+`migrate` job alone — `DATABASE_URL` and `CLICKHOUSE_*`.
+
 | Project | Variables |
 |---|---|
 | all with data | `DATABASE_URL` (Neon **pooled** — the `-pooler` host), `CLICKHOUSE_URL` |

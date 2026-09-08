@@ -53,7 +53,7 @@ jobs:
           fi
 
           # Root files that invalidate every app.
-          ROOT='^(package\.json|bun\.lock|turbo\.json|tsconfig\.base\.json|\.github/)'
+          ROOT='^(package\.json|bun\.lock|bunfig\.toml|turbo\.json|tsconfig\.base\.json|\.github/)'
 
           matches() {
             [ "$CHANGED" = "ALL" ] && return 0
