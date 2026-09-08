@@ -222,10 +222,7 @@ function BreakdownRow({
   count: number;
   total: number;
 }) {
-  // Share only, no raw count. The absolute number of probes is an
-  // implementation detail of the check interval — a visitor comparing two
-  // monitors on 30s and 5m intervals would read wildly different totals for
-  // the same availability.
+  // Share only — raw probe counts just reflect the check interval.
   const pct = total > 0 ? (count / total) * 100 : 0;
   return (
     <div className="flex items-baseline gap-3">

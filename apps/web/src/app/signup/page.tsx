@@ -4,14 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { signUp, signupsEnabled } from "~/lib/actions/signup";
 
-/**
- * Self-service signup. Closed unless SIGNUPS_ENABLED=on — a self-hosted
- * deployment should not expose a form that lets a stranger add a workspace.
- *
- * The slug the user picks here becomes their status page's hostname,
- * `<slug>.<STATUS_PAGE_ROOT_DOMAIN>`, resolved by workspaceSlugFromHost in
- * apps/api. Reserved slugs are rejected by the action's schema.
- */
+/** Closed unless SIGNUPS_ENABLED=on. The slug becomes the status page host. */
 export default function SignupPage() {
   if (!signupsEnabled()) notFound();
 

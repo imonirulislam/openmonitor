@@ -67,8 +67,7 @@ export const edgeAuthConfig: NextAuthConfig = {
     authorized({ auth, request }) {
       const isLoggedIn = !!auth?.user;
       const path = request.nextUrl.pathname;
-      // /signup 404s on its own when SIGNUPS_ENABLED is off, so listing it
-      // here doesn't open anything on a closed deployment.
+      // /signup 404s itself when SIGNUPS_ENABLED is off.
       const isPublic =
         path.startsWith("/login") ||
         path.startsWith("/api/auth") ||

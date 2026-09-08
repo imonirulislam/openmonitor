@@ -10,39 +10,26 @@ import { parseOrFlash } from "~/lib/zod-flash";
 
 const PATH = "/signup";
 
-/**
- * Self-service signup is opt-in, like RETENTION_ENABLED and NOTIFIER_POLL.
- *
- * A self-hosted deployment wants exactly one workspace and no way for a
- * stranger to add another, so the default has to be "closed" — the same reason
- * there is no signup form in the first place (see packages/auth/CLAUDE.md).
- * Turning it on is a decision by whoever controls the deploy.
- */
+/** Opt-in: a self-hosted deployment shouldn't let a stranger add a workspace. */
 export function signupsEnabled(): boolean {
   return process.env.SIGNUPS_ENABLED === "on";
 }
 
 const signupSchema = z.object({
   email: z.string().email().max(200),
-  // Matches acceptInvite — one password policy, not two.
-  password: z.string().min(8).max(200),
+  password: z.string().min(8).max(200), // same policy as acceptInvite
   workspaceName: z.string().min(1).max(200),
   slug: z
     .string()
     .min(2)
     .max(80)
     .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes only")
-    // The slug becomes a hostname under STATUS_PAGE_ROOT_DOMAIN, so it can
-    // collide with something the deployment owns.
     .refine((slug) => !isReservedSlug(slug), "That address is reserved"),
 });
 
 /**
- * Create an account and its first workspace in one transaction, then sign in.
- *
- * The new user is an admin *of their own workspace only* — `admin` is read from
- * `workspace_members`, so it grants nothing outside it. Instance-wide powers
- * stay behind OPERATOR_EMAILS, which no signup can grant.
+ * Account + first workspace in one transaction, then sign in. `admin` here is
+ * admin of that workspace only; OPERATOR_EMAILS stays out of reach.
  */
 export async function signUp(formData: FormData) {
   if (!signupsEnabled()) {
@@ -52,9 +39,7 @@ export async function signUp(formData: FormData) {
   const parsed = parseOrFlash(signupSchema, Object.fromEntries(formData), PATH);
   const email = parsed.email.toLowerCase();
 
-  // Checked up front so the common mistakes get a readable message. The unique
-  // indexes on users.email and workspaces.slug are still the real guard — two
-  // simultaneous signups can both pass these reads.
+  // Readable messages for the common case; the unique indexes are the real guard.
   const [takenEmail] = await db()
     .select({ id: schema.users.id })
     .from(schema.users)
@@ -93,9 +78,7 @@ export async function signUp(formData: FormData) {
         .insert(schema.workspaceMembers)
         .values({ workspaceId: workspace.id, userId: user.id, role: "admin" });
 
-      // Written here rather than through logAudit(): that reads the session for
-      // the actor and returns early without one, and at this point the user
-      // isn't signed in yet — the call would have silently recorded nothing.
+      // Not logAudit() — it takes the actor from the session, and there isn't one yet.
       await tx.insert(schema.auditLogs).values({
         workspaceId: workspace.id,
         actorId: user.id,
@@ -108,19 +91,12 @@ export async function signUp(formData: FormData) {
       });
     });
   } catch (err) {
-    // Lost the race on one of the unique indexes. Both fields are shown on the
-    // form, so a single message pointing at them is enough.
     if (String(err).includes("23505") || /unique/i.test(String(err))) {
       redirect(withToastRedirect(PATH, "That email or address was just taken", "error"));
     }
     throw err;
   }
 
-  // signIn throws a redirect, so it has to be the last thing and outside the
-  // transaction.
-  await signIn("credentials", {
-    email,
-    password: parsed.password,
-    redirectTo: "/dashboard",
-  });
+  // Throws a redirect, so it goes last.
+  await signIn("credentials", { email, password: parsed.password, redirectTo: "/dashboard" });
 }

@@ -23,11 +23,8 @@ export function workspaceSlugFromHost(host: string | undefined): string | null {
   const label = normalized.slice(0, -(root.length + 1));
   if (!label || label.includes(".")) return null;
 
-  // A reserved label is infrastructure, not a tenant. `status.example.com` is
-  // the canonical status host and `www` is the apex; neither names a workspace.
-  // Workspace creation rejects these slugs, so a reserved label can never match
-  // a real workspace — reading one as a tenant only turns the site's own
-  // hostname into a 404, which is exactly what it did.
+  // status.example.com is the site's own host, not a tenant. Workspace creation
+  // rejects these slugs, so reading one as a workspace only 404s the real page.
   if (isReservedSlug(label)) return null;
 
   return label;
