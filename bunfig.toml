@@ -1,0 +1,9 @@
+# Hoisted, not bun's default isolated linker.
+#
+# Isolated puts every package in a node_modules/.bun store at the workspace
+# root and symlinks into it. Next traces server files through those symlinks
+# and records store-relative paths, so `vercel deploy --prebuilt` from
+# apps/<name> looks for apps/<name>/node_modules/.bun and fails with
+# "Please ensure project dependencies have been installed".
+[install]
+linker = "hoisted"

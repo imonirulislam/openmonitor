@@ -3,7 +3,7 @@ FROM oven/bun:1-alpine AS base
 WORKDIR /repo
 
 FROM base AS deps
-COPY package.json bun.lock* turbo.json tsconfig.base.json ./
+COPY package.json bun.lock* bunfig.toml turbo.json tsconfig.base.json ./
 # Only the workspaces marketing actually needs. bun errors if a workspace that
 # *is* present has a workspace dependency that isn't, so this set has to be
 # closed under dependencies — but nothing here depends on db or clickhouse,

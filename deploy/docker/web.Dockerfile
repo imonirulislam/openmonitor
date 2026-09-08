@@ -3,7 +3,7 @@ FROM oven/bun:1-alpine AS base
 WORKDIR /repo
 
 FROM base AS deps
-COPY package.json bun.lock* turbo.json tsconfig.base.json ./
+COPY package.json bun.lock* bunfig.toml turbo.json tsconfig.base.json ./
 COPY packages/api-client/package.json ./packages/api-client/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/db/package.json ./packages/db/
