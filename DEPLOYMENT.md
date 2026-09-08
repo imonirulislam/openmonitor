@@ -88,7 +88,7 @@ Only affected apps deploy; each filter covers its dependency closure, so `packag
 three apps and `bun.lock` hits everything.
 
 Secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_{MARKETING,STATUS_PAGE,WEB,API}`,
-`DATABASE_URL`, `CLICKHOUSE_URL`. The runner needs to reach both databases — if ClickHouse is
+`DATABASE_URL`, `CLICKHOUSE_URL`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD`. The runner needs to reach both databases — if ClickHouse is
 on a private VM, migrate from somewhere that can.
 
 ## Status page URLs

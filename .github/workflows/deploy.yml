@@ -95,6 +95,8 @@ jobs:
       - name: ClickHouse schema
         env:
           CLICKHOUSE_URL: ${{ secrets.CLICKHOUSE_URL }}
+          CLICKHOUSE_USER: ${{ secrets.CLICKHOUSE_USER }}
+          CLICKHOUSE_PASSWORD: ${{ secrets.CLICKHOUSE_PASSWORD }}
           RETENTION_RUN_DAYS: ${{ vars.RETENTION_RUN_DAYS || '180' }}
         run: bun run --filter @openmonitor/clickhouse migrate
 
