@@ -28,7 +28,7 @@ ROOT_DOMAIN="${ROOT_DOMAIN:-openmonitor.app}"
 
 # No trailing slashes: apps/web/src/app/dashboard/settings/system/page.tsx
 # concatenates ${API_URL}${path} raw.
-APP_URL="https://app.$ROOT_DOMAIN"
+APP_URL="https://dashboard.$ROOT_DOMAIN"
 API="https://api.$ROOT_DOMAIN"
 STATUS_URL="https://status.$ROOT_DOMAIN"
 

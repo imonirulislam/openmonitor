@@ -22,6 +22,9 @@ const RESERVED = new Set([
   "assets",
   "auth",
   "cdn",
+  // The datastore's own hostname in deploy/vm — a workspace claiming it would
+  // collide with infrastructure DNS.
+  "clickhouse",
   "dashboard",
   "email",
   "ftp",
