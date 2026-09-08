@@ -15,9 +15,15 @@ One project per app. Link from the app directory — `vercel link` treats the cu
 as the project root, which sets Root Directory for you:
 
 ```bash
-cd apps/marketing && bunx vercel link   # then status-page, web, api
-cat apps/marketing/.vercel/project.json # org + project ids, for CI secrets
+for a in marketing status-page api web; do
+  (cd "apps/$a" && bunx vercel link --yes --project "openmonitor-$a")
+done
+cat apps/marketing/.vercel/project.json   # org + project ids, for the CI secrets
 ```
+
+Names are cosmetic — CI authenticates with `VERCEL_PROJECT_ID`, so renaming a project later
+changes nothing but its default `*.vercel.app` URL. Don't connect these projects to Git;
+`.github/workflows/deploy.yml` deploys them, and both would fire on every push.
 
 Creating projects in the dashboard instead? Set **Root Directory** to the app folder and keep
 "Include source files outside of the Root Directory" on — the apps import from `packages/`.
