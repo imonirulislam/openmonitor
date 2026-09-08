@@ -222,6 +222,10 @@ function BreakdownRow({
   count: number;
   total: number;
 }) {
+  // Share only, no raw count. The absolute number of probes is an
+  // implementation detail of the check interval — a visitor comparing two
+  // monitors on 30s and 5m intervals would read wildly different totals for
+  // the same availability.
   const pct = total > 0 ? (count / total) * 100 : 0;
   return (
     <div className="flex items-baseline gap-3">
@@ -229,9 +233,7 @@ function BreakdownRow({
         <span className={cn("size-2 rounded-sm", SEGMENT_COLOR[status])} />
         <span>{label}</span>
       </div>
-      <div className="ml-auto font-mono text-muted-foreground tabular-nums">
-        {count} <span className="text-muted-foreground/60">({pct.toFixed(1)}%)</span>
-      </div>
+      <div className="ml-auto font-mono text-muted-foreground tabular-nums">{pct.toFixed(1)}%</div>
     </div>
   );
 }
