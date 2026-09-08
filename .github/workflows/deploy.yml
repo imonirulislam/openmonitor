@@ -7,6 +7,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      all:
+        description: Deploy every app, ignoring the change filter
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-production
@@ -44,7 +49,13 @@ jobs:
             BEFORE="$(git rev-parse HEAD~1 2>/dev/null || true)"
           fi
 
-          if [ -z "$BEFORE" ]; then
+          # Changing an env var in Vercel doesn't touch the repo, and
+          # NEXT_PUBLIC_* is inlined at build time — so after an env change the
+          # apps have to rebuild even though no file changed.
+          if [ "${{ inputs.all }}" = "true" ]; then
+            echo "all=true — deploying every app."
+            CHANGED='ALL'
+          elif [ -z "$BEFORE" ]; then
             echo "No comparable base commit — deploying everything."
             CHANGED='ALL'
           else
