@@ -13,5 +13,5 @@
       "schedule": "0 4 * * *"
     }
   ],
-  "installCommand": "cd ../.. && bun install --frozen-lockfile"
+  "installCommand": "[ -f bun.lock ] || cd ../..; bun install --frozen-lockfile"
 }

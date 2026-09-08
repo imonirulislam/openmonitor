@@ -11,8 +11,8 @@
 
 ## Vercel
 
-One project per app. Link from the app directory — `vercel link` treats the current directory
-as the project root, which sets Root Directory for you:
+One project per app, each with **Root Directory** set to its app folder — the layout in
+[Vercel's Turborepo guide](https://vercel.com/docs/monorepos/turborepo).
 
 ```bash
 for a in marketing status-page api web; do
@@ -21,12 +21,24 @@ done
 cat apps/marketing/.vercel/project.json   # org + project ids, for the CI secrets
 ```
 
+`vercel link` does **not** set Root Directory. Linking from the app directory creates
+`.vercel/` there and leaves Root Directory at `.`. Set it per project, under
+Settings → Build & Deployment, and keep "Include source files outside of the Root Directory"
+on — the apps import from `packages/`:
+
+```bash
+vercel project inspect "$(python3 -c 'import json;print(json.load(open("apps/web/.vercel/project.json"))["projectId"])')"
+# Root Directory   apps/web
+```
+
+Left at `.`, the deploy fails at the upload rather than the build: `apps/<app>` becomes the
+upload base while Next traces server files into the workspace `node_modules` above it, and
+`deploy --prebuilt` reports `File does not exist: node_modules/@swc/helpers/…`. The workflow
+runs every vercel command from the repo root for the same reason.
+
 Names are cosmetic — CI authenticates with `VERCEL_PROJECT_ID`, so renaming a project later
 changes nothing but its default `*.vercel.app` URL. Don't connect these projects to Git;
 `.github/workflows/deploy.yml` deploys them, and both would fire on every push.
-
-Creating projects in the dashboard instead? Set **Root Directory** to the app folder and keep
-"Include source files outside of the Root Directory" on — the apps import from `packages/`.
 
 Every `vercel.json` pins `sin1`, matching Neon in `ap-southeast-1` and the VM in Singapore.
 Keep all three together — the status page makes several queries per render and each one is a

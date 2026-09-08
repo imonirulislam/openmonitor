@@ -7,5 +7,5 @@
       "destination": "/api"
     }
   ],
-  "installCommand": "cd ../.. && bun install --frozen-lockfile"
+  "installCommand": "[ -f bun.lock ] || cd ../..; bun install --frozen-lockfile"
 }

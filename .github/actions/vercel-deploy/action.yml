@@ -16,9 +16,14 @@ inputs:
 runs:
   using: composite
   steps:
-    # The whole repo is checked out and installed from the root, because the
-    # apps import workspace packages. `vercel build` then runs its own install —
-    # each vercel.json sets installCommand to `cd ../..` for the same reason.
+    # Every vercel command runs from the repo root, and each project's Root
+    # Directory is apps/<app> — the layout in
+    # https://vercel.com/docs/monorepos/turborepo.
+    #
+    # Running them inside apps/<app> instead makes that directory the upload
+    # base, and Next traces server files into the workspace node_modules above
+    # it. `deploy --prebuilt` then fails on paths it can't reach: "Please ensure
+    # project dependencies have been installed: node_modules/@swc/helpers/...".
     #
     # The token goes through the environment rather than --token, so it stays
     # out of argv and out of the interpolated command line.
@@ -30,7 +35,6 @@ runs:
 
     - name: Pull project settings
       shell: bash
-      working-directory: apps/${{ inputs.app }}
       env:
         VERCEL_ORG_ID: ${{ inputs.org-id }}
         VERCEL_PROJECT_ID: ${{ inputs.project-id }}
@@ -42,7 +46,6 @@ runs:
     # file upload that either works or doesn't.
     - name: Build
       shell: bash
-      working-directory: apps/${{ inputs.app }}
       env:
         VERCEL_ORG_ID: ${{ inputs.org-id }}
         VERCEL_PROJECT_ID: ${{ inputs.project-id }}
@@ -51,7 +54,6 @@ runs:
 
     - name: Deploy
       shell: bash
-      working-directory: apps/${{ inputs.app }}
       env:
         VERCEL_ORG_ID: ${{ inputs.org-id }}
         VERCEL_PROJECT_ID: ${{ inputs.project-id }}
