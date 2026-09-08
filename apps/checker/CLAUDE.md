@@ -25,11 +25,15 @@ source of truth for monitor state and emits events on transitions.
 
 | Env var                       | Default                  |
 |-------------------------------|--------------------------|
+| `PROBE_TOKEN`                 | **required** — fatal if unset |
 | `API_URL`                     | `http://localhost:5002`  |
-| `PROBE_API_KEY`               | required                 |
-| `PROBE_TOKEN`                 | _(required)_             |
 | `CHECKER_REFRESH_INTERVAL`    | `30s`                    |
 | `CHECKER_DEFAULT_TIMEOUT_MS`  | `10000` (or as duration) |
+| `DATABASE_URL`                | unset — see below        |
+
+`PROBE_TOKEN` is the whole identity: the region is a property of the token, resolved
+server-side. Get one from Settings → Probe locations; it's shown once, because only its
+SHA-256 hash is stored. A lost token is rotated, not recovered.
 
 ## Stdlib only
 
@@ -38,7 +42,12 @@ No external Go modules. `go.mod` is empty on purpose — stdlib `net/http`, `enc
 
 ## What this does NOT do
 
-- No DB access. Goes through the API. (Cheaper than two networking codebases to maintain.)
+- No DB access for probe data — monitors and results both go through the API.
+
+  `DATABASE_URL` is the one exception and it's optional: when set, the checker also
+  `LISTEN`s on `pg_notify('monitor_changed', …)` and refreshes immediately instead of
+  waiting up to `CHECKER_REFRESH_INTERVAL`. `deploy/vm` deliberately leaves it unset so the
+  probe box holds no Postgres credentials; the cost is up to 30s to pick up a new monitor.
 - No retry on probe-result POST failures yet. If the API is down, results are dropped.
   When that becomes a problem, add a small in-memory ring buffer with timed flush —
   don't add a local SQLite cache.
