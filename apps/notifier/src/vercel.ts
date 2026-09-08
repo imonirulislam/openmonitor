@@ -1,5 +1,5 @@
 import { handle } from "hono/vercel";
-import { createApp } from "../src/app";
+import { createApp } from "./app";
 
 /**
  * Vercel entrypoint. See apps/api/api/index.ts — same shape, same reasons.

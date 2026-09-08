@@ -45,8 +45,14 @@ Keep all three together — the status page makes several queries per render and
 round trip. Moving deployment means changing the five `vercel.json` files, the Neon project
 (its region is fixed at creation) and the VM, together.
 
-The two Hono apps have no framework preset. They run through `api/index.ts` plus a rewrite
-that sends every path to that one function.
+The two Hono apps have no framework preset. Each one's `build` bundles `src/vercel.ts` into
+`api/index.js` — a single self-contained function, with a rewrite sending every path to it.
+
+The bundle is not a packaging preference. `@vercel/node` typechecks a TypeScript entrypoint
+with compiler options of its own, ignoring both the app tsconfig and the repo root, and
+without `strict` Drizzle's insert/update types collapse to a partial column set — the deploy
+failed on `TS2353` for columns that exist while CI passed. Shipping JS leaves it nothing to
+typecheck, and bundling the dependencies in means nothing to file-trace either.
 
 ### Environment
 

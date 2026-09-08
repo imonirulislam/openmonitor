@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "echo 'no build step — runtime is tsx; typecheck runs separately'",
+    "build": "bun build src/vercel.ts --outfile=api/index.js --target=node --format=esm",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint:types": "tsgolint --tsconfig tsconfig.json"

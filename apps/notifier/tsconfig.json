@@ -2,10 +2,7 @@
   "extends": "@openmonitor/tsconfig/node.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "dist",
-    // See apps/api/tsconfig.json — @vercel/node doesn't take `strict` from
-    // `extends`, and Drizzle's types need it.
-    "strict": true
+    "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "api/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }
