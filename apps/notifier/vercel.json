@@ -1,5 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["sin1"],
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+  "regions": [
+    "sin1"
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ],
+  "installCommand": "cd ../.. && bun install --frozen-lockfile"
 }
