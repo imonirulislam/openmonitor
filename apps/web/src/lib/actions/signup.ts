@@ -6,14 +6,10 @@ import { withToastRedirect } from "@openmonitor/ui";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { signIn } from "~/auth";
+import { signupsEnabled } from "~/lib/signups";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 const PATH = "/signup";
-
-/** Opt-in: a self-hosted deployment shouldn't let a stranger add a workspace. */
-export function signupsEnabled(): boolean {
-  return process.env.SIGNUPS_ENABLED === "on";
-}
 
 const signupSchema = z.object({
   email: z.string().email().max(200),

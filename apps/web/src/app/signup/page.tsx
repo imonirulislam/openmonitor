@@ -2,7 +2,12 @@ import { Button, Card, CardContent, Input, Label } from "@openmonitor/ui";
 import { ActivityIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { signUp, signupsEnabled } from "~/lib/actions/signup";
+import { signUp } from "~/lib/actions/signup";
+import { signupsEnabled } from "~/lib/signups";
+
+// Read the flag per request. Prerendered, it would bake in whichever value
+// SIGNUPS_ENABLED had at build time and keep 404ing after you turn it on.
+export const dynamic = "force-dynamic";
 
 /** Closed unless SIGNUPS_ENABLED=on. The slug becomes the status page host. */
 export default function SignupPage() {
