@@ -25,9 +25,24 @@ Auth.js v5 (NextAuth) with the Drizzle adapter. Used by `apps/web` (admin).
 
 ## Password hashing
 
-Argon2id, defaults from the `argon2` package. We don't expose tunable parameters — if we ever
-need to (e.g., to migrate to higher cost), do it in `src/password.ts` with a versioning prefix
-on the hash so old hashes still verify.
+scrypt from `node:crypto`. Hashes carry their parameters — `scrypt$N=…$salt$hash` — so the
+cost can be raised later and old hashes still verify.
+
+## Bootstrap
+
+There is no signup route. `src/bootstrap.ts` creates the first workspace and admin on an empty
+database:
+
+```bash
+ADMIN_EMAIL=you@example.com bun run --filter @openmonitor/auth bootstrap
+```
+
+Generates a password and prints it once unless `ADMIN_PASSWORD` is set. Idempotent — an
+existing email keeps its password and only gains the membership. It lives here rather than in
+`packages/db` because it needs the hasher, and db importing auth would be a cycle.
+
+Don't use `db:seed` for this: it writes demo monitors and probe tokens whose values are in the
+repository.
 
 ## What this package does NOT do
 

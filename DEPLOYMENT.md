@@ -61,6 +61,14 @@ CLICKHOUSE_URL="https://…" bun run --filter @openmonitor/clickhouse migrate
 
 Write Postgres migrations by hand — **never run `db:generate`**. See `packages/db/CLAUDE.md`.
 
+Then create the first admin — there is no signup route, and `db:seed` is demo data with
+published credentials:
+
+```bash
+DATABASE_URL="postgresql://…" ADMIN_EMAIL=you@example.com \
+  bun run --filter @openmonitor/auth bootstrap
+```
+
 ### CI/CD
 
 `.github/workflows/deploy.yml` deploys on push to `main`: migrate → `api` → `web`, with

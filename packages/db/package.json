@@ -11,7 +11,8 @@
     "./types": "./src/types.ts",
     "./assertions": "./src/assertions.ts",
     "./region-status": "./src/region-status.ts",
-    "./probe-token": "./src/probe-token.ts"
+    "./probe-token": "./src/probe-token.ts",
+    "./load-env": "./src/load-env.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate",

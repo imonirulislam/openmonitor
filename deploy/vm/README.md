@@ -123,6 +123,19 @@ docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d -
 Point an A record at the box for `CLICKHOUSE_HOSTNAME` **before** starting, or Caddy's first
 certificate attempt fails and it backs off.
 
+### First admin
+
+The database is empty and there is no signup page, so create the first account before you try
+to log in. From anywhere that can reach Neon:
+
+```bash
+DATABASE_URL="postgresql://…-pooler…?sslmode=require" \
+  ADMIN_EMAIL=you@example.com bun run --filter @openmonitor/auth bootstrap
+```
+
+It prints a generated password once. Then set `OPERATOR_EMAILS` on the `web` project to that
+address, or you won't be able to manage shared probe locations.
+
 Then set on the `web` and `api` Vercel projects:
 
 ```
