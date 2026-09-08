@@ -148,6 +148,13 @@
       "when": 1777632000000,
       "tag": "0020_incident_numbers",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1777633000000,
+      "tag": "0021_status_page_slug_global",
+      "breakpoints": true
     }
   ]
 }

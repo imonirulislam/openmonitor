@@ -49,12 +49,19 @@ export async function signUp(formData: FormData) {
     redirect(withToastRedirect(PATH, "That email already has an account", "error"));
   }
 
-  const [takenSlug] = await db()
+  // The slug names the status page (its subdomain) and the workspace. Both are
+  // unique, so both have to be free.
+  const [takenPage] = await db()
+    .select({ id: schema.statusPages.id })
+    .from(schema.statusPages)
+    .where(eq(schema.statusPages.slug, parsed.slug))
+    .limit(1);
+  const [takenWorkspace] = await db()
     .select({ id: schema.workspaces.id })
     .from(schema.workspaces)
     .where(eq(schema.workspaces.slug, parsed.slug))
     .limit(1);
-  if (takenSlug) {
+  if (takenPage || takenWorkspace) {
     redirect(withToastRedirect(PATH, "That address is already taken", "error"));
   }
 
@@ -77,6 +84,13 @@ export async function signUp(formData: FormData) {
       await tx
         .insert(schema.workspaceMembers)
         .values({ workspaceId: workspace.id, userId: user.id, role: "admin" });
+
+      await tx.insert(schema.statusPages).values({
+        workspaceId: workspace.id,
+        slug: parsed.slug,
+        name: parsed.workspaceName,
+        isPublic: true,
+      });
 
       // Not logAudit() — it takes the actor from the session, and there isn't one yet.
       await tx.insert(schema.auditLogs).values({

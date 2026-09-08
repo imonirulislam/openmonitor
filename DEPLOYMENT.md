@@ -76,7 +76,7 @@ GitHub needs only `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_*`, and �
 | all with data | `DATABASE_URL` (Neon **pooled** — the `-pooler` host), `CLICKHOUSE_URL` |
 | `marketing` | `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_STATUS_PAGE_URL`, `NEXT_PUBLIC_REPO_URL` |
 | `status-page` | `API_URL`, `NEXT_PUBLIC_API_URL`, optional `NEXT_PUBLIC_STATUS_*` branding |
-| `web` | `AUTH_SECRET`, `AUTH_URL`, `API_URL`, `PROBE_API_KEY`, `OPERATOR_EMAILS`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STATUS_PAGE_URL` |
+| `web` | `AUTH_SECRET`, `AUTH_URL`, `API_URL`, `PROBE_API_KEY`, `OPERATOR_EMAILS`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STATUS_PAGE_URL`, optional `SIGNUPS_ENABLED=on` + `STATUS_PAGE_ROOT_DOMAIN` |
 | `api` | `PROBE_API_KEY`, `PAGE_UNLOCK_SECRET`, `CRON_SECRET`, `SLACK_SIGNING_SECRET`, `STATUS_PAGE_ROOT_DOMAIN`, **`RETENTION_ENABLED=off`** |
 | `notifier` | `CRON_SECRET`, **`NOTIFIER_POLL=off`** |
 
@@ -100,8 +100,8 @@ CLICKHOUSE_URL="https://…" bun run --filter @openmonitor/clickhouse migrate
 
 Write Postgres migrations by hand — **never run `db:generate`**. See `packages/db/CLAUDE.md`.
 
-Then create the first admin — there is no signup route, and `db:seed` is demo data with
-published credentials:
+Then create the first admin. Signup is closed unless `SIGNUPS_ENABLED=on`, and `db:seed` is
+demo data with published credentials:
 
 ```bash
 DATABASE_URL="postgresql://…" ADMIN_EMAIL=you@example.com \
@@ -131,13 +131,13 @@ Resolved in this order:
 | URL | Resolves to |
 |---|---|
 | `status.acme.com` | the page's `custom_domain` — a customer's own domain always wins |
-| `acme.openmonitor.app` | workspace `acme`, page `default` (needs `STATUS_PAGE_ROOT_DOMAIN`) |
-| `acme.openmonitor.app/reports` | workspace from host, page from path |
-| `openmonitor.app/acme/reports` | path only — no wildcard DNS needed |
+| `acme.openmonitor.app` | the page slugged `acme` (needs `STATUS_PAGE_ROOT_DOMAIN`) |
+| `openmonitor.app/acme` | path only — no wildcard DNS needed |
 
-A subdomain pins the workspace: it overrides `?workspace=`, and a page missing from that
-workspace 404s rather than falling through, so one tenant's host can't render another's page.
-`www` and the apex fall through to path routing; deeper labels are rejected.
+The subdomain **is** the page slug, not the workspace slug, so one workspace can publish
+several independently-addressed pages. `status_pages.slug` is therefore unique across all
+workspaces, not within one. Reserved labels and the apex fall through to path routing;
+deeper labels are rejected.
 
 Needs wildcard DNS and a wildcard certificate. **Wildcard domains are Vercel Pro** — on Hobby,
 front it with Cloudflare or serve the status page from Cloudflare Pages.

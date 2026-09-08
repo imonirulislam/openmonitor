@@ -164,10 +164,9 @@ export const workspaceMembers = pgTable(
 
 // ---------- Status pages ----------
 //
-// One workspace can own N status pages. Each status page has its own slug
-// (used in URLs) and selects which monitors are visible. Custom domains let
-// hosts route to a specific status page without going through workspace-slug
-// path prefixes.
+// One workspace can own N status pages. The slug is the page's subdomain under
+// STATUS_PAGE_ROOT_DOMAIN — hence unique across workspaces — and a custom
+// domain overrides it.
 
 export const statusPages = pgTable(
   "status_pages",
@@ -204,7 +203,9 @@ export const statusPages = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex("status_pages_workspace_slug_unique").on(t.workspaceId, t.slug),
+    // Global, not per-workspace: the slug is the page's subdomain under
+    // STATUS_PAGE_ROOT_DOMAIN, so two workspaces can't both hold it.
+    uniqueIndex("status_pages_slug_unique").on(t.slug),
     uniqueIndex("status_pages_custom_domain_unique").on(t.customDomain),
   ],
 );

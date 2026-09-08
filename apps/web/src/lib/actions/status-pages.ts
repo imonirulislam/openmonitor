@@ -1,7 +1,7 @@
 "use server";
 
 import { hashPassword } from "@openmonitor/auth/password";
-import { and, db, eq, inArray, isReservedSlug, schema } from "@openmonitor/db";
+import { and, db, eq, inArray, isReservedSlug, ne, schema } from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -16,9 +16,27 @@ const slugSchema = z
   .min(2)
   .max(80)
   .regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, and dashes only")
-  // A workspace slug becomes a hostname under STATUS_PAGE_ROOT_DOMAIN, and a
-  // page slug becomes a path segment. Both can collide with something we own.
-  .refine((slug) => !isReservedSlug(slug), "That slug is reserved");
+  // The slug is the page's subdomain under STATUS_PAGE_ROOT_DOMAIN.
+  .refine((slug) => !isReservedSlug(slug), "That address is reserved");
+
+/**
+ * Page slugs are unique across all workspaces because each one is a subdomain.
+ * The unique index is the real guard; this exists to say so readably.
+ */
+async function assertSlugFree(slug: string, destination: string, exceptId?: string) {
+  const [taken] = await db()
+    .select({ id: schema.statusPages.id })
+    .from(schema.statusPages)
+    .where(
+      exceptId
+        ? and(eq(schema.statusPages.slug, slug), ne(schema.statusPages.id, exceptId))
+        : eq(schema.statusPages.slug, slug),
+    )
+    .limit(1);
+  if (taken) {
+    redirect(withToastRedirect(destination, "That address is already taken", "error"));
+  }
+}
 
 const writeSchema = z.object({
   name: z.string().min(1).max(200),
@@ -96,6 +114,7 @@ export async function createStatusPage(formData: FormData) {
     "/dashboard/status-pages/new",
   );
   const isPublic = readIsPublic(formData);
+  await assertSlugFree(parsed.slug, "/dashboard/status-pages/new");
 
   const [created] = await db()
     .insert(schema.statusPages)
@@ -118,7 +137,7 @@ export async function createStatusPage(formData: FormData) {
   });
 
   revalidatePath("/dashboard/status-pages");
-  redirect(withToastRedirect(`/dashboard/status-pages/${created?.id}`, `Created “${parsed.name}”`));
+  redirect(withToastRedirect(`/dashboard/status-pages/${parsed.slug}`, `Created “${parsed.name}”`));
 }
 
 export async function updateStatusPage(id: string, formData: FormData) {
@@ -134,6 +153,7 @@ export async function updateStatusPage(id: string, formData: FormData) {
     `/dashboard/status-pages/${addr}`,
   );
   const isPublic = readIsPublic(formData);
+  await assertSlugFree(parsed.slug, `/dashboard/status-pages/${addr}`, id);
 
   await db()
     .update(schema.statusPages)

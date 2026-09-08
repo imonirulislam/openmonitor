@@ -145,7 +145,8 @@ gate it the same way, not on a workspace role.
 - Multi-region probe aggregation
 - Email / SMS / PagerDuty notifications
 - Public API tokens for read access
-- Status page custom domains / multi-tenancy
+- Emailed invites — `inviteMember` hands the admin a link to pass on by hand
+- Per-workspace quotas, so one tenant can't saturate the single checker
 - On-call schedules
 - Subscriber email/SMS lists for status updates
 
