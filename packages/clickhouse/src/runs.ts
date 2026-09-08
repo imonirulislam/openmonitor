@@ -143,8 +143,8 @@ export async function latencyBuckets(monitorId: string, hours: number): Promise<
     `
     SELECT
       formatDateTime(toStartOfInterval(checked_at, INTERVAL 10 MINUTE), '%Y-%m-%dT%H:%i:00Z') AS bucket,
-      toUInt32(round(avg(latency_ms)))                    AS avg,
-      toUInt32(round(quantile(0.95)(latency_ms)))         AS p95,
+      toUInt32(round(ifNotFinite(avg(latency_ms), 0)))                    AS avg,
+      toUInt32(round(ifNotFinite(quantile(0.95)(latency_ms), 0)))         AS p95,
       toUInt32(countIf(status = 'up'))                    AS ok,
       toUInt32(count())                                   AS total
     FROM monitor_runs
@@ -291,11 +291,11 @@ export async function latencyStats(monitorId: string, since: Date): Promise<Late
       toUInt32(countIf(status = 'up'))       AS ok,
       toUInt32(countIf(status = 'degraded')) AS degraded,
       toUInt32(countIf(status = 'down'))     AS failing,
-      toUInt32(round(quantile(0.50)(latency_ms))) AS p50,
-      toUInt32(round(quantile(0.75)(latency_ms))) AS p75,
-      toUInt32(round(quantile(0.90)(latency_ms))) AS p90,
-      toUInt32(round(quantile(0.95)(latency_ms))) AS p95,
-      toUInt32(round(quantile(0.99)(latency_ms))) AS p99
+      toUInt32(round(ifNotFinite(quantile(0.50)(latency_ms), 0))) AS p50,
+      toUInt32(round(ifNotFinite(quantile(0.75)(latency_ms), 0))) AS p75,
+      toUInt32(round(ifNotFinite(quantile(0.90)(latency_ms), 0))) AS p90,
+      toUInt32(round(ifNotFinite(quantile(0.95)(latency_ms), 0))) AS p95,
+      toUInt32(round(ifNotFinite(quantile(0.99)(latency_ms), 0))) AS p99
     FROM monitor_runs
     WHERE monitor_id = {monitorId:UUID} AND checked_at >= {since:DateTime}
     `,
@@ -348,15 +348,15 @@ export async function phaseBuckets(
     SELECT
       formatDateTime(toStartOfInterval(checked_at, INTERVAL {bucketSeconds:UInt32} SECOND),
                      '%Y-%m-%dT%H:%i:00Z')                          AS bucket,
-      toUInt32(round(avg(latency_ms)))                        AS avg,
-      toUInt32(round(quantile(0.95)(latency_ms)))             AS p95,
+      toUInt32(round(ifNotFinite(avg(latency_ms), 0)))                        AS avg,
+      toUInt32(round(ifNotFinite(quantile(0.95)(latency_ms), 0)))             AS p95,
       toUInt32(countIf(status = 'up'))                        AS ok,
       toUInt32(count())                                       AS total,
-      toUInt32(round(quantile({q:Float64})(latency_dns_ms)))      AS dns,
-      toUInt32(round(quantile({q:Float64})(latency_connect_ms)))  AS connect,
-      toUInt32(round(quantile({q:Float64})(latency_tls_ms)))      AS tls,
-      toUInt32(round(quantile({q:Float64})(latency_ttfb_ms)))     AS ttfb,
-      toUInt32(round(quantile({q:Float64})(latency_transfer_ms))) AS transfer,
+      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_dns_ms), 0)))      AS dns,
+      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_connect_ms), 0)))  AS connect,
+      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_tls_ms), 0)))      AS tls,
+      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_ttfb_ms), 0)))     AS ttfb,
+      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_transfer_ms), 0))) AS transfer,
       toUInt32(countIf(latency_ttfb_ms > 0))                  AS phaseSamples
     FROM monitor_runs
     WHERE monitor_id = {monitorId:UUID} AND checked_at >= {since:DateTime}
@@ -385,7 +385,7 @@ export async function p95ByMonitor(
   const per = await rows<{ monitor_id: string; p95: number; n: number }>(
     `
     SELECT monitor_id,
-           toUInt32(round(quantile(0.95)(latency_ms))) AS p95,
+           toUInt32(round(ifNotFinite(quantile(0.95)(latency_ms), 0))) AS p95,
            toUInt32(count()) AS n
     FROM monitor_runs
     WHERE monitor_id IN {monitorIds:Array(UUID)} AND checked_at >= {since:DateTime}
@@ -397,7 +397,7 @@ export async function p95ByMonitor(
 
   const [all] = await rows<{ p95: number; n: number }>(
     `
-    SELECT toUInt32(round(quantile(0.95)(latency_ms))) AS p95, toUInt32(count()) AS n
+    SELECT toUInt32(round(ifNotFinite(quantile(0.95)(latency_ms), 0))) AS p95, toUInt32(count()) AS n
     FROM monitor_runs
     WHERE monitor_id IN {monitorIds:Array(UUID)} AND checked_at >= {since:DateTime}
     `,
@@ -446,9 +446,9 @@ export async function regionLatency(monitorId: string, since: Date): Promise<Reg
     rows<{ region: string; p50: number; p90: number; p99: number; min: number; max: number }>(
       `
       SELECT region,
-             toUInt32(round(quantile(0.50)(latency_ms))) AS p50,
-             toUInt32(round(quantile(0.90)(latency_ms))) AS p90,
-             toUInt32(round(quantile(0.99)(latency_ms))) AS p99,
+             toUInt32(round(ifNotFinite(quantile(0.50)(latency_ms), 0))) AS p50,
+             toUInt32(round(ifNotFinite(quantile(0.90)(latency_ms), 0))) AS p90,
+             toUInt32(round(ifNotFinite(quantile(0.99)(latency_ms), 0))) AS p99,
              toUInt32(min(latency_ms)) AS min,
              toUInt32(max(latency_ms)) AS max
       FROM monitor_runs ${where}
@@ -461,7 +461,7 @@ export async function regionLatency(monitorId: string, since: Date): Promise<Reg
       SELECT region, groupArray(mean) AS trend
       FROM (
         SELECT region, toStartOfHour(checked_at) AS hour,
-               toUInt32(round(avg(latency_ms))) AS mean
+               toUInt32(round(ifNotFinite(avg(latency_ms), 0))) AS mean
         FROM monitor_runs ${where}
         GROUP BY region, hour
         ORDER BY region, hour

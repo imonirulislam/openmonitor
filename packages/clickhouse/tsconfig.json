@@ -2,7 +2,12 @@
   "extends": "@openmonitor/tsconfig/node.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    // The node preset pins `types` to ["node"], which excludes @types/bun and
+    // breaks `import ... from "bun:test"`. Widened per package that has tests
+    // rather than in the preset, so bun globals stay out of code that runs on
+    // Vercel's Node runtime.
+    "types": ["node", "bun"]
   },
   "include": ["src/**/*.ts"]
 }

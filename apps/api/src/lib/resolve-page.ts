@@ -1,12 +1,13 @@
-import { and, type db, eq, schema } from "@openmonitor/db";
+import { and, type db, eq, isReservedSlug, schema } from "@openmonitor/db";
 import { env } from "../env";
 
 /**
  * Pull the workspace slug out of `<workspace>.<root-domain>`.
  *
- * Returns null for the apex, for `www`, for any host outside the configured
- * root, and when STATUS_PAGE_ROOT_DOMAIN is unset — so a single-tenant
- * self-host, which has no wildcard DNS, behaves exactly as before.
+ * Returns null for the apex, for reserved labels, for any host outside the
+ * configured root, and when STATUS_PAGE_ROOT_DOMAIN is unset — so a
+ * single-tenant self-host, which has no wildcard DNS, behaves exactly as
+ * before.
  *
  * Deliberately only the first label: `a.b.openmonitor.app` is not a workspace.
  * Wildcard certificates cover one level, so anything deeper can't have been
@@ -20,7 +21,15 @@ export function workspaceSlugFromHost(host: string | undefined): string | null {
   if (!normalized || !normalized.endsWith(`.${root}`)) return null;
 
   const label = normalized.slice(0, -(root.length + 1));
-  if (!label || label === "www" || label.includes(".")) return null;
+  if (!label || label.includes(".")) return null;
+
+  // A reserved label is infrastructure, not a tenant. `status.example.com` is
+  // the canonical status host and `www` is the apex; neither names a workspace.
+  // Workspace creation rejects these slugs, so a reserved label can never match
+  // a real workspace — reading one as a tenant only turns the site's own
+  // hostname into a 404, which is exactly what it did.
+  if (isReservedSlug(label)) return null;
+
   return label;
 }
 

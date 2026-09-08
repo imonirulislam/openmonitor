@@ -3,8 +3,9 @@
   "compilerOptions": {
     "noEmit": true,
     // The node preset pins `types` to ["node"], which excludes @types/bun and
-    // breaks `import ... from "bun:test"`. Only this package has tests, so widen
-    // it here rather than in the shared preset.
+    // breaks `import ... from "bun:test"`. Widened per package that has tests
+    // rather than in the preset, so bun globals stay out of code that runs on
+    // Vercel's Node runtime.
     "types": ["node", "bun"]
   },
   "include": ["src/**/*.ts", "drizzle.config.ts"],
