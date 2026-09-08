@@ -1,10 +1,12 @@
 name: Deploy
 
-# Production deploys only. If you also connect Vercel's Git integration, both
-# will fire on every push — see the note in DEPLOYMENT.md.
+# Manual until you opt in. Add the VERCEL_* and DATABASE_URL/CLICKHOUSE_URL
+# secrets, turn off Vercel's own Git deploys, then uncomment the push trigger —
+# running both means every push deploys twice, with no ordering and no
+# migration. Until then Vercel's Git integration is the simpler way to ship.
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
   workflow_dispatch:
 
 concurrency:
