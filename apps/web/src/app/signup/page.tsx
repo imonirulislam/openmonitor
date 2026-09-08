@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { signUp } from "~/lib/actions/signup";
 import { signupsEnabled } from "~/lib/signups";
+import { SlugField } from "./slug-field";
 
 // Read the flag per request. Prerendered, it would bake in whichever value
 // SIGNUPS_ENABLED had at build time and keep 404ing after you turn it on.
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default function SignupPage() {
   if (!signupsEnabled()) notFound();
 
-  const rootDomain = process.env.STATUS_PAGE_ROOT_DOMAIN ?? "example.com";
+  const statusPageUrl = process.env.NEXT_PUBLIC_STATUS_PAGE_URL ?? "http://localhost:5003";
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6">
@@ -63,22 +64,7 @@ export default function SignupPage() {
                 placeholder="Acme Inc"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="slug">Status page address</Label>
-              <Input
-                id="slug"
-                name="slug"
-                required
-                minLength={2}
-                maxLength={80}
-                pattern="[a-z0-9-]+"
-                placeholder="acme"
-              />
-              <p className="text-muted-foreground text-xs">
-                Your page will be at <span className="font-mono">&lt;address&gt;.{rootDomain}</span>
-                . Lowercase letters, numbers and dashes.
-              </p>
-            </div>
+            <SlugField statusPageUrl={statusPageUrl} />
             <Button type="submit">Create account</Button>
             <p className="text-muted-foreground text-center text-xs">
               Already have an account?{" "}

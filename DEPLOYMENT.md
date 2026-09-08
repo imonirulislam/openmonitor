@@ -139,8 +139,12 @@ several independently-addressed pages. `status_pages.slug` is therefore unique a
 workspaces, not within one. Reserved labels and the apex fall through to path routing;
 deeper labels are rejected.
 
-Needs wildcard DNS and a wildcard certificate. **Wildcard domains are Vercel Pro** — on Hobby,
-front it with Cloudflare or serve the status page from Cloudflare Pages.
+Only the subdomain form needs wildcard DNS and a wildcard certificate — **wildcard domains are
+Vercel Pro**, and Vercel issues the certificate over DNS-01, so the domain has to be on Vercel's
+nameservers. A Cloudflare CNAME won't do it.
+
+The path form works everywhere with no wildcard, so `status.example.com/acme` is the safe thing
+to advertise until that's set up. The signup form previews the path URL for exactly that reason.
 
 Slugs are checked against `packages/db/src/reserved-slugs.ts` so nobody can register `app`,
 `api` or `mail` and own that hostname.
