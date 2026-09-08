@@ -1,12 +1,11 @@
 name: Deploy
 
-# Manual until you opt in. Add the VERCEL_* and DATABASE_URL/CLICKHOUSE_URL
-# secrets, turn off Vercel's own Git deploys, then uncomment the push trigger —
-# running both means every push deploys twice, with no ordering and no
-# migration. Until then Vercel's Git integration is the simpler way to ship.
+# Create the Vercel projects with `vercel link` and never connect them to Git —
+# then this is the only thing that deploys them, and there's no double-deploy to
+# disable.
 on:
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
