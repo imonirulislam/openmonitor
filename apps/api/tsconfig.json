@@ -2,7 +2,13 @@
   "extends": "@openmonitor/tsconfig/node.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "dist"
+    "outDir": "dist",
+    // Repeated from the preset because @vercel/node typechecks api/index.ts
+    // with its own tsconfig handling and does not pick `strict` up from
+    // `extends`. Drizzle's insert/update types collapse to a partial column set
+    // without strictNullChecks, so the deploy failed on TS2353 for columns that
+    // plainly exist — while CI, which reads the preset, passed.
+    "strict": true
   },
   "include": ["src/**/*.ts", "api/**/*.ts"]
 }
