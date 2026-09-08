@@ -1,6 +1,8 @@
 import { Button, Card, CardContent, Input, Label } from "@openmonitor/ui";
 import { ActivityIcon } from "lucide-react";
+import Link from "next/link";
 import { signIn } from "~/auth";
+import { signupsEnabled } from "~/lib/signups";
 
 export default function LoginPage({
   searchParams,
@@ -71,6 +73,14 @@ async function LoginForm({
               </p>
             ) : null}
             <Button type="submit">Sign in</Button>
+            {signupsEnabled() ? (
+              <p className="text-muted-foreground text-center text-xs">
+                No account yet?{" "}
+                <Link href="/signup" className="underline">
+                  Create one
+                </Link>
+              </p>
+            ) : null}
           </form>
         </CardContent>
       </Card>

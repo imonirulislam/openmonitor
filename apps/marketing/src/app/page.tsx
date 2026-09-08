@@ -9,7 +9,7 @@ import {
   ShieldCheckIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { APP_URL, REPO_URL } from "~/components/site-chrome";
+import { APP_URL, REPO_URL, SIGNUP_URL, SIGNUPS_OPEN } from "~/components/site-chrome";
 
 /**
  * Every claim on this page is something the product does today. Monitor kinds
@@ -83,10 +83,10 @@ export default function HomePage() {
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <a
-            href={APP_URL}
+            href={SIGNUPS_OPEN ? SIGNUP_URL : APP_URL}
             className="rounded-md bg-foreground px-4 py-2 font-medium text-background text-sm"
           >
-            Open the dashboard
+            {SIGNUPS_OPEN ? "Create your status page" : "Open the dashboard"}
           </a>
           <a
             href={REPO_URL}
@@ -184,10 +184,10 @@ docker compose up --build`}</code>
             </p>
           </div>
           <a
-            href={APP_URL}
+            href={SIGNUPS_OPEN ? SIGNUP_URL : APP_URL}
             className="rounded-md bg-foreground px-4 py-2 font-medium text-background text-sm"
           >
-            Open the dashboard
+            {SIGNUPS_OPEN ? "Create your status page" : "Open the dashboard"}
           </a>
         </div>
       </section>

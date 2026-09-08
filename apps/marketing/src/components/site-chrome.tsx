@@ -14,6 +14,14 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:5001";
 const STATUS_URL = process.env.NEXT_PUBLIC_STATUS_PAGE_URL ?? "http://localhost:5003";
 const REPO_URL = process.env.NEXT_PUBLIC_REPO_URL ?? "https://github.com/imonirulislam/openmonitor";
 
+// Marketing can't read the dashboard's SIGNUPS_ENABLED, so it gets its own
+// public flag. Off by default: a self-hoster's landing page shouldn't offer a
+// signup that /signup would 404.
+export const SIGNUPS_OPEN = ["on", "true", "1", "yes"].includes(
+  (process.env.NEXT_PUBLIC_SIGNUPS_ENABLED ?? "").trim().toLowerCase(),
+);
+export const SIGNUP_URL = `${APP_URL}/signup`;
+
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-border border-b bg-background/80 backdrop-blur">
@@ -45,12 +53,17 @@ export function SiteHeader() {
             GitHub
           </a>
           <ThemeToggle />
-          <a
-            href={APP_URL}
-            className="ml-1 rounded-md bg-foreground px-3 py-1.5 font-medium text-background text-sm"
-          >
+          <a href={APP_URL} className="ml-1 font-medium text-sm">
             Sign in
           </a>
+          {SIGNUPS_OPEN ? (
+            <a
+              href={SIGNUP_URL}
+              className="rounded-md bg-foreground px-3 py-1.5 font-medium text-background text-sm"
+            >
+              Get started
+            </a>
+          ) : null}
         </nav>
       </div>
     </header>
