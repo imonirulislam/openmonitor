@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // Nothing in this repo compiles against this file — every app and package
+  // has its own tsconfig, and turbo runs tsc per package.
+  //
+  // It exists for tools that discover a tsconfig by walking up from the
+  // working directory and fall back to compiler defaults when they find none.
+  // @vercel/node is one: it typechecks apps/api/api/index.ts during `vercel
+  // build`, found no tsconfig at the repo root, and so ran without `strict`.
+  // Drizzle's insert/update types collapse to a partial column set without
+  // strictNullChecks, failing the deploy with TS2353 on columns that exist
+  // while CI, which reads the per-package configs, passed.
+  //
+  //   cd apps/api && tsc --noEmit --strict false   # reproduces it
+  //
+  // `files: []` keeps it from claiming any sources of its own.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "files": []
+}
