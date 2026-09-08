@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 /**
@@ -8,6 +9,11 @@ import type { NextConfig } from "next";
 const config: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@openmonitor/ui"],
+  // Traced server files resolve into the workspace-root node_modules, above
+  // this app. Without this the trace paths are relative to apps/marketing, and
+  // `vercel deploy --prebuilt` fails on the ones that escape it: "Please ensure
+  // project dependencies have been installed".
+  outputFileTracingRoot: path.resolve(import.meta.dirname, "../.."),
 };
 
 export default config;

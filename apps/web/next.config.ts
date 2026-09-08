@@ -16,6 +16,8 @@ const config: NextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "1mb" },
   },
+  // See apps/marketing/next.config.ts — traced files live above this app.
+  outputFileTracingRoot: path.resolve(import.meta.dirname, "../.."),
 };
 
 export default config;
