@@ -33,6 +33,18 @@ runs:
     - run: bun install --frozen-lockfile
       shell: bash
 
+    # api and notifier pin `builds` to their generated api/index.js, which
+    # disables Vercel's build command — so the bundle has to exist first.
+    #
+    # That pin is what stops @vercel/node discovering the app's TypeScript and
+    # typechecking it with compiler options of its own. It ignores the app
+    # tsconfig, a root tsconfig and the absence of either, and without `strict`
+    # Drizzle's insert/update types collapse to a partial column set.
+    - name: Bundle the function entrypoint
+      if: inputs.app == 'api' || inputs.app == 'notifier'
+      shell: bash
+      run: bun run --filter @openmonitor/${{ inputs.app }} build
+
     - name: Pull project settings
       shell: bash
       env:

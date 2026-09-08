@@ -13,5 +13,11 @@
       "schedule": "0 4 * * *"
     }
   ],
-  "installCommand": "[ -f bun.lock ] || cd ../..; bun install --frozen-lockfile"
+  "installCommand": "[ -f bun.lock ] || cd ../..; bun install --frozen-lockfile",
+  "builds": [
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    }
+  ]
 }
