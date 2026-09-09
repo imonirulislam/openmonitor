@@ -3,14 +3,7 @@
 import { Input, Label } from "@openmonitor/ui";
 import { useState } from "react";
 
-/**
- * Address field with a live preview of the resulting URL.
- *
- * The preview shows the path form, `<status host>/<slug>`, because that works
- * on every deployment. The `<slug>.<root domain>` form additionally needs
- * wildcard DNS and a wildcard certificate, so promising it unconditionally
- * hands new users a URL that doesn't resolve.
- */
+/** Address field with a live preview of the resulting URL. */
 export function SlugField({ statusPageUrl }: { statusPageUrl: string }) {
   const [slug, setSlug] = useState("");
   const base = statusPageUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -35,7 +28,7 @@ export function SlugField({ statusPageUrl }: { statusPageUrl: string }) {
       <p className="text-muted-foreground text-xs">
         Your page will be at{" "}
         <span className="font-mono">
-          {base}/{slug || "your-address"}
+          {slug || "your-address"}.{base}
         </span>
       </p>
     </div>

@@ -139,12 +139,30 @@ several independently-addressed pages. `status_pages.slug` is therefore unique a
 workspaces, not within one. Reserved labels and the apex fall through to path routing;
 deeper labels are rejected.
 
-Only the subdomain form needs wildcard DNS and a wildcard certificate — **wildcard domains are
-Vercel Pro**, and Vercel issues the certificate over DNS-01, so the domain has to be on Vercel's
-nameservers. A Cloudflare CNAME won't do it.
+Both forms work. The path form needs nothing. The subdomain form needs a wildcard certificate,
+which Vercel issues over DNS-01 — normally meaning the domain must sit on Vercel's nameservers.
 
-The path form works everywhere with no wildcard, so `status.example.com/acme` is the safe thing
-to advertise until that's set up. The signup form previews the path URL for exactly that reason.
+It doesn't have to. Nest the wildcard one level and delegate only the challenge name, keeping
+your own DNS provider authoritative:
+
+| Where | Record | Name | Value |
+|---|---|---|---|
+| your DNS | NS | `_acme-challenge.status` | `ns1.vercel-dns.com.` |
+| your DNS | NS | `_acme-challenge.status` | `ns2.vercel-dns.com.` |
+| your DNS | CNAME | `*.status` | `cname.vercel-dns-0.com` (DNS-only, unproxied) |
+| Vercel | domain on `status-page` | `*.status.example.com` | |
+
+Then set `STATUS_PAGE_ROOT_DOMAIN=status.example.com` on `api`, and pages resolve at
+`<slug>.status.example.com`. Vercel still shows "update your nameservers" — it's advisory, and
+the certificate issues anyway.
+
+This only works nested. Vercel excludes apex wildcards from the delegation method, because
+`*.example.com` validates at `_acme-challenge.example.com`, the same name that validates the
+apex itself — delegating it hands over certificate issuance for the whole zone.
+
+Getting `STATUS_PAGE_ROOT_DOMAIN` wrong here fails quietly: left at `example.com`, the label for
+`acme.status.example.com` is `acme.status`, which contains a dot, so host resolution returns null
+and **every** subdomain falls through to the default page instead of 404ing.
 
 Slugs are checked against `packages/db/src/reserved-slugs.ts` so nobody can register `app`,
 `api` or `mail` and own that hostname.
