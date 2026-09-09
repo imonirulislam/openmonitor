@@ -1,6 +1,13 @@
 "use client";
 
-import { Button, Card, cn, SectionTitle } from "@openmonitor/ui";
+import {
+  Button,
+  Card,
+  cn,
+  RegionLatencyChart,
+  type RegionLatencyPoint,
+  SectionTitle,
+} from "@openmonitor/ui";
 import Link from "next/link";
 import { useState } from "react";
 import { Line, LineChart, ResponsiveContainer, YAxis } from "recharts";
@@ -38,9 +45,14 @@ type SortKey = "p50" | "p90" | "p99";
 export function MonitorRegions({
   regions,
   monitorId,
+  chart,
+  labels,
 }: {
   regions: RegionRow[];
   monitorId: string;
+  /** Long-format buckets for the Chart tab, from regionLatencyBuckets(). */
+  chart: RegionLatencyPoint[];
+  labels?: Record<string, string>;
 }) {
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean } | null>(null);
   const [view, setView] = useState<"table" | "chart">("table");
@@ -211,8 +223,8 @@ export function MonitorRegions({
           </table>
         </Card>
       ) : (
-        <Card className="p-8 text-center text-muted-foreground text-sm">
-          Chart view — coming when multi-region probing lands.
+        <Card className="p-5">
+          <RegionLatencyChart data={chart} labels={labels} />
         </Card>
       )}
 

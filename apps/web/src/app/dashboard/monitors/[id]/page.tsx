@@ -13,7 +13,6 @@ import {
   MetricCardTitle,
   MetricCardValue,
   type MetricCardVariant,
-  RegionLatencyChart,
   SectionTitle,
   TimingPhasesChart,
 } from "@openmonitor/ui";
@@ -203,19 +202,12 @@ export default async function OverviewPage({
         </Card>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <div>
-          <SectionTitle>Latency by region</SectionTitle>
-          <p className="font-mono text-muted-foreground text-sm tracking-tight">
-            One line per probe location, same quantile and resolution as above
-          </p>
-        </div>
-        <Card className="p-5">
-          <RegionLatencyChart data={regionBuckets} labels={regionLabels} />
-        </Card>
-      </section>
-
-      <MonitorRegions regions={regions} monitorId={idOrSlug} />
+      <MonitorRegions
+        regions={regions}
+        monitorId={idOrSlug}
+        chart={regionBuckets}
+        labels={regionLabels}
+      />
 
       <MonitorTimeline monitorId={id} workspaceId={workspaceId} />
     </div>

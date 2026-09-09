@@ -77,7 +77,7 @@ export function RegionLatencyChart({
   return (
     <div className="h-[220px] w-full">
       <ResponsiveContainer>
-        <LineChart data={rows} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+        <LineChart data={rows} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
           <XAxis
             dataKey="label"
@@ -92,8 +92,8 @@ export function RegionLatencyChart({
             fontSize={11}
             tickLine={false}
             axisLine={false}
-            width={48}
-            unit="ms"
+            width={56}
+            tickFormatter={(v: number) => `${v}ms`}
           />
           <Tooltip
             cursor={{ stroke: "var(--color-border)" }}

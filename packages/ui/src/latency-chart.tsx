@@ -36,7 +36,7 @@ export function LatencyChart({ data }: { data: Point[] }) {
   return (
     <div className="h-[220px] w-full">
       <ResponsiveContainer>
-        <AreaChart data={formatted} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+        <AreaChart data={formatted} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="latency-fill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="oklch(0.62 0.19 260)" stopOpacity={0.35} />
@@ -61,7 +61,7 @@ export function LatencyChart({ data }: { data: Point[] }) {
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: number) => `${v}ms`}
-            width={48}
+            width={56}
           />
           <Tooltip
             contentStyle={{
