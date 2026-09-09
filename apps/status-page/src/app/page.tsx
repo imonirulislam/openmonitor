@@ -25,7 +25,7 @@ export default async function HomePage() {
 /**
  * Per-page favicon override. When the resolved page has an iconUrl set,
  * Next.js writes a <link rel="icon"> into <head> with it; otherwise the
- * default static favicon (from /favicon.ico in /public) wins.
+ * default icon (app/icon.svg) wins.
  *
  * The status fetch here is the same one the page itself does — Next's
  * request cache de-dupes the API hit so we don't pay twice per request.

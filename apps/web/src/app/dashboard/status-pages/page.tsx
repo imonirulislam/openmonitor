@@ -3,6 +3,7 @@ import { Button, Card, SectionGroupTitle } from "@openmonitor/ui";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { StatusPagesTable } from "~/components/status-pages-table";
+import { publicPageUrl } from "~/lib/public-url";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function StatusPagesIndex() {
@@ -20,13 +21,8 @@ export default async function StatusPagesIndex() {
     .where(eq(schema.statusPages.workspaceId, workspaceId))
     .orderBy(desc(schema.statusPages.createdAt));
 
-  const baseUrl = process.env.NEXT_PUBLIC_STATUS_PAGE_URL ?? "http://localhost:5003";
-  // Pre-compute the public URL server-side so the row component doesn't need
-  // the env var.
-  const rows = pages.map((p) => ({
-    ...p,
-    publicUrl: p.customDomain ? `https://${p.customDomain}` : `${baseUrl}/${p.slug}`,
-  }));
+  // Pre-computed server-side so the row component doesn't need the env var.
+  const rows = pages.map((p) => ({ ...p, publicUrl: publicPageUrl(p) }));
 
   return (
     <div className="flex flex-col gap-6">

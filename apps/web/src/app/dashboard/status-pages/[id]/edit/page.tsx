@@ -24,6 +24,7 @@ import {
   updateStatusPageBranding,
   updateStatusPageLinks,
 } from "~/lib/actions/status-pages";
+import { publicPageUrl } from "~/lib/public-url";
 import { statusPageIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspace } from "~/lib/workspace";
 
@@ -38,8 +39,7 @@ export default async function StatusPageSettings({ params }: { params: Promise<{
     .limit(1);
   if (!page) notFound();
 
-  const baseUrl = process.env.NEXT_PUBLIC_STATUS_PAGE_URL ?? "http://localhost:5003";
-  const publicUrl = page.customDomain ? `https://${page.customDomain}` : `${baseUrl}/${page.slug}`;
+  const publicUrl = publicPageUrl(page);
 
   return (
     <div className="flex flex-col gap-6">
