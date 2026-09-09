@@ -232,17 +232,6 @@ export async function StatusPageView({
         <Separator />
         <StatusEventFeed events={feedEvents} />
       </section>
-
-      {summary.page.contactUrl ? (
-        <footer className="border-t border-border pt-4 text-center">
-          <a
-            href={summary.page.contactUrl}
-            className="font-mono text-muted-foreground text-xs uppercase tracking-wide hover:text-foreground"
-          >
-            Contact
-          </a>
-        </footer>
-      ) : null}
     </main>
   );
 }

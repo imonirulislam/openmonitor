@@ -1,7 +1,9 @@
 import { cn, ThemeProvider } from "@openmonitor/ui";
 import localFont from "next/font/local";
 import type { CSSProperties, ReactNode } from "react";
-import { SiteFooter, SiteHeader } from "~/components/site-header";
+import { SiteFooter } from "~/components/site-footer";
+import { SiteHeader } from "~/components/site-header";
+import { pageIdentity } from "~/lib/page-identity";
 import "./globals.css";
 
 /**
@@ -35,7 +37,9 @@ const DESCRIPTION =
 
 export const metadata = { title: TITLE, description: DESCRIPTION };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const page = await pageIdentity();
+
   return (
     <html
       lang="en"
@@ -46,9 +50,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <ThemeProvider defaultTheme="dark">
           <div className="flex min-h-screen flex-col">
-            <SiteHeader title={TITLE} />
+            <SiteHeader title={page.title} />
             <div className="flex-1">{children}</div>
-            <SiteFooter title={TITLE} />
+            <SiteFooter
+              title={page.title}
+              host={page.host}
+              contactUrl={page.contactUrl}
+              homepageUrl={page.homepageUrl}
+            />
           </div>
         </ThemeProvider>
       </body>

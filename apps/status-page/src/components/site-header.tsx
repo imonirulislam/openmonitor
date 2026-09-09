@@ -76,14 +76,3 @@ export function SiteHeader({ title }: { title: string }) {
     </header>
   );
 }
-
-export function SiteFooter({ title }: { title: string }) {
-  return (
-    <footer className="border-t border-border">
-      <div className="mx-auto flex h-12 w-full max-w-3xl items-center justify-between px-4 text-muted-foreground text-xs">
-        <span className="font-mono">{title}</span>
-        <span>Powered by OpenMonitor</span>
-      </div>
-    </footer>
-  );
-}
