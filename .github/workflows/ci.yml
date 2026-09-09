@@ -1,14 +1,16 @@
 name: CI
 
-# Also callable, so deploy.yml can gate on it rather than duplicating the gates.
+# No push trigger: deploy.yml calls this on main, so a push trigger would run
+# every check twice and — sharing a concurrency group with the reusable call —
+# one run would cancel the other. That killed a deploy mid-flight.
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_call:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Scoped by workflow as well as ref, so a caller's run and a standalone run
+  # can never contend even if a trigger is added back.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
