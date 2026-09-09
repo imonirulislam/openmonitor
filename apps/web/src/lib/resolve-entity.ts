@@ -42,23 +42,23 @@ async function bySlug(
   return row.id;
 }
 
-/** `/dashboard/monitors/<slug|uuid>` */
+/** `/monitors/<slug|uuid>` */
 export function monitorIdFrom(param: string, workspaceId: string): Promise<string> {
   return bySlug(schema.monitors, param, workspaceId);
 }
 
-/** `/dashboard/status-pages/<slug|uuid>` */
+/** `/status-pages/<slug|uuid>` */
 export function statusPageIdFrom(param: string, workspaceId: string): Promise<string> {
   return bySlug(schema.statusPages, param, workspaceId);
 }
 
-/** `/dashboard/heartbeats/<slug|uuid>` */
+/** `/heartbeats/<slug|uuid>` */
 export function heartbeatIdFrom(param: string, workspaceId: string): Promise<string> {
   return bySlug(schema.heartbeatMonitors, param, workspaceId);
 }
 
 /**
- * `/dashboard/incidents/<number|uuid>`
+ * `/incidents/<number|uuid>`
  *
  * Incidents have no slug — a title changes as an outage is understood, which is
  * exactly what you don't want in a URL — so they're numbered per workspace.

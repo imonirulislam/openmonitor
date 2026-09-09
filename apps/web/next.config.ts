@@ -18,6 +18,15 @@ const config: NextConfig = {
   },
   // See apps/marketing/next.config.ts — traced files live above this app.
   outputFileTracingRoot: path.resolve(import.meta.dirname, "../.."),
+  // The app used to live under /dashboard, which read as
+  // dashboard.example.com/dashboard/monitors. Routes are at the root now;
+  // keep the old paths working for anything already bookmarked.
+  async redirects() {
+    return [
+      { source: "/dashboard", destination: "/", permanent: true },
+      { source: "/dashboard/:path*", destination: "/:path*", permanent: true },
+    ];
+  },
 };
 
 export default config;

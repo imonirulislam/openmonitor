@@ -35,7 +35,7 @@ export default async function MonitorDetailLayout({
     <div className="flex flex-col gap-6">
       <div>
         <Link
-          href="/dashboard/monitors"
+          href="/monitors"
           className="inline-flex items-center gap-1.5 font-mono text-muted-foreground text-xs uppercase tracking-wide hover:text-foreground"
         >
           <ArrowLeftIcon className="size-3" /> All monitors

@@ -19,7 +19,7 @@ import { auth } from "~/auth";
 import { isOperator } from "~/lib/operator";
 import { parseOrFlash } from "~/lib/zod-flash";
 
-const PATH = "/dashboard/settings/probe-locations";
+const PATH = "/settings/probe-locations";
 
 /** Shared locations plus this workspace's own private ones. */
 const visibleTo = (workspaceId: string) =>

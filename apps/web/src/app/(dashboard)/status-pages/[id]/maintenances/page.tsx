@@ -53,7 +53,7 @@ export default async function MaintenancesTab({ params }: { params: Promise<{ id
           <SectionTitle>Maintenances</SectionTitle>
           <SectionDescription>
             Planned outages affecting components on this page. Looking for{" "}
-            <Link href={`/dashboard/status-pages/${idOrSlug}/status-reports`} className="underline">
+            <Link href={`/status-pages/${idOrSlug}/status-reports`} className="underline">
               status reports
             </Link>
             ?

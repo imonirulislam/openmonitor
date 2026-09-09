@@ -44,7 +44,7 @@ export async function createMaintenance(formData: FormData) {
       recurrenceRule: rrule ? rrule : undefined,
       recurrenceUntil: ruleUntil ? ruleUntil : undefined,
     },
-    "/dashboard/maintenance",
+    "/maintenance",
   );
 
   await db().transaction(async (tx) => {
@@ -114,8 +114,8 @@ export async function createMaintenance(formData: FormData) {
     });
   });
 
-  revalidatePath("/dashboard/maintenance");
-  redirect(withToastRedirect("/dashboard/maintenance", `Scheduled “${parsed.title}”`));
+  revalidatePath("/maintenance");
+  redirect(withToastRedirect("/maintenance", `Scheduled “${parsed.title}”`));
 }
 
 /** Cancel an upcoming or in-progress maintenance window. */
@@ -130,8 +130,8 @@ export async function cancelMaintenance(id: string) {
         eq(schema.maintenances.workspaceId, session.user.workspaceId),
       ),
     );
-  revalidatePath("/dashboard/maintenance");
-  redirect(withToastRedirect("/dashboard/maintenance", "Maintenance cancelled", "info"));
+  revalidatePath("/maintenance");
+  redirect(withToastRedirect("/maintenance", "Maintenance cancelled", "info"));
 }
 
 export async function deleteMaintenance(id: string) {
@@ -144,6 +144,6 @@ export async function deleteMaintenance(id: string) {
         eq(schema.maintenances.workspaceId, session.user.workspaceId),
       ),
     );
-  revalidatePath("/dashboard/maintenance");
-  redirect(withToastRedirect("/dashboard/maintenance", "Maintenance deleted", "info"));
+  revalidatePath("/maintenance");
+  redirect(withToastRedirect("/maintenance", "Maintenance deleted", "info"));
 }

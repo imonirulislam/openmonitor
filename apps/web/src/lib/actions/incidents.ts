@@ -49,7 +49,7 @@ export async function createIncident(formData: FormData) {
     // inside per-page Status Reports tabs (Sheet); the server action doesn't
     // know which page initiated, so we use the workspace status-pages list as
     // a sensible fallback.
-    "/dashboard/status-pages",
+    "/status-pages",
   );
 
   const created = await db().transaction(async (tx) => {
@@ -136,8 +136,8 @@ export async function createIncident(formData: FormData) {
     targetLabel: parsed.title,
     metadata: { severity: parsed.severity, status: parsed.status },
   });
-  revalidatePath("/dashboard/incidents");
-  redirect(withToastRedirect(`/dashboard/incidents/${addr}`, `Opened “${parsed.title}”`));
+  revalidatePath("/incidents");
+  redirect(withToastRedirect(`/incidents/${addr}`, `Opened “${parsed.title}”`));
 }
 
 export async function postIncidentUpdate(incidentId: string, formData: FormData) {
@@ -149,7 +149,7 @@ export async function postIncidentUpdate(incidentId: string, formData: FormData)
       status: formData.get("status"),
       message: formData.get("message"),
     },
-    `/dashboard/incidents/${addr}`,
+    `/incidents/${addr}`,
   );
 
   await db().transaction(async (tx) => {
@@ -210,11 +210,11 @@ export async function postIncidentUpdate(incidentId: string, formData: FormData)
     targetId: incidentId,
     metadata: { status: parsed.status },
   });
-  revalidatePath(`/dashboard/incidents/${addr}`);
-  revalidatePath("/dashboard/incidents");
+  revalidatePath(`/incidents/${addr}`);
+  revalidatePath("/incidents");
   redirect(
     withToastRedirect(
-      `/dashboard/incidents/${addr}`,
+      `/incidents/${addr}`,
       parsed.status === "resolved" ? "Incident resolved" : "Update posted",
     ),
   );

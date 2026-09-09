@@ -22,7 +22,7 @@ export default async function HeartbeatsIndex() {
           </p>
         </div>
         <Button asChild>
-          <Link href="/dashboard/heartbeats/new">
+          <Link href="/heartbeats/new">
             <PlusIcon /> New heartbeat
           </Link>
         </Button>
@@ -35,7 +35,7 @@ export default async function HeartbeatsIndex() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <Link
-                  href={`/dashboard/heartbeats/${h.slug}`}
+                  href={`/heartbeats/${h.slug}`}
                   className="font-semibold text-base hover:underline"
                 >
                   {h.name}
@@ -83,7 +83,7 @@ export default async function HeartbeatsIndex() {
         {rows.length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground text-sm">
             No heartbeats yet.{" "}
-            <Link href="/dashboard/heartbeats/new" className="underline">
+            <Link href="/heartbeats/new" className="underline">
               Create one
             </Link>
             .

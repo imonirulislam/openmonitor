@@ -1,7 +1,7 @@
 /**
  * Shared option arrays + types for the latency chart's quantile / resolution
  * pickers. Lives in a non-`"use client"` module so the server component
- * (`apps/web/src/app/dashboard/monitors/[id]/page.tsx`) can import the
+ * (`apps/web/src/app/(dashboard)/monitors/[id]/page.tsx`) can import the
  * constants directly — Next.js silently strips non-component exports from a
  * `"use client"` file when imported into a server component, which surfaces
  * as "QUANTILES.find is not a function" at request time.

@@ -27,14 +27,14 @@ import { type WorkspaceOption, WorkspaceSwitcher } from "~/components/workspace-
 import { signOutAction } from "~/lib/actions/auth";
 
 const NAV = [
-  { href: "/dashboard", label: "Overview", icon: GaugeIcon, exact: true },
-  { href: "/dashboard/status-pages", label: "Status pages", icon: PanelTopIcon },
-  { href: "/dashboard/monitors", label: "Monitors", icon: ActivityIcon },
-  { href: "/dashboard/heartbeats", label: "Heartbeats", icon: HeartPulseIcon },
-  { href: "/dashboard/maintenance", label: "Maintenance", icon: WrenchIcon },
-  { href: "/dashboard/channels", label: "Channels", icon: BellIcon },
-  { href: "/dashboard/audit-logs", label: "Audit logs", icon: ScanEyeIcon },
-  { href: "/dashboard/settings", label: "Settings", icon: CogIcon },
+  { href: "/", label: "Overview", icon: GaugeIcon, exact: true },
+  { href: "/status-pages", label: "Status pages", icon: PanelTopIcon },
+  { href: "/monitors", label: "Monitors", icon: ActivityIcon },
+  { href: "/heartbeats", label: "Heartbeats", icon: HeartPulseIcon },
+  { href: "/maintenance", label: "Maintenance", icon: WrenchIcon },
+  { href: "/channels", label: "Channels", icon: BellIcon },
+  { href: "/audit-logs", label: "Audit logs", icon: ScanEyeIcon },
+  { href: "/settings", label: "Settings", icon: CogIcon },
 ];
 
 export function AppSidebar({

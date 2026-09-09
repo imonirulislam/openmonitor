@@ -73,31 +73,31 @@ export default async function OverviewPage() {
           label="Monitors"
           value={monitorRows.length.toString()}
           icon={ActivityIcon}
-          href="/dashboard/monitors"
+          href="/monitors"
         />
         <OverviewStatCard
           label="Status Pages"
           value={statusPageRows.length.toString()}
           icon={PanelTopIcon}
-          href="/dashboard/status-pages"
+          href="/status-pages"
         />
         <OverviewStatCard
           label="Heartbeats"
           value={heartbeatRows.length.toString()}
           icon={HeartPulseIcon}
-          href="/dashboard/heartbeats"
+          href="/heartbeats"
         />
         <OverviewStatCard
           label="Last Incident"
           relativeTo={latestIncident?.startedAt ?? null}
           icon={ZapIcon}
-          href="/dashboard/incidents"
+          href="/incidents"
         />
         <OverviewStatCard
           label="Last Maintenance"
           relativeTo={latestMaintenance?.startsAt ?? null}
           icon={WrenchIcon}
-          href="/dashboard/maintenance"
+          href="/maintenance"
         />
       </div>
 

@@ -80,9 +80,7 @@ export default async function SystemPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "admin") {
-    redirect(
-      withToastRedirect("/dashboard/settings", "Admin role required for System settings", "error"),
-    );
+    redirect(withToastRedirect("/settings", "Admin role required for System settings", "error"));
   }
 
   const [retention, checker] = await Promise.all([

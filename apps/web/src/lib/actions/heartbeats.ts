@@ -43,7 +43,7 @@ function generateToken(): string {
 
 export async function createHeartbeat(formData: FormData) {
   const ws = await requireEditor();
-  const parsed = parseOrFlash(writeSchema, Object.fromEntries(formData), "/dashboard/heartbeats");
+  const parsed = parseOrFlash(writeSchema, Object.fromEntries(formData), "/heartbeats");
 
   const enabled = formData.get("enabled") === "true";
   const [created] = await db()
@@ -67,18 +67,14 @@ export async function createHeartbeat(formData: FormData) {
     targetLabel: parsed.name,
   });
 
-  revalidatePath("/dashboard/heartbeats");
-  redirect(withToastRedirect(`/dashboard/heartbeats/${created?.id}`, `Created “${parsed.name}”`));
+  revalidatePath("/heartbeats");
+  redirect(withToastRedirect(`/heartbeats/${created?.id}`, `Created “${parsed.name}”`));
 }
 
 export async function updateHeartbeat(id: string, formData: FormData) {
   const ws = await requireEditor();
   const addr = await heartbeatSlug(id);
-  const parsed = parseOrFlash(
-    writeSchema,
-    Object.fromEntries(formData),
-    `/dashboard/heartbeats/${addr}`,
-  );
+  const parsed = parseOrFlash(writeSchema, Object.fromEntries(formData), `/heartbeats/${addr}`);
   const enabled = formData.get("enabled") === "true";
 
   await db()
@@ -101,8 +97,8 @@ export async function updateHeartbeat(id: string, formData: FormData) {
     targetLabel: parsed.name,
   });
 
-  revalidatePath(`/dashboard/heartbeats/${addr}`);
-  redirect(withToastRedirect("/dashboard/heartbeats", "Heartbeat saved"));
+  revalidatePath(`/heartbeats/${addr}`);
+  redirect(withToastRedirect("/heartbeats", "Heartbeat saved"));
 }
 
 /** Mint a new token, invalidating the old one. */
@@ -118,8 +114,8 @@ export async function rotateHeartbeatToken(id: string) {
     targetType: "monitor",
     targetId: id,
   });
-  revalidatePath(`/dashboard/heartbeats/${addr}`);
-  redirect(withToastRedirect(`/dashboard/heartbeats/${addr}`, "Token rotated", "info"));
+  revalidatePath(`/heartbeats/${addr}`);
+  redirect(withToastRedirect(`/heartbeats/${addr}`, "Token rotated", "info"));
 }
 
 export async function deleteHeartbeat(id: string) {
@@ -130,6 +126,6 @@ export async function deleteHeartbeat(id: string) {
     targetType: "monitor",
     targetId: id,
   });
-  revalidatePath("/dashboard/heartbeats");
-  redirect(withToastRedirect("/dashboard/heartbeats", "Heartbeat deleted", "info"));
+  revalidatePath("/heartbeats");
+  redirect(withToastRedirect("/heartbeats", "Heartbeat deleted", "info"));
 }

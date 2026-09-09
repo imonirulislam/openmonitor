@@ -647,7 +647,7 @@ export function MonitorConfigForm({
                         {probeLocations.length === 0 ? (
                           <p className="text-muted-foreground text-sm">
                             No probe locations configured yet. Add one in{" "}
-                            <Link href="/dashboard/settings/probe-locations" className="underline">
+                            <Link href="/settings/probe-locations" className="underline">
                               Settings → Probe locations
                             </Link>
                             .

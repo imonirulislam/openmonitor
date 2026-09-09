@@ -108,5 +108,5 @@ export async function signUp(formData: FormData) {
   }
 
   // Throws a redirect, so it goes last.
-  await signIn("credentials", { email, password: parsed.password, redirectTo: "/dashboard" });
+  await signIn("credentials", { email, password: parsed.password, redirectTo: "/" });
 }

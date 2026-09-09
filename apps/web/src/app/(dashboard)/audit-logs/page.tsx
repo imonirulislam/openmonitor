@@ -84,7 +84,7 @@ export default async function AuditLogsPage() {
     const segment = TARGET_PATH[type];
     if (!segment || !id) return null;
     const address = type === "monitor" ? monitorSlugs.get(id) : incidentNumbers.get(id);
-    return address ? `/dashboard/${segment}/${address}` : null;
+    return address ? `/${segment}/${address}` : null;
   };
 
   const rows: AuditRow[] = logs.map((l) => ({

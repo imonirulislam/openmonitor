@@ -84,7 +84,7 @@ export function MonitorRegions({
         <Card className="p-8 text-center">
           <p className="text-muted-foreground text-sm">
             No probe results yet. Add a probe location in{" "}
-            <Link href="/dashboard/settings/probe-locations" className="underline">
+            <Link href="/settings/probe-locations" className="underline">
               Settings → Probe locations
             </Link>{" "}
             and point a checker at it.
@@ -211,9 +211,7 @@ export function MonitorRegions({
                   <td className="px-4 py-3 text-right">
                     <RowActions>
                       <RowAction asChild>
-                        <Link href={`/dashboard/monitors/${monitorId}/logs?region=${r.code}`}>
-                          View logs
-                        </Link>
+                        <Link href={`/monitors/${monitorId}/logs?region=${r.code}`}>View logs</Link>
                       </RowAction>
                     </RowActions>
                   </td>

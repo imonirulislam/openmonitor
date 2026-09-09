@@ -41,7 +41,7 @@ export async function changeOwnPassword(formData: FormData) {
   const parsed = parseOrFlash(
     changePasswordSchema,
     Object.fromEntries(formData),
-    "/dashboard/settings/account",
+    "/settings/account",
   );
 
   const [user] = await db()
@@ -53,9 +53,7 @@ export async function changeOwnPassword(formData: FormData) {
 
   const ok = await verifyPassword(user.passwordHash, parsed.currentPassword);
   if (!ok) {
-    redirect(
-      withToastRedirect("/dashboard/settings/account", "Current password is incorrect", "error"),
-    );
+    redirect(withToastRedirect("/settings/account", "Current password is incorrect", "error"));
   }
 
   const newHash = await hashPassword(parsed.newPassword);
@@ -71,7 +69,7 @@ export async function changeOwnPassword(formData: FormData) {
     targetLabel: session.user.email ?? null,
   });
 
-  redirect(withToastRedirect("/dashboard/settings/account", "Password updated"));
+  redirect(withToastRedirect("/settings/account", "Password updated"));
 }
 
 // ---------- Member management (admin only) ----------
@@ -98,11 +96,7 @@ const changeRoleSchema = z.object({
  */
 export async function inviteMember(formData: FormData) {
   const ws = await requireAdmin();
-  const parsed = parseOrFlash(
-    inviteSchema,
-    Object.fromEntries(formData),
-    "/dashboard/settings/members",
-  );
+  const parsed = parseOrFlash(inviteSchema, Object.fromEntries(formData), "/settings/members");
   const email = parsed.email.toLowerCase();
 
   await db().transaction(async (tx) => {
@@ -161,7 +155,7 @@ export async function inviteMember(formData: FormData) {
     // admin can copy the link.
     redirect(
       withToastRedirect(
-        `/dashboard/settings/members?invited=${userId}&token=${token}`,
+        `/settings/members?invited=${userId}&token=${token}`,
         existing ? `Added ${email} to the workspace` : `Invited ${email} — share the link below`,
       ),
     );
@@ -170,11 +164,7 @@ export async function inviteMember(formData: FormData) {
 
 export async function changeMemberRole(formData: FormData) {
   const ws = await requireAdmin();
-  const parsed = parseOrFlash(
-    changeRoleSchema,
-    Object.fromEntries(formData),
-    "/dashboard/settings/members",
-  );
+  const parsed = parseOrFlash(changeRoleSchema, Object.fromEntries(formData), "/settings/members");
 
   await db()
     .update(schema.workspaceMembers)
@@ -193,7 +183,7 @@ export async function changeMemberRole(formData: FormData) {
     metadata: { role: parsed.role },
   });
 
-  redirect(withToastRedirect("/dashboard/settings/members", "Role updated"));
+  redirect(withToastRedirect("/settings/members", "Role updated"));
 }
 
 export async function removeMember(userId: string): Promise<void> {
@@ -215,8 +205,8 @@ export async function removeMember(userId: string): Promise<void> {
     targetId: userId,
   });
 
-  revalidatePath("/dashboard/settings/members");
-  redirect(withToastRedirect("/dashboard/settings/members", "Member removed", "info"));
+  revalidatePath("/settings/members");
+  redirect(withToastRedirect("/settings/members", "Member removed", "info"));
 }
 
 export async function setUserActive(userId: string, active: boolean): Promise<void> {
@@ -233,10 +223,10 @@ export async function setUserActive(userId: string, active: boolean): Promise<vo
     targetId: userId,
   });
 
-  revalidatePath("/dashboard/settings/members");
+  revalidatePath("/settings/members");
   redirect(
     withToastRedirect(
-      "/dashboard/settings/members",
+      "/settings/members",
       active ? "User reactivated" : "User deactivated",
       active ? "success" : "info",
     ),

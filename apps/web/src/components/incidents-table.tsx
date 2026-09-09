@@ -21,10 +21,7 @@ const columns: ColumnDef<Row>[] = [
     accessorKey: "title",
     header: "Title",
     cell: ({ row }) => (
-      <Link
-        href={`/dashboard/incidents/${row.original.number}`}
-        className="font-medium hover:underline"
-      >
+      <Link href={`/incidents/${row.original.number}`} className="font-medium hover:underline">
         {row.original.title}
       </Link>
     ),

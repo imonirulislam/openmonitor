@@ -30,11 +30,7 @@ function templateScope(id: string, workspaceId: string) {
 
 export async function createIncidentTemplate(formData: FormData) {
   const ws = await requireEditor();
-  const parsed = parseOrFlash(
-    writeSchema,
-    Object.fromEntries(formData),
-    "/dashboard/settings/templates",
-  );
+  const parsed = parseOrFlash(writeSchema, Object.fromEntries(formData), "/settings/templates");
 
   await db().insert(schema.incidentTemplates).values({
     workspaceId: ws.workspaceId,
@@ -51,17 +47,13 @@ export async function createIncidentTemplate(formData: FormData) {
     targetLabel: parsed.name,
   });
 
-  revalidatePath("/dashboard/settings/templates");
-  redirect(withToastRedirect("/dashboard/settings/templates", `Created “${parsed.name}”`));
+  revalidatePath("/settings/templates");
+  redirect(withToastRedirect("/settings/templates", `Created “${parsed.name}”`));
 }
 
 export async function updateIncidentTemplate(id: string, formData: FormData) {
   const ws = await requireEditor();
-  const parsed = parseOrFlash(
-    writeSchema,
-    Object.fromEntries(formData),
-    "/dashboard/settings/templates",
-  );
+  const parsed = parseOrFlash(writeSchema, Object.fromEntries(formData), "/settings/templates");
 
   await db()
     .update(schema.incidentTemplates)
@@ -80,8 +72,8 @@ export async function updateIncidentTemplate(id: string, formData: FormData) {
     targetLabel: parsed.name,
   });
 
-  revalidatePath("/dashboard/settings/templates");
-  redirect(withToastRedirect("/dashboard/settings/templates", "Template saved"));
+  revalidatePath("/settings/templates");
+  redirect(withToastRedirect("/settings/templates", "Template saved"));
 }
 
 export async function deleteIncidentTemplate(id: string) {
@@ -92,6 +84,6 @@ export async function deleteIncidentTemplate(id: string) {
     targetType: "incident",
     targetId: null,
   });
-  revalidatePath("/dashboard/settings/templates");
-  redirect(withToastRedirect("/dashboard/settings/templates", "Template deleted", "info"));
+  revalidatePath("/settings/templates");
+  redirect(withToastRedirect("/settings/templates", "Template deleted", "info"));
 }

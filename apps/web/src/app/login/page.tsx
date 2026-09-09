@@ -19,7 +19,7 @@ async function LoginForm({
 }) {
   const params = await searchParamsPromise;
   const error = params.error;
-  const callbackUrl = params.callbackUrl ?? "/dashboard";
+  const callbackUrl = params.callbackUrl ?? "/";
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6">

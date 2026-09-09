@@ -115,7 +115,7 @@ export function WorkspaceSwitcher({
         })}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <a href="/dashboard/settings/workspace?new=1" className="flex items-center gap-2">
+          <a href="/settings/workspace?new=1" className="flex items-center gap-2">
             <PlusIcon className="size-3.5" />
             New workspace
           </a>

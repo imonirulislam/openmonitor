@@ -249,7 +249,7 @@ async function syncProbeLocations(
 
 export async function createMonitor(formData: FormData) {
   const session = await requireEditor();
-  const parsed = parseConfigPayload(formData, "/dashboard/monitors/new");
+  const parsed = parseConfigPayload(formData, "/monitors/new");
   const cols = configToColumns(parsed);
   const created = await db().transaction(async (tx) => {
     const [row] = await tx
@@ -271,14 +271,12 @@ export async function createMonitor(formData: FormData) {
     targetLabel: parsed.name,
     metadata: { slug: parsed.slug, kind: parsed.kind },
   });
-  revalidatePath("/dashboard/monitors");
+  revalidatePath("/monitors");
   if (created) {
     // Land on the edit page so the user can configure response-time + schedule.
-    redirect(
-      withToastRedirect(`/dashboard/monitors/${created.slug}/edit`, `Created “${parsed.name}”`),
-    );
+    redirect(withToastRedirect(`/monitors/${created.slug}/edit`, `Created “${parsed.name}”`));
   }
-  redirect(withToastRedirect("/dashboard/monitors", `Created “${parsed.name}”`));
+  redirect(withToastRedirect("/monitors", `Created “${parsed.name}”`));
 }
 
 /**
@@ -289,7 +287,7 @@ export async function createMonitor(formData: FormData) {
 export async function updateMonitorConfig(id: string, formData: FormData) {
   const session = await requireEditor();
   const addr = await monitorSlug(id);
-  const parsed = parseConfigPayload(formData, `/dashboard/monitors/${addr}/edit`);
+  const parsed = parseConfigPayload(formData, `/monitors/${addr}/edit`);
   const cols = configToColumns(parsed);
   await db().transaction(async (tx) => {
     await tx
@@ -308,8 +306,8 @@ export async function updateMonitorConfig(id: string, formData: FormData) {
     targetLabel: parsed.name,
     metadata: { kind: parsed.kind, assertions: parsed.assertions.length },
   });
-  revalidatePath(`/dashboard/monitors/${addr}`);
-  redirect(withToastRedirect(`/dashboard/monitors/${addr}/edit`, "Configuration saved"));
+  revalidatePath(`/monitors/${addr}`);
+  redirect(withToastRedirect(`/monitors/${addr}/edit`, "Configuration saved"));
 }
 
 export async function updateMonitorResponseTime(id: string, formData: FormData) {
@@ -321,12 +319,10 @@ export async function updateMonitorResponseTime(id: string, formData: FormData) 
     try {
       json = JSON.parse(raw);
     } catch {
-      redirect(
-        withToastRedirect(`/dashboard/monitors/${addr}/edit`, "Invalid form payload", "error"),
-      );
+      redirect(withToastRedirect(`/monitors/${addr}/edit`, "Invalid form payload", "error"));
     }
   }
-  const parsed = parseOrFlash(responseTimeSchema, json, `/dashboard/monitors/${addr}/edit`);
+  const parsed = parseOrFlash(responseTimeSchema, json, `/monitors/${addr}/edit`);
   await db()
     .update(schema.monitors)
     .set({
@@ -342,8 +338,8 @@ export async function updateMonitorResponseTime(id: string, formData: FormData) 
     targetLabel: null,
     metadata: { degradedAfterMs: parsed.degradedAfterMs ?? null, timeoutMs: parsed.timeoutMs },
   });
-  revalidatePath(`/dashboard/monitors/${addr}`);
-  redirect(withToastRedirect(`/dashboard/monitors/${addr}/edit`, "Response time saved"));
+  revalidatePath(`/monitors/${addr}`);
+  redirect(withToastRedirect(`/monitors/${addr}/edit`, "Response time saved"));
 }
 
 export async function deleteMonitor(id: string) {
@@ -360,8 +356,8 @@ export async function deleteMonitor(id: string) {
     targetId: id,
     targetLabel: existing?.name ?? null,
   });
-  revalidatePath("/dashboard/monitors");
-  redirect(withToastRedirect("/dashboard/monitors", "Monitor deleted", "info"));
+  revalidatePath("/monitors");
+  redirect(withToastRedirect("/monitors", "Monitor deleted", "info"));
 }
 
 /**
@@ -380,10 +376,10 @@ export async function toggleMonitorEnabled(id: string, next: boolean) {
     targetId: id,
     targetLabel: null,
   });
-  revalidatePath("/dashboard/monitors");
+  revalidatePath("/monitors");
   redirect(
     withToastRedirect(
-      "/dashboard/monitors",
+      "/monitors",
       next ? "Monitor enabled" : "Monitor disabled",
       next ? "success" : "info",
     ),
@@ -410,7 +406,7 @@ export async function updateMonitorSchedule(id: string, formData: FormData) {
   const parsed = parseOrFlash(
     scheduleSchema,
     Object.fromEntries(formData),
-    `/dashboard/monitors/${addr}/edit`,
+    `/monitors/${addr}/edit`,
   );
   const enabled = readEnabled(formData);
   const autoIncidentThreshold =
@@ -446,6 +442,6 @@ export async function updateMonitorSchedule(id: string, formData: FormData) {
       enabled,
     },
   });
-  revalidatePath(`/dashboard/monitors/${addr}`);
-  redirect(withToastRedirect(`/dashboard/monitors/${addr}/edit`, "Schedule saved"));
+  revalidatePath(`/monitors/${addr}`);
+  redirect(withToastRedirect(`/monitors/${addr}/edit`, "Schedule saved"));
 }

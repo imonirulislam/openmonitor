@@ -14,7 +14,7 @@ const TABS = [
 ] as const;
 
 /**
- * Sub-area tab nav for /dashboard/status-pages/[id]/<tab>. Mirrors openstatus's
+ * Sub-area tab nav for /status-pages/[id]/<tab>. Mirrors openstatus's
  * status-page detail layout: status reports, maintenances, subscribers,
  * components, settings.
  */
@@ -24,7 +24,7 @@ export function StatusPageTabs({ pageId }: { pageId: string }) {
   return (
     <nav className="flex flex-wrap items-center gap-0.5 border-b border-border">
       {TABS.map((t) => {
-        const href = `/dashboard/status-pages/${pageId}/${t.value}`;
+        const href = `/status-pages/${pageId}/${t.value}`;
         const isActive = pathname === href || pathname.startsWith(`${href}/`);
         const Icon = t.icon;
         return (

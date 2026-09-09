@@ -117,7 +117,7 @@ export default async function MonitorsPage({
     if (nextStatus) params.set("status", nextStatus);
     if (nextSort) params.set("sort", nextSort);
     const qs = params.toString();
-    return qs ? `/dashboard/monitors?${qs}` : "/dashboard/monitors";
+    return qs ? `/monitors?${qs}` : "/monitors";
   };
 
   return (
@@ -129,7 +129,7 @@ export default async function MonitorsPage({
             <SectionDescription>Create and manage your monitors.</SectionDescription>
           </SectionHeader>
           <Button asChild size="sm">
-            <Link href="/dashboard/monitors/new">
+            <Link href="/monitors/new">
               <PlusIcon /> Create Monitor
             </Link>
           </Button>

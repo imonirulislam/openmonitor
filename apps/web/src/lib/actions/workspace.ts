@@ -70,7 +70,7 @@ export async function switchWorkspace(workspaceId: string): Promise<void> {
   });
 
   // Reload the dashboard so server components re-render with the new workspace.
-  redirect("/dashboard");
+  redirect("/");
 }
 
 export async function createWorkspace(formData: FormData) {
@@ -79,7 +79,7 @@ export async function createWorkspace(formData: FormData) {
   const parsed = parseOrFlash(
     createSchema,
     Object.fromEntries(formData),
-    "/dashboard/settings/workspace?new=1",
+    "/settings/workspace?new=1",
   );
 
   const workspaceId = await db().transaction(async (tx) => {
@@ -113,17 +113,13 @@ export async function createWorkspace(formData: FormData) {
     sameSite: "lax",
   });
 
-  revalidatePath("/dashboard");
-  redirect(withToastRedirect("/dashboard", `Created workspace “${parsed.name}”`));
+  revalidatePath("/");
+  redirect(withToastRedirect("/", `Created workspace “${parsed.name}”`));
 }
 
 export async function renameWorkspace(formData: FormData) {
   const ws = await requireAdmin();
-  const parsed = parseOrFlash(
-    renameSchema,
-    Object.fromEntries(formData),
-    "/dashboard/settings/workspace",
-  );
+  const parsed = parseOrFlash(renameSchema, Object.fromEntries(formData), "/settings/workspace");
 
   await db()
     .update(schema.workspaces)
@@ -138,8 +134,8 @@ export async function renameWorkspace(formData: FormData) {
     metadata: { slug: parsed.slug },
   });
 
-  revalidatePath("/dashboard/settings/workspace");
-  redirect(withToastRedirect("/dashboard/settings/workspace", "Workspace updated"));
+  revalidatePath("/settings/workspace");
+  redirect(withToastRedirect("/settings/workspace", "Workspace updated"));
 }
 
 export async function deleteWorkspace(): Promise<void> {
@@ -176,5 +172,5 @@ export async function deleteWorkspace(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(WORKSPACE_COOKIE_NAME);
 
-  redirect(withToastRedirect("/dashboard", "Workspace deleted", "info"));
+  redirect(withToastRedirect("/", "Workspace deleted", "info"));
 }

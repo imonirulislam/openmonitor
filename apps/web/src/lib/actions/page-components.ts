@@ -76,7 +76,7 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
   } catch {
     throw new Error("invalid tree payload");
   }
-  const tree = parseOrFlash(treeSchema, parsedJson, `/dashboard/status-pages/${addr}/components`);
+  const tree = parseOrFlash(treeSchema, parsedJson, `/status-pages/${addr}/components`);
 
   await db().transaction(async (tx) => {
     const existingComponents = await tx
@@ -249,6 +249,6 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
     },
   });
 
-  revalidatePath(`/dashboard/status-pages/${addr}/components`);
-  redirect(withToastRedirect(`/dashboard/status-pages/${addr}/components`, "Components saved"));
+  revalidatePath(`/status-pages/${addr}/components`);
+  redirect(withToastRedirect(`/status-pages/${addr}/components`, "Components saved"));
 }

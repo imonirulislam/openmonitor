@@ -32,7 +32,7 @@ export default async function StatusPagesIndex() {
           <p className="mt-1 text-muted-foreground text-sm">Create and manage your status pages.</p>
         </div>
         <Button asChild size="sm">
-          <Link href="/dashboard/status-pages/new">
+          <Link href="/status-pages/new">
             <PlusIcon /> Create Status Page
           </Link>
         </Button>
@@ -41,7 +41,7 @@ export default async function StatusPagesIndex() {
       {rows.length === 0 ? (
         <Card className="p-8 text-center text-muted-foreground text-sm">
           No status pages yet.{" "}
-          <Link href="/dashboard/status-pages/new" className="underline">
+          <Link href="/status-pages/new" className="underline">
             Create one
           </Link>
           .

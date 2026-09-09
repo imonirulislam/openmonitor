@@ -5,7 +5,7 @@ import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 /**
  * Workspace-wide incident browse view. Creation happens on a per-status-page
- * basis from /dashboard/status-pages/[id]/status-reports — this page is
+ * basis from /status-pages/[id]/status-reports — this page is
  * read-only and intentionally not in the sidebar.
  */
 export default async function IncidentsPage() {

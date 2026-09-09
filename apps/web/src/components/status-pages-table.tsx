@@ -22,10 +22,7 @@ const columns: ColumnDef<StatusPageRow>[] = [
     accessorKey: "name",
     header: "Title",
     cell: ({ row }) => (
-      <Link
-        href={`/dashboard/status-pages/${row.original.slug}`}
-        className="font-medium hover:underline"
-      >
+      <Link href={`/status-pages/${row.original.slug}`} className="font-medium hover:underline">
         {row.original.name}
       </Link>
     ),
@@ -87,10 +84,10 @@ const columns: ColumnDef<StatusPageRow>[] = [
         <div className="flex justify-end">
           <RowActions>
             <RowAction asChild>
-              <Link href={`/dashboard/status-pages/${p.slug}/edit`}>Edit</Link>
+              <Link href={`/status-pages/${p.slug}/edit`}>Edit</Link>
             </RowAction>
             <RowAction asChild>
-              <Link href={`/dashboard/status-pages/${p.slug}/components`}>Components</Link>
+              <Link href={`/status-pages/${p.slug}/components`}>Components</Link>
             </RowAction>
             <RowActionSeparator />
             <RowActionAction action={deleteStatusPage.bind(null, p.id)} destructive>

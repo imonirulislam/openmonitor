@@ -111,10 +111,10 @@ export async function createStatusPage(formData: FormData) {
       ...Object.fromEntries(formData),
       customDomain: cd ? cd : undefined,
     },
-    "/dashboard/status-pages/new",
+    "/status-pages/new",
   );
   const isPublic = readIsPublic(formData);
-  await assertSlugFree(parsed.slug, "/dashboard/status-pages/new");
+  await assertSlugFree(parsed.slug, "/status-pages/new");
 
   const [created] = await db()
     .insert(schema.statusPages)
@@ -136,8 +136,8 @@ export async function createStatusPage(formData: FormData) {
     metadata: { slug: parsed.slug, isPublic },
   });
 
-  revalidatePath("/dashboard/status-pages");
-  redirect(withToastRedirect(`/dashboard/status-pages/${parsed.slug}`, `Created “${parsed.name}”`));
+  revalidatePath("/status-pages");
+  redirect(withToastRedirect(`/status-pages/${parsed.slug}`, `Created “${parsed.name}”`));
 }
 
 export async function updateStatusPage(id: string, formData: FormData) {
@@ -150,10 +150,10 @@ export async function updateStatusPage(id: string, formData: FormData) {
       ...Object.fromEntries(formData),
       customDomain: cd ? cd : undefined,
     },
-    `/dashboard/status-pages/${addr}`,
+    `/status-pages/${addr}`,
   );
   const isPublic = readIsPublic(formData);
-  await assertSlugFree(parsed.slug, `/dashboard/status-pages/${addr}`, id);
+  await assertSlugFree(parsed.slug, `/status-pages/${addr}`, id);
 
   await db()
     .update(schema.statusPages)
@@ -174,8 +174,8 @@ export async function updateStatusPage(id: string, formData: FormData) {
     targetLabel: parsed.name,
   });
 
-  revalidatePath(`/dashboard/status-pages/${addr}/edit`);
-  redirect(withToastRedirect(`/dashboard/status-pages/${addr}/edit`, "Status page saved"));
+  revalidatePath(`/status-pages/${addr}/edit`);
+  redirect(withToastRedirect(`/status-pages/${addr}/edit`, "Status page saved"));
 }
 
 export async function deleteStatusPage(id: string): Promise<void> {
@@ -195,8 +195,8 @@ export async function deleteStatusPage(id: string): Promise<void> {
     targetLabel: existing?.name ?? null,
   });
 
-  revalidatePath("/dashboard/status-pages");
-  redirect(withToastRedirect("/dashboard/status-pages", "Status page deleted", "info"));
+  revalidatePath("/status-pages");
+  redirect(withToastRedirect("/status-pages", "Status page deleted", "info"));
 }
 
 /**
@@ -214,7 +214,7 @@ export async function setStatusPagePassword(id: string, formData: FormData) {
   const parsed = parseOrFlash(
     passwordSchema,
     Object.fromEntries(formData),
-    `/dashboard/status-pages/${addr}`,
+    `/status-pages/${addr}`,
   );
 
   const trimmed = parsed.password.trim();
@@ -233,10 +233,10 @@ export async function setStatusPagePassword(id: string, formData: FormData) {
     targetId: id,
   });
 
-  revalidatePath(`/dashboard/status-pages/${addr}/edit`);
+  revalidatePath(`/status-pages/${addr}/edit`);
   redirect(
     withToastRedirect(
-      `/dashboard/status-pages/${addr}/edit`,
+      `/status-pages/${addr}/edit`,
       trimmed ? "Password protection enabled" : "Password protection cleared",
       trimmed ? "success" : "info",
     ),
@@ -259,7 +259,7 @@ export async function updateStatusPageBranding(id: string, formData: FormData) {
       primaryColor: primaryColor || undefined,
       customCss: customCss.trim() ? customCss : undefined,
     },
-    `/dashboard/status-pages/${addr}/edit`,
+    `/status-pages/${addr}/edit`,
   );
 
   await db()
@@ -279,8 +279,8 @@ export async function updateStatusPageBranding(id: string, formData: FormData) {
     targetId: id,
   });
 
-  revalidatePath(`/dashboard/status-pages/${addr}/edit`);
-  redirect(withToastRedirect(`/dashboard/status-pages/${addr}/edit`, "Branding saved"));
+  revalidatePath(`/status-pages/${addr}/edit`);
+  redirect(withToastRedirect(`/status-pages/${addr}/edit`, "Branding saved"));
 }
 
 /** Save the optional homepage + contact links. Both can be empty to hide. */
@@ -295,7 +295,7 @@ export async function updateStatusPageLinks(id: string, formData: FormData) {
       homepageUrl: homepageUrl || undefined,
       contactUrl: contactUrl || undefined,
     },
-    `/dashboard/status-pages/${addr}/edit`,
+    `/status-pages/${addr}/edit`,
   );
 
   await db()
@@ -313,8 +313,8 @@ export async function updateStatusPageLinks(id: string, formData: FormData) {
     targetId: id,
   });
 
-  revalidatePath(`/dashboard/status-pages/${addr}/edit`);
-  redirect(withToastRedirect(`/dashboard/status-pages/${addr}/edit`, "Links saved"));
+  revalidatePath(`/status-pages/${addr}/edit`);
+  redirect(withToastRedirect(`/status-pages/${addr}/edit`, "Links saved"));
 }
 
 /**
@@ -326,11 +326,7 @@ export async function setStatusPageMonitors(id: string, formData: FormData) {
   const ws = await requireEditor();
   const addr = await statusPageSlug(id);
   const monitorIds = formData.getAll("monitorIds").map(String);
-  const parsed = parseOrFlash(
-    monitorSelectionSchema,
-    { monitorIds },
-    `/dashboard/status-pages/${addr}`,
-  );
+  const parsed = parseOrFlash(monitorSelectionSchema, { monitorIds }, `/status-pages/${addr}`);
 
   await db().transaction(async (tx) => {
     // Verify the page belongs to the workspace.
@@ -398,10 +394,10 @@ export async function setStatusPageMonitors(id: string, formData: FormData) {
     metadata: { count: parsed.monitorIds.length },
   });
 
-  revalidatePath(`/dashboard/status-pages/${addr}/components`);
+  revalidatePath(`/status-pages/${addr}/components`);
   redirect(
     withToastRedirect(
-      `/dashboard/status-pages/${addr}/components`,
+      `/status-pages/${addr}/components`,
       `Updated components (${parsed.monitorIds.length} selected)`,
     ),
   );

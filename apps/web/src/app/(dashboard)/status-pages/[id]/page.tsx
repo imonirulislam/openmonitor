@@ -11,5 +11,5 @@ export default async function StatusPageDetailIndex({
   const { id: idOrSlug } = await params;
   const workspaceId = await getCurrentWorkspaceId();
   const id = await statusPageIdFrom(idOrSlug, workspaceId);
-  redirect(`/dashboard/status-pages/${idOrSlug}/status-reports`);
+  redirect(`/status-pages/${idOrSlug}/status-reports`);
 }

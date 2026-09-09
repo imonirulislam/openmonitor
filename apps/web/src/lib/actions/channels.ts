@@ -24,11 +24,7 @@ async function requireEditor() {
 
 export async function createSlackChannel(formData: FormData) {
   const session = await requireEditor();
-  const parsed = parseOrFlash(
-    slackChannelSchema,
-    Object.fromEntries(formData),
-    "/dashboard/channels",
-  );
+  const parsed = parseOrFlash(slackChannelSchema, Object.fromEntries(formData), "/channels");
   await db()
     .insert(schema.notificationChannels)
     .values({
@@ -38,8 +34,8 @@ export async function createSlackChannel(formData: FormData) {
       config: { webhookUrl: parsed.webhookUrl },
       enabled: parsed.enabled,
     });
-  revalidatePath("/dashboard/channels");
-  redirect(withToastRedirect("/dashboard/channels", `Added channel “${parsed.name}”`));
+  revalidatePath("/channels");
+  redirect(withToastRedirect("/channels", `Added channel “${parsed.name}”`));
 }
 
 export async function deleteChannel(id: string) {
@@ -52,8 +48,8 @@ export async function deleteChannel(id: string) {
         eq(schema.notificationChannels.workspaceId, session.user.workspaceId),
       ),
     );
-  revalidatePath("/dashboard/channels");
-  redirect(withToastRedirect("/dashboard/channels", "Channel deleted", "info"));
+  revalidatePath("/channels");
+  redirect(withToastRedirect("/channels", "Channel deleted", "info"));
 }
 
 export async function linkMonitorToChannel(monitorId: string, channelId: string) {
@@ -83,8 +79,8 @@ export async function linkMonitorToChannel(monitorId: string, channelId: string)
   if (!monitor || !channel) throw new Error("forbidden");
 
   await db().insert(schema.monitorChannels).values({ monitorId, channelId }).onConflictDoNothing();
-  revalidatePath("/dashboard/channels");
-  revalidatePath("/dashboard/monitors");
+  revalidatePath("/channels");
+  revalidatePath("/monitors");
 }
 
 export async function unlinkMonitorFromChannel(monitorId: string, channelId: string) {
@@ -99,6 +95,6 @@ export async function unlinkMonitorFromChannel(monitorId: string, channelId: str
         eq(schema.monitorChannels.channelId, channelId),
       ),
     );
-  revalidatePath("/dashboard/channels");
-  revalidatePath("/dashboard/monitors");
+  revalidatePath("/channels");
+  revalidatePath("/monitors");
 }

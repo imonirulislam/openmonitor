@@ -39,10 +39,7 @@ const columns: ColumnDef<Row>[] = [
     accessorKey: "name",
     header: "Name",
     cell: ({ row }) => (
-      <Link
-        href={`/dashboard/monitors/${row.original.slug}`}
-        className="font-medium hover:underline"
-      >
+      <Link href={`/monitors/${row.original.slug}`} className="font-medium hover:underline">
         {row.original.name}
       </Link>
     ),
@@ -133,10 +130,10 @@ const columns: ColumnDef<Row>[] = [
         <div className="flex justify-end">
           <RowActions>
             <RowAction asChild>
-              <Link href={`/dashboard/monitors/${m.slug}/edit`}>Edit</Link>
+              <Link href={`/monitors/${m.slug}/edit`}>Edit</Link>
             </RowAction>
             <RowAction asChild>
-              <Link href={`/dashboard/monitors/${m.slug}/logs`}>View logs</Link>
+              <Link href={`/monitors/${m.slug}/logs`}>View logs</Link>
             </RowAction>
             <RowActionSeparator />
             <RowActionAction action={toggleMonitorEnabled.bind(null, m.id, !m.enabled)}>

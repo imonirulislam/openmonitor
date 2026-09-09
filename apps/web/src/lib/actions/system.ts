@@ -18,7 +18,7 @@ export async function runRetentionAction() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "admin") {
-    redirect(withToastRedirect("/dashboard/settings/system", "Admin role required", "error"));
+    redirect(withToastRedirect("/settings/system", "Admin role required", "error"));
   }
   const res = await fetch(`${API_URL}/v1/system/scheduler/run`, {
     method: "POST",
@@ -26,24 +26,20 @@ export async function runRetentionAction() {
     cache: "no-store",
   });
   if (!res.ok) {
-    redirect(
-      withToastRedirect("/dashboard/settings/system", `Sweep failed: ${res.status}`, "error"),
-    );
+    redirect(withToastRedirect("/settings/system", `Sweep failed: ${res.status}`, "error"));
   }
   const body = (await res.json()) as {
     monitorRunsDeleted: number;
     eventsDeleted: number;
     error?: string;
   };
-  revalidatePath("/dashboard/settings/system");
+  revalidatePath("/settings/system");
   if (body.error) {
-    redirect(
-      withToastRedirect("/dashboard/settings/system", `Sweep error: ${body.error}`, "error"),
-    );
+    redirect(withToastRedirect("/settings/system", `Sweep error: ${body.error}`, "error"));
   }
   redirect(
     withToastRedirect(
-      "/dashboard/settings/system",
+      "/settings/system",
       `Sweep finished: deleted ${body.monitorRunsDeleted} runs, ${body.eventsDeleted} events.`,
     ),
   );

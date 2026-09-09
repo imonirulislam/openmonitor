@@ -16,7 +16,7 @@ const TABS = [
 
 export function MonitorTabs({ monitorId }: { monitorId: string }) {
   const pathname = usePathname();
-  const base = `/dashboard/monitors/${monitorId}`;
+  const base = `/monitors/${monitorId}`;
 
   return (
     <nav className="inline-flex h-9 items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
