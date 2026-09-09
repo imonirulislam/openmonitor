@@ -367,6 +367,45 @@ export async function phaseBuckets(
   );
 }
 
+export type RegionLatencyBucket = {
+  bucket: string;
+  region: string;
+  value: number;
+};
+
+/**
+ * Per-region latency over time, long format — one row per (bucket, region).
+ *
+ * Long rather than wide because regions aren't known at query time and
+ * ClickHouse can't pivot to dynamic columns; the chart widens it. Buckets a
+ * region has no probes in are simply absent, which recharts renders as a gap
+ * rather than a drop to zero.
+ */
+export async function regionLatencyBuckets(
+  monitorId: string,
+  since: Date,
+  bucketSeconds: number,
+  quantile: number,
+): Promise<RegionLatencyBucket[]> {
+  return rows<RegionLatencyBucket>(
+    `
+    SELECT
+      formatDateTime(toStartOfInterval(checked_at, INTERVAL {bucketSeconds:UInt32} SECOND),
+                     '%Y-%m-%dT%H:%i:00Z')                              AS bucket,
+      region                                                            AS region,
+      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_ms), 0))) AS value
+    FROM monitor_runs
+    WHERE monitor_id = {monitorId:UUID}
+      AND checked_at >= {since:DateTime}
+      -- 0 is the "not measured" sentinel, not a real 0ms response.
+      AND latency_ms > 0
+    GROUP BY bucket, region
+    ORDER BY bucket ASC, region ASC
+    `,
+    { monitorId, since: toChDateTime(since), bucketSeconds, q: quantile },
+  );
+}
+
 /**
  * p95 latency per monitor over a window, plus the workspace-wide figure.
  *

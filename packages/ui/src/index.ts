@@ -68,6 +68,7 @@ export {
   MetricCardValue,
   type MetricCardVariant,
 } from "./metric-card";
+export { RegionLatencyChart, type RegionLatencyPoint } from "./region-latency-chart";
 export {
   Section,
   SectionDescription,

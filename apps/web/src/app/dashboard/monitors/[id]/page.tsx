@@ -2,8 +2,9 @@ import {
   phaseBuckets as fetchPhaseBuckets,
   latencyStats,
   regionLatency,
+  regionLatencyBuckets,
 } from "@openmonitor/clickhouse";
-import { and, db, eq, schema } from "@openmonitor/db";
+import { and, db, eq, isNull, or, schema } from "@openmonitor/db";
 import {
   Card,
   MetricCard,
@@ -12,6 +13,7 @@ import {
   MetricCardTitle,
   MetricCardValue,
   type MetricCardVariant,
+  RegionLatencyChart,
   SectionTitle,
   TimingPhasesChart,
 } from "@openmonitor/ui";
@@ -70,13 +72,15 @@ export default async function OverviewPage({
   // serially they cost three round trips, which is the whole page load when
   // ClickHouse isn't in the same region as this function.
   //
-  // regionStats: per-region percentiles plus an hourly-mean sparkline.
-  // stats:       status counts and the five latency percentiles over 24h.
-  // buckets:     per-phase latency, bucketed by the chart's r= control.
-  const [regionStats, stats, buckets] = await Promise.all([
+  // regionStats:   per-region percentiles plus an hourly-mean sparkline.
+  // stats:         status counts and the five latency percentiles over 24h.
+  // buckets:       per-phase latency, bucketed by the chart's r= control.
+  // regionBuckets: the same window split per region, for the lines chart.
+  const [regionStats, stats, buckets, regionBuckets] = await Promise.all([
     regionLatency(id, since),
     latencyStats(id, since),
     fetchPhaseBuckets(id, since, bucketSeconds, quantileNumber),
+    regionLatencyBuckets(id, since, bucketSeconds, quantileNumber),
   ]);
 
   const regionStatuses = await conn
@@ -88,11 +92,20 @@ export default async function OverviewPage({
     .where(eq(schema.monitorRegionStatus.monitorId, id));
   const statusByRegion = new Map(regionStatuses.map((r) => [r.region, r.status]));
 
+  // Shared locations (workspaceId IS NULL) are the operator's fleet and a
+  // monitor can be assigned to one, so they need naming too — otherwise the
+  // chart legend and the table fall back to the raw region code.
   const locationNames = await conn
     .select({ region: schema.probeLocations.region, name: schema.probeLocations.name })
     .from(schema.probeLocations)
-    .where(eq(schema.probeLocations.workspaceId, workspaceId));
+    .where(
+      or(
+        isNull(schema.probeLocations.workspaceId),
+        eq(schema.probeLocations.workspaceId, workspaceId),
+      ),
+    );
   const nameByRegion = new Map(locationNames.map((l) => [l.region, l.name]));
+  const regionLabels = Object.fromEntries(nameByRegion);
 
   const regions: RegionRow[] = regionStats.map((r) => ({
     code: r.region,
@@ -187,6 +200,18 @@ export default async function OverviewPage({
           ) : (
             <LatencyChart data={buckets} />
           )}
+        </Card>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <div>
+          <SectionTitle>Latency by region</SectionTitle>
+          <p className="font-mono text-muted-foreground text-sm tracking-tight">
+            One line per probe location, same quantile and resolution as above
+          </p>
+        </div>
+        <Card className="p-5">
+          <RegionLatencyChart data={regionBuckets} labels={regionLabels} />
         </Card>
       </section>
 
