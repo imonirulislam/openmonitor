@@ -108,7 +108,15 @@ func probe(ctx context.Context, m Monitor, defaultTimeout time.Duration) ProbeOu
 		req.Header.Set("User-Agent", "openmonitor-checker/0.1")
 	}
 
-	client := &http.Client{Timeout: timeout}
+	// Every probe gets a fresh connection. http.DefaultTransport pools them,
+	// so after the first probe to a host the DNS, TCP and TLS work never
+	// happens again — those httptrace events stop firing and the phase
+	// breakdown collapses to TTFB alone. A monitor is supposed to measure the
+	// full connect path each time, not a warm socket.
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.DisableKeepAlives = true
+	client := &http.Client{Timeout: timeout, Transport: transport}
+	defer client.CloseIdleConnections()
 	// Honor follow_redirects from the monitor config. Default Go behavior is to
 	// follow up to 10 redirects; opt out by returning ErrUseLastResponse.
 	if !m.FollowRedirects {
