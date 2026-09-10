@@ -23,7 +23,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         workspaces={workspaces}
       />
       <SidebarInset>
-        <div className="mx-auto w-full max-w-7xl px-6 py-8">{children}</div>
+        <div className="mx-auto w-full max-w-5xl px-6 py-8">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

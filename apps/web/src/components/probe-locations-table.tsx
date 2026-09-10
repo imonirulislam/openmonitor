@@ -21,7 +21,23 @@ import {
   setProbeLocationMonitors,
 } from "~/lib/actions/probe-locations";
 
-/** Provider tag. A guess from the region code renders greyed, not as fact. */
+/** Stable per-provider colour. Monograms, not brand logos — providers are free text. */
+const MARK_TONES = [
+  "bg-[oklch(0.62_0.19_260)]",
+  "bg-[oklch(0.70_0.17_145)]",
+  "bg-[oklch(0.72_0.18_60)]",
+  "bg-[oklch(0.63_0.22_15)]",
+  "bg-[oklch(0.65_0.19_310)]",
+  "bg-[oklch(0.70_0.14_200)]",
+];
+
+function toneFor(provider: string) {
+  let n = 0;
+  for (const ch of provider) n = (n + ch.charCodeAt(0)) % MARK_TONES.length;
+  return MARK_TONES[n] as string;
+}
+
+/** Provider mark. A guess from the region code renders hollow, not as fact. */
 function ProviderTag({
   region,
   name,
@@ -39,19 +55,18 @@ function ProviderTag({
     <Tooltip>
       <TooltipTrigger asChild>
         <span
+          aria-label={isGuess ? `${value} (guessed)` : value}
           className={cn(
-            "cursor-default rounded px-1 py-0.5 font-mono text-[10px]",
-            isGuess ? "bg-muted/60 text-muted-foreground/70" : "bg-muted text-foreground",
+            "flex size-4 cursor-default items-center justify-center rounded font-semibold text-[9px] uppercase",
+            isGuess
+              ? "border border-muted-foreground/40 text-muted-foreground/70"
+              : cn(toneFor(value), "text-white"),
           )}
         >
-          {value}
+          {value.charAt(0)}
         </span>
       </TooltipTrigger>
-      <TooltipContent>
-        {isGuess
-          ? `Guessed from the region code. Set a provider if this box isn't on ${value}.`
-          : `Provider: ${value}`}
-      </TooltipContent>
+      <TooltipContent>{isGuess ? `${value} — guessed from the region code` : value}</TooltipContent>
     </Tooltip>
   );
 }

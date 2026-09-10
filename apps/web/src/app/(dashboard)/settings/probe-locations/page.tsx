@@ -133,7 +133,7 @@ export default async function ProbeLocationsPage({
 
       <ProbeLocationsTable locations={rows} monitors={monitors} />
 
-      <FormCard className="max-w-2xl">
+      <FormCard>
         <form action={createProbeLocation}>
           <FormCardHeader>
             <FormCardTitle>Add a location</FormCardTitle>

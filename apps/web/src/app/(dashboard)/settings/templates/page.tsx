@@ -41,7 +41,7 @@ export default async function IncidentTemplatesPage() {
           each time.
         </SectionDescription>
       </SectionHeader>
-      <div className="flex max-w-2xl flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <FormCard asForm action={createIncidentTemplate}>
           <FormCardHeader>
             <FormCardTitle>New incident template</FormCardTitle>

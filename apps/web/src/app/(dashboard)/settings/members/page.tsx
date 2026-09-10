@@ -82,7 +82,7 @@ export default async function MembersPage({
       ) : null}
 
       {isAdmin ? (
-        <FormCard asForm action={inviteMember} className="max-w-2xl">
+        <FormCard asForm action={inviteMember}>
           <FormCardHeader>
             <FormCardTitle>Invite member</FormCardTitle>
             <FormCardDescription>
