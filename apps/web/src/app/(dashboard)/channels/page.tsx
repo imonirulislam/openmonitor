@@ -6,7 +6,15 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  FormCard,
+  FormCardContent,
+  FormCardDescription,
+  FormCardFooter,
+  FormCardFooterInfo,
+  FormCardHeader,
+  FormCardTitle,
   Input,
+  Label,
   SectionGroupTitle,
   Separator,
 } from "@openmonitor/ui";
@@ -59,25 +67,40 @@ export default async function ChannelsPage() {
 
       <Separator />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Add Slack channel</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={createSlackChannel} className="flex flex-col gap-3">
-            <Input name="name" placeholder="Friendly name (e.g., #ops-alerts)" required />
+      <FormCard asForm action={createSlackChannel}>
+        <FormCardHeader>
+          <FormCardTitle>Add Slack channel</FormCardTitle>
+          <FormCardDescription>
+            Alerts for linked monitors are posted to this webhook.
+          </FormCardDescription>
+        </FormCardHeader>
+        <FormCardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" name="name" required placeholder="#ops-alerts" />
+            <p className="text-muted-foreground text-xs">Shown in the channel list.</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="webhookUrl">Webhook URL</Label>
             <Input
+              id="webhookUrl"
               name="webhookUrl"
               type="url"
-              placeholder="https://hooks.slack.com/services/..."
               required
+              placeholder="https://hooks.slack.com/services/..."
             />
-            <Button type="submit" className="self-start">
-              Add channel
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <p className="text-muted-foreground text-xs">
+              From Slack → Incoming Webhooks. Stored as given.
+            </p>
+          </div>
+        </FormCardContent>
+        <FormCardFooter>
+          <FormCardFooterInfo>
+            A channel receives nothing until a monitor is linked to it below.
+          </FormCardFooterInfo>
+          <Button type="submit">Add channel</Button>
+        </FormCardFooter>
+      </FormCard>
 
       <div className="flex flex-col gap-3">
         {channels.map((c) => {
