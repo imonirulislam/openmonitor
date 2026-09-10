@@ -10,7 +10,14 @@ import {
 } from "@openmonitor/ui";
 import { CheckIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { QUANTILES, type Quantile, RESOLUTIONS, type Resolution } from "./latency-chart-options";
+import {
+  PERIODS,
+  type Period,
+  QUANTILES,
+  type Quantile,
+  RESOLUTIONS,
+  type Resolution,
+} from "./latency-chart-options";
 
 /**
  * Inline pickers shown above the timing-phases chart. Mirrors openstatus's
@@ -27,15 +34,17 @@ import { QUANTILES, type Quantile, RESOLUTIONS, type Resolution } from "./latenc
 export function LatencyChartControls({
   quantile,
   resolution,
+  period,
 }: {
   quantile: Quantile;
   resolution: Resolution;
+  period: Period;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const setParam = (key: "q" | "r", value: string, defaultValue: string) => {
+  const setParam = (key: "q" | "r" | "p", value: string, defaultValue: string) => {
     const params = new URLSearchParams(searchParams);
     if (value === defaultValue) params.delete(key);
     else params.set(key, value);
@@ -45,6 +54,8 @@ export function LatencyChartControls({
 
   const quantileLabel = QUANTILES.find((q) => q.value === quantile)?.label ?? "P50";
   const resolutionLabel = RESOLUTIONS.find((r) => r.value === resolution)?.label ?? "30 minutes";
+  const periodLabel = PERIODS.find((p) => p.value === period)?.label ?? "last day";
+  const isDefault = quantile === "p50" && resolution === "30" && period === "24h";
 
   return (
     <p className="font-mono text-muted-foreground text-sm">
@@ -102,7 +113,45 @@ export function LatencyChartControls({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>{" "}
-      resolution
+      resolution over the{" "}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center rounded-md border border-border bg-card px-2 py-0.5 font-medium text-foreground text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            {periodLabel}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-40">
+          <DropdownMenuLabel className="font-mono text-[10px] text-muted-foreground uppercase tracking-wide">
+            Period
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {PERIODS.map((p) => (
+            <DropdownMenuItem
+              key={p.value}
+              onSelect={() => setParam("p", p.value, "24h")}
+              className="flex items-center justify-between gap-2"
+            >
+              <span>{p.label}</span>
+              {p.value === period ? <CheckIcon className="size-3.5" /> : null}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {isDefault ? null : (
+        <>
+          {" "}
+          <button
+            type="button"
+            onClick={() => router.replace(pathname, { scroll: false })}
+            className="text-muted-foreground text-xs underline hover:text-foreground"
+          >
+            Reset
+          </button>
+        </>
+      )}
     </p>
   );
 }

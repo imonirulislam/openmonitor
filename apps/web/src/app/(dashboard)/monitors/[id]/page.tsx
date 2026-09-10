@@ -1,4 +1,5 @@
 import {
+  dailyBuckets,
   phaseBuckets as fetchPhaseBuckets,
   latencyStats,
   regionLatency,
@@ -13,14 +14,22 @@ import {
   MetricCardTitle,
   MetricCardValue,
   type MetricCardVariant,
+  Section,
+  SectionDescription,
+  SectionHeader,
   SectionTitle,
+  StatusTracker,
   TimingPhasesChart,
+  type TrackerDay,
 } from "@openmonitor/ui";
 import { formatDistanceToNowStrict } from "date-fns";
 import { notFound } from "next/navigation";
 import { LatencyChart } from "~/components/latency-chart";
 import { LatencyChartControls } from "~/components/latency-chart-controls";
 import {
+  PERIOD_TO_HOURS,
+  PERIODS,
+  type Period,
   QUANTILES,
   type Quantile,
   RESOLUTIONS,
@@ -44,7 +53,7 @@ export default async function OverviewPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ q?: string; r?: string }>;
+  searchParams: Promise<{ q?: string; r?: string; p?: string }>;
 }) {
   const { id: idOrSlug } = await params;
   const sp = await searchParams;
@@ -52,6 +61,8 @@ export default async function OverviewPage({
   // the SQL — defaults match openstatus's chart (P50 / 30 minutes).
   const quantile: Quantile = QUANTILES.find((q) => q.value === sp.q)?.value ?? "p50";
   const resolution: Resolution = RESOLUTIONS.find((r) => r.value === sp.r)?.value ?? "30";
+  const period: Period = PERIODS.find((x) => x.value === sp.p)?.value ?? "24h";
+  const periodHours = PERIOD_TO_HOURS[period];
   const quantileNumber = QUANTILE_TO_NUMBER[quantile];
   const bucketMinutes = Number.parseInt(resolution, 10);
   const workspaceId = await getCurrentWorkspaceId();
@@ -64,7 +75,7 @@ export default async function OverviewPage({
     .limit(1);
   if (!monitor) notFound();
 
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const since = new Date(Date.now() - periodHours * 60 * 60 * 1000);
   const bucketSeconds = bucketMinutes * 60;
 
   // All three ClickHouse reads at once — they don't depend on each other, and
@@ -75,12 +86,34 @@ export default async function OverviewPage({
   // stats:         status counts and the five latency percentiles over 24h.
   // buckets:       per-phase latency, bucketed by the chart's r= control.
   // regionBuckets: the same window split per region, for the lines chart.
-  const [regionStats, stats, buckets, regionBuckets] = await Promise.all([
+  const [regionStats, stats, buckets, regionBuckets, days] = await Promise.all([
     regionLatency(id, since),
     latencyStats(id, since),
     fetchPhaseBuckets(id, since, bucketSeconds, quantileNumber),
     regionLatencyBuckets(id, since, bucketSeconds, quantileNumber),
+    dailyBuckets(id, Math.ceil(periodHours / 24), "UTC"),
   ]);
+
+  // DayBucket carries counts; the tracker wants a status per day too.
+  const tracker: TrackerDay[] = days.map((d) => ({
+    date: d.date,
+    total: d.total,
+    ok: d.ok,
+    degraded: d.degraded,
+    down: d.down,
+    unknown: d.unknown,
+    failed: d.down,
+    status:
+      d.total === 0
+        ? "no_data"
+        : d.down > 0
+          ? "down"
+          : d.degraded > 0
+            ? "degraded"
+            : d.ok > 0
+              ? "up"
+              : "unknown",
+  }));
 
   const regionStatuses = await conn
     .select({
@@ -185,6 +218,20 @@ export default async function OverviewPage({
         />
       </MetricCardGroup>
 
+      <Section>
+        <SectionHeader>
+          <SectionTitle>Uptime</SectionTitle>
+          <SectionDescription>One bar per day across every region</SectionDescription>
+        </SectionHeader>
+        <Card className="p-5">
+          {tracker.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No probe results in this window.</p>
+          ) : (
+            <StatusTracker days={tracker} />
+          )}
+        </Card>
+      </Section>
+
       <section className="flex flex-col gap-4">
         <div>
           <SectionTitle>Latency</SectionTitle>
@@ -192,7 +239,9 @@ export default async function OverviewPage({
             Response time across all the regions
           </p>
         </div>
-        {hasPhaseData ? <LatencyChartControls quantile={quantile} resolution={resolution} /> : null}
+        {hasPhaseData ? (
+          <LatencyChartControls quantile={quantile} resolution={resolution} period={period} />
+        ) : null}
         <Card className="p-5">
           {hasPhaseData ? (
             <TimingPhasesChart data={phaseBuckets} resolutionMinutes={bucketMinutes} />

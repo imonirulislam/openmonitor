@@ -325,7 +325,9 @@ function Sparkline({ data }: { data: number[] }) {
           stroke="var(--color-success)"
           strokeWidth={1.5}
           dot={false}
-          isAnimationActive={false}
+          // Matches the charts, which use recharts' default animation. This was
+          // opted out, so the table read as static next to them.
+          animationDuration={800}
         />
       </LineChart>
     </ResponsiveContainer>

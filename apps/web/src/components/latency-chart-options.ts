@@ -27,3 +27,19 @@ export const RESOLUTIONS = [
   { value: "1440", label: "1 day" },
 ] as const;
 export type Resolution = (typeof RESOLUTIONS)[number]["value"];
+
+/**
+ * The window every query on the monitor page runs over. Was hardcoded to 24h,
+ * which made "is this slower than last week" unanswerable.
+ */
+export const PERIODS = [
+  { value: "24h", label: "last day", hours: 24 },
+  { value: "7d", label: "last 7 days", hours: 24 * 7 },
+  { value: "30d", label: "last 30 days", hours: 24 * 30 },
+] as const;
+export type Period = (typeof PERIODS)[number]["value"];
+export const PERIOD_TO_HOURS: Record<Period, number> = {
+  "24h": 24,
+  "7d": 24 * 7,
+  "30d": 24 * 30,
+};
