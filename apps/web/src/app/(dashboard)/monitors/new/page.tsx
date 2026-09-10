@@ -33,7 +33,7 @@ export default async function NewMonitorPage() {
   }));
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header>
         <SectionGroupTitle>New monitor</SectionGroupTitle>
         <p className="mt-1 text-muted-foreground text-sm">

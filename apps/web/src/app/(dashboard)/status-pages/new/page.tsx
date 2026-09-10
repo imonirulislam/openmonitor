@@ -17,7 +17,7 @@ import { createStatusPage } from "~/lib/actions/status-pages";
 
 export default function NewStatusPagePage() {
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header>
         <SectionGroupTitle>New status page</SectionGroupTitle>
         <p className="mt-1 text-muted-foreground text-sm">

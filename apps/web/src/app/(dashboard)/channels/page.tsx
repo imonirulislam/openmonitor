@@ -59,7 +59,7 @@ export default async function ChannelsPage() {
 
       <Separator />
 
-      <Card className="max-w-2xl">
+      <Card>
         <CardHeader>
           <CardTitle>Add Slack channel</CardTitle>
         </CardHeader>

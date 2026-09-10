@@ -41,7 +41,7 @@ export default async function HeartbeatEdit({ params }: { params: Promise<{ id: 
   const pingUrl = `${apiBaseUrl}/v1/heartbeats/${hb.token}`;
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <div>
           <SectionGroupTitle>{hb.name}</SectionGroupTitle>

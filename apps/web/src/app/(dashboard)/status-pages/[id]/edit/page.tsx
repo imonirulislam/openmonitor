@@ -49,7 +49,7 @@ export default async function StatusPageSettings({ params }: { params: Promise<{
           Identity, branding, links, and access for this status page.
         </SectionDescription>
       </SectionHeader>
-      <div className="flex max-w-2xl flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <FormCard asForm action={updateStatusPage.bind(null, id)}>
           <FormCardHeader>
             <FormCardTitle>Identity</FormCardTitle>

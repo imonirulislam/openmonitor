@@ -78,7 +78,7 @@ export default async function EditMonitorPage({ params }: { params: Promise<{ id
       : "";
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <MonitorConfigForm
         mode="edit"
         action={updateMonitorConfig.bind(null, id)}

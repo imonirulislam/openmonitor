@@ -15,7 +15,7 @@ import { createHeartbeat } from "~/lib/actions/heartbeats";
 
 export default function NewHeartbeatPage() {
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <FormCard asForm action={createHeartbeat}>
         <FormCardHeader>
           <FormCardTitle>New heartbeat</FormCardTitle>
