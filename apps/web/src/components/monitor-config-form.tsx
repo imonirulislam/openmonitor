@@ -12,6 +12,7 @@ import {
   stringCompareDictionary,
 } from "@openmonitor/db/assertions";
 import { REGION_POLICIES } from "@openmonitor/db/region-status";
+import { groupRegions } from "@openmonitor/regions";
 import {
   Button,
   Checkbox,
@@ -108,19 +109,6 @@ const TYPE_OPTIONS: Array<{
 
 const HTTP_ASSERTION_TYPES = ["status", "header", "textBody"] as const;
 const DNS_ASSERTION_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS"] as const;
-
-const LOCATION_GROUPS = [
-  {
-    key: "shared" as const,
-    label: "Shared locations",
-    hint: "Run by whoever operates this deployment and offered to every workspace.",
-  },
-  {
-    key: "private" as const,
-    label: "This workspace",
-    hint: "Probe locations you added and only this workspace can use.",
-  },
-];
 
 export interface ProbeLocationChoice {
   id: string;
@@ -667,22 +655,18 @@ export function MonitorConfigForm({
                             .
                           </p>
                         ) : (
-                          LOCATION_GROUPS.map(({ key, label, hint }) => {
-                            const group = probeLocations.filter((l) =>
-                              key === "shared" ? l.shared : !l.shared,
-                            );
-                            if (group.length === 0) return null;
+                          groupRegions(probeLocations).map(({ continent, items }) => {
                             const chosen = (field.value ?? []).filter((id) =>
-                              group.some((l) => l.id === id),
+                              items.some((l) => l.id === id),
                             );
-                            const allSelected = chosen.length === group.length;
+                            const allSelected = chosen.length === items.length;
                             return (
-                              <div key={key} className="flex flex-col gap-2">
+                              <div key={continent} className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between">
                                   <FormLabel className="font-normal">
-                                    {label}{" "}
+                                    {continent}{" "}
                                     <span className="align-baseline font-mono text-muted-foreground/70 text-xs tabular-nums">
-                                      ({chosen.length}/{group.length})
+                                      ({chosen.length}/{items.length})
                                     </span>
                                   </FormLabel>
                                   <button
@@ -690,7 +674,7 @@ export function MonitorConfigForm({
                                     className="text-muted-foreground text-xs hover:text-foreground"
                                     onClick={() => {
                                       const next = new Set(field.value ?? []);
-                                      for (const l of group) {
+                                      for (const l of items) {
                                         if (allSelected) next.delete(l.id);
                                         else next.add(l.id);
                                       }
@@ -700,9 +684,8 @@ export function MonitorConfigForm({
                                     {allSelected ? "Clear all" : "Select all"}
                                   </button>
                                 </div>
-                                <p className="text-muted-foreground text-xs">{hint}</p>
                                 <div className="grid gap-2 sm:grid-cols-2">
-                                  {group.map((loc) => (
+                                  {items.map((loc) => (
                                     <label
                                       key={loc.id}
                                       className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm"
@@ -716,10 +699,11 @@ export function MonitorConfigForm({
                                           field.onChange([...next]);
                                         }}
                                       />
-                                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                                      <span aria-hidden>{loc.info.flag}</span>
+                                      <span className="truncate">{loc.info.location}</span>
+                                      <span className="ml-auto font-mono text-muted-foreground text-xs">
                                         {loc.region}
-                                      </code>
-                                      <span className="truncate">{loc.name}</span>
+                                      </span>
                                     </label>
                                   ))}
                                 </div>

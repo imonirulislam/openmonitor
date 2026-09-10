@@ -6,6 +6,7 @@ import {
   regionLatencyBuckets,
 } from "@openmonitor/clickhouse";
 import { and, db, eq, isNull, or, schema } from "@openmonitor/db";
+import { getRegionInfo } from "@openmonitor/regions";
 import {
   Card,
   MetricCard,
@@ -114,7 +115,13 @@ export default async function OverviewPage({
       ),
     );
   const nameByRegion = new Map(locationNames.map((l) => [l.region, l.name]));
-  const regionLabels = Object.fromEntries(nameByRegion);
+  // Catalogue name where we know the code, the operator's own name otherwise.
+  const regionLabels = Object.fromEntries(
+    regionStats.map((r) => [
+      r.region,
+      getRegionInfo(r.region, { label: nameByRegion.get(r.region) }).location,
+    ]),
+  );
 
   const regions: RegionRow[] = regionStats.map((r) => ({
     code: r.region,

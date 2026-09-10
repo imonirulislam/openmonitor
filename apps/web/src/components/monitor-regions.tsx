@@ -1,5 +1,6 @@
 "use client";
 
+import { getRegionInfo } from "@openmonitor/regions";
 import {
   Button,
   Card,
@@ -179,11 +180,17 @@ export function MonitorRegions({
                         aria-hidden
                         className={cn("size-2 shrink-0 rounded-full", STATUS_DOT[r.status])}
                       />
-                      <span className="font-mono">{r.code}</span>
+                      <span aria-hidden>{getRegionInfo(r.code, { label: r.name }).flag}</span>
+                      <span>{getRegionInfo(r.code, { label: r.name }).location}</span>
                     </div>
-                    {r.name !== r.code ? (
-                      <span className="text-muted-foreground text-xs">{r.name}</span>
-                    ) : null}
+                    <div className="mt-0.5 flex items-center gap-2 pl-4 text-muted-foreground text-xs">
+                      <span className="font-mono">{r.code}</span>
+                      {getRegionInfo(r.code).provider !== "private" ? (
+                        <span className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">
+                          {getRegionInfo(r.code).provider}
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">

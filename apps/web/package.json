@@ -18,6 +18,7 @@
     "@openmonitor/auth": "workspace:*",
     "@openmonitor/clickhouse": "workspace:*",
     "@openmonitor/db": "workspace:*",
+    "@openmonitor/regions": "workspace:*",
     "@openmonitor/ui": "workspace:*",
     "@tanstack/react-table": "^8.20.5",
     "date-fns": "^4.1.0",
