@@ -35,7 +35,10 @@ export type RegionInfo = {
   location: string;
   flag: string;
   continent: Continent;
-  /** Best guess from the code's shape; "private" when we don't recognise it. */
+  /**
+   * Who runs it. Inferred from the code unless the caller passes the stored
+   * value, which always wins — the inference is a suggestion, not a fact.
+   */
   provider: string;
 };
 
@@ -46,18 +49,68 @@ export type RegionInfo = {
  */
 const CATALOGUE: Record<string, Omit<RegionInfo, "code">> = {
   // North America
-  atl: { location: "Atlanta, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  bos: { location: "Boston, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  den: { location: "Denver, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  dfw: { location: "Dallas, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  ewr: { location: "Secaucus, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  iad: { location: "Ashburn, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  lax: { location: "Los Angeles, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  mia: { location: "Miami, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  ord: { location: "Chicago, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  phx: { location: "Phoenix, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  sea: { location: "Seattle, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
-  sjc: { location: "San Jose, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
+  atl: {
+    location: "Atlanta, Georgia, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  bos: {
+    location: "Boston, Massachusetts, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  den: {
+    location: "Denver, Colorado, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  dfw: { location: "Dallas, Texas, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
+  ewr: {
+    location: "Secaucus, New Jersey, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  iad: {
+    location: "Ashburn, Virginia, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  lax: {
+    location: "Los Angeles, California, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  mia: { location: "Miami, Florida, USA", flag: "🇺🇸", continent: "North America", provider: "fly" },
+  ord: {
+    location: "Chicago, Illinois, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  phx: {
+    location: "Phoenix, Arizona, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  sea: {
+    location: "Seattle, Washington, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
+  sjc: {
+    location: "San Jose, California, USA",
+    flag: "🇺🇸",
+    continent: "North America",
+    provider: "fly",
+  },
   yul: { location: "Montreal, Canada", flag: "🇨🇦", continent: "North America", provider: "fly" },
   yyz: { location: "Toronto, Canada", flag: "🇨🇦", continent: "North America", provider: "fly" },
   qro: { location: "Querétaro, Mexico", flag: "🇲🇽", continent: "North America", provider: "fly" },
@@ -80,7 +133,7 @@ const CATALOGUE: Record<string, Omit<RegionInfo, "code">> = {
   // South America
   bog: { location: "Bogotá, Colombia", flag: "🇨🇴", continent: "South America", provider: "fly" },
   eze: {
-    location: "Buenos Aires, Argentina",
+    location: "Ezeiza, Argentina",
     flag: "🇦🇷",
     continent: "South America",
     provider: "fly",
@@ -158,15 +211,21 @@ const CATALOGUE: Record<string, Omit<RegionInfo, "code">> = {
  * location's name) under the Private continent, so a self-hosted fleet reads
  * sensibly without anyone filling in a catalogue.
  */
-export function getRegionInfo(code: string, opts?: { label?: string }): RegionInfo {
+export function getRegionInfo(
+  code: string,
+  opts?: { label?: string; provider?: string | null },
+): RegionInfo {
   const known = CATALOGUE[code.toLowerCase()];
-  if (known) return { code, ...known };
+  // A stored provider always wins: the catalogue infers one from the code,
+  // which is wrong for a self-hosted box reusing an IATA name. `sin` on Contabo
+  // was being labelled "fly".
+  if (known) return { code, ...known, provider: opts?.provider ?? known.provider };
   return {
     code,
     location: opts?.label ?? code,
     flag: "🌐",
     continent: "Private",
-    provider: "private",
+    provider: opts?.provider ?? "private",
   };
 }
 

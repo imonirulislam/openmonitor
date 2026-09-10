@@ -106,7 +106,11 @@ export default async function OverviewPage({
   // monitor can be assigned to one, so they need naming too — otherwise the
   // chart legend and the table fall back to the raw region code.
   const locationNames = await conn
-    .select({ region: schema.probeLocations.region, name: schema.probeLocations.name })
+    .select({
+      region: schema.probeLocations.region,
+      name: schema.probeLocations.name,
+      provider: schema.probeLocations.provider,
+    })
     .from(schema.probeLocations)
     .where(
       or(
@@ -115,17 +119,22 @@ export default async function OverviewPage({
       ),
     );
   const nameByRegion = new Map(locationNames.map((l) => [l.region, l.name]));
+  const providerByRegion = new Map(locationNames.map((l) => [l.region, l.provider]));
   // Catalogue name where we know the code, the operator's own name otherwise.
   const regionLabels = Object.fromEntries(
     regionStats.map((r) => [
       r.region,
-      getRegionInfo(r.region, { label: nameByRegion.get(r.region) }).location,
+      getRegionInfo(r.region, {
+        label: nameByRegion.get(r.region),
+        provider: providerByRegion.get(r.region),
+      }).location,
     ]),
   );
 
   const regions: RegionRow[] = regionStats.map((r) => ({
     code: r.region,
     name: nameByRegion.get(r.region) ?? r.region,
+    provider: providerByRegion.get(r.region) ?? null,
     status: statusByRegion.get(r.region) ?? "unknown",
     trend: r.trend,
     p50: r.p50,

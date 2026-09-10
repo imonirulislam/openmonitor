@@ -38,6 +38,7 @@ export default async function ProbeLocationsPage({
       id: schema.probeLocations.id,
       name: schema.probeLocations.name,
       region: schema.probeLocations.region,
+      provider: schema.probeLocations.provider,
       enabled: schema.probeLocations.enabled,
       lastSeenAt: schema.probeLocations.lastSeenAt,
       workspaceId: schema.probeLocations.workspaceId,
@@ -90,6 +91,7 @@ export default async function ProbeLocationsPage({
     id: l.id,
     name: l.name,
     region: l.region,
+    provider: l.provider,
     enabled: l.enabled,
     lastSeenAt: l.lastSeenAt,
     shared: l.workspaceId === null,
@@ -156,6 +158,14 @@ export default async function ProbeLocationsPage({
                 />
                 <p className="text-muted-foreground text-xs">
                   Lowercase, numbers and dashes. Stored on every probe result.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="provider">Provider</Label>
+                <Input id="provider" name="provider" placeholder="contabo" maxLength={50} />
+                <p className="text-muted-foreground text-xs">
+                  Optional. Left blank, a known region code is labelled with its usual host — which
+                  is wrong for your own box reusing that code.
                 </p>
               </div>
             </div>

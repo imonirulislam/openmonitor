@@ -8,6 +8,10 @@ import {
   RegionLatencyChart,
   type RegionLatencyPoint,
   SectionTitle,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@openmonitor/ui";
 import Link from "next/link";
 import { useState } from "react";
@@ -19,11 +23,18 @@ import { RowAction, RowActions } from "~/components/row-actions";
  * region, joined with each region's current status from `monitor_region_status`.
  */
 
+/** Resolved once per row so the flag, code and tooltip agree. */
+function regionOf(r: RegionRow) {
+  return getRegionInfo(r.code, { label: r.name, provider: r.provider });
+}
+
 export interface RegionRow {
   /** Region code as stored on probe results, e.g. "eu-west". */
   code: string;
   /** Location name from probe_locations, or the code if the location is gone. */
   name: string;
+  /** Operator-declared provider. Null falls back to the catalogue's guess. */
+  provider?: string | null;
   status: "up" | "down" | "degraded" | "unknown";
   /** Hourly average latency over the window, oldest first. */
   trend: number[];
@@ -96,190 +107,193 @@ export function MonitorRegions({
   }
 
   return (
-    <section className="flex flex-col gap-4">
-      <div>
-        <SectionTitle>Regions</SectionTitle>
-        <p className="font-mono text-muted-foreground text-sm tracking-tight">
-          Every selected region's latency trend
+    <TooltipProvider delayDuration={150}>
+      <section className="flex flex-col gap-4">
+        <div>
+          <SectionTitle>Regions</SectionTitle>
+          <p className="font-mono text-muted-foreground text-sm tracking-tight">
+            Every selected region's latency trend
+          </p>
+        </div>
+
+        <p className="text-sm">
+          The <FilterChip>P50</FilterChip>{" "}
+          <span className="text-muted-foreground">quantile trend over the</span>{" "}
+          <FilterChip>Last day</FilterChip>
         </p>
-      </div>
 
-      <p className="text-sm">
-        The <FilterChip>P50</FilterChip>{" "}
-        <span className="text-muted-foreground">quantile trend over the</span>{" "}
-        <FilterChip>Last day</FilterChip>
-      </p>
+        <div className="inline-flex h-8 w-fit items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
+          <button
+            type="button"
+            onClick={() => setView("table")}
+            className={cn(
+              "rounded-sm px-3 py-1 text-sm transition-colors",
+              view === "table"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Table
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("chart")}
+            className={cn(
+              "rounded-sm px-3 py-1 text-sm transition-colors",
+              view === "chart"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Chart
+          </button>
+        </div>
 
-      <div className="inline-flex h-8 w-fit items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
-        <button
-          type="button"
-          onClick={() => setView("table")}
-          className={cn(
-            "rounded-sm px-3 py-1 text-sm transition-colors",
-            view === "table"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Table
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("chart")}
-          className={cn(
-            "rounded-sm px-3 py-1 text-sm transition-colors",
-            view === "chart"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Chart
-        </button>
-      </div>
-
-      {view === "table" ? (
-        <Card className="overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border text-left text-muted-foreground text-xs">
-              <tr>
-                <th className="px-4 py-3 font-medium">Region</th>
-                <th className="px-4 py-3 font-medium">Trend</th>
-                <th className="w-[80px] px-4 py-3 text-right font-medium">
-                  <SortHeader
-                    label="P50"
-                    active={sort?.key === "p50"}
-                    desc={sort?.desc}
-                    onClick={() => toggleSort("p50")}
-                  />
-                </th>
-                <th className="w-[80px] px-4 py-3 text-right font-medium">
-                  <SortHeader
-                    label="P90"
-                    active={sort?.key === "p90"}
-                    desc={sort?.desc}
-                    onClick={() => toggleSort("p90")}
-                  />
-                </th>
-                <th className="w-[80px] px-4 py-3 text-right font-medium">
-                  <SortHeader
-                    label="P99"
-                    active={sort?.key === "p99"}
-                    desc={sort?.desc}
-                    onClick={() => toggleSort("p99")}
-                  />
-                </th>
-                <th className="w-[40px] px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {sorted.map((r, i) => (
-                <tr key={r.code} className="transition-colors hover:bg-muted/30">
-                  <td className="px-4 py-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span
-                        aria-hidden
-                        className={cn("size-2 shrink-0 rounded-full", STATUS_DOT[r.status])}
-                      />
-                      <span aria-hidden>{getRegionInfo(r.code, { label: r.name }).flag}</span>
-                      <span>{getRegionInfo(r.code, { label: r.name }).location}</span>
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-2 pl-4 text-muted-foreground text-xs">
-                      <span className="font-mono">{r.code}</span>
-                      {getRegionInfo(r.code).provider !== "private" ? (
-                        <span className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">
-                          {getRegionInfo(r.code).provider}
-                        </span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 flex-1">
-                        <Sparkline data={r.trend} index={i} />
-                      </div>
-                      <div className="flex flex-col items-end font-mono text-[10px] text-muted-foreground tabular-nums">
-                        <span>{r.max}ms</span>
-                        <span>{r.min}ms</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
-                    {r.p50}
-                    <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
-                    {r.p90}
-                    <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
-                    {r.p99}
-                    <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <RowActions>
-                      <RowAction asChild>
-                        <Link href={`/monitors/${monitorId}/logs?region=${r.code}`}>View logs</Link>
-                      </RowAction>
-                    </RowActions>
-                  </td>
+        {view === "table" ? (
+          <Card className="overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border text-left text-muted-foreground text-xs">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Region</th>
+                  <th className="px-4 py-3 font-medium">Trend</th>
+                  <th className="w-[80px] px-4 py-3 text-right font-medium">
+                    <SortHeader
+                      label="P50"
+                      active={sort?.key === "p50"}
+                      desc={sort?.desc}
+                      onClick={() => toggleSort("p50")}
+                    />
+                  </th>
+                  <th className="w-[80px] px-4 py-3 text-right font-medium">
+                    <SortHeader
+                      label="P90"
+                      active={sort?.key === "p90"}
+                      desc={sort?.desc}
+                      onClick={() => toggleSort("p90")}
+                    />
+                  </th>
+                  <th className="w-[80px] px-4 py-3 text-right font-medium">
+                    <SortHeader
+                      label="P99"
+                      active={sort?.key === "p99"}
+                      desc={sort?.desc}
+                      onClick={() => toggleSort("p99")}
+                    />
+                  </th>
+                  <th className="w-[40px] px-4 py-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      ) : (
-        <Card className="p-5">
-          <RegionLatencyChart data={chart} labels={labels} />
-        </Card>
-      )}
+              </thead>
+              <tbody className="divide-y divide-border">
+                {sorted.map((r, i) => (
+                  <tr key={r.code} className="transition-colors hover:bg-muted/30">
+                    <td className="px-4 py-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className={cn("size-2 shrink-0 rounded-full", STATUS_DOT[r.status])}
+                        />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="flex cursor-default items-center gap-1.5">
+                              <span aria-hidden>{regionOf(r).flag}</span>
+                              <span className="font-mono">{r.code}</span>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>{regionOf(r).location}</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 flex-1">
+                          <Sparkline data={r.trend} index={i} />
+                        </div>
+                        <div className="flex flex-col items-end font-mono text-[10px] text-muted-foreground tabular-nums">
+                          <span>{r.max}ms</span>
+                          <span>{r.min}ms</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
+                      {r.p50}
+                      <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
+                      {r.p90}
+                      <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-sm tabular-nums">
+                      {r.p99}
+                      <span className="ml-0.5 text-[10px] text-muted-foreground">ms</span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <RowActions>
+                        <RowAction asChild>
+                          <Link href={`/monitors/${monitorId}/logs?region=${r.code}`}>
+                            View logs
+                          </Link>
+                        </RowAction>
+                      </RowActions>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        ) : (
+          <Card className="p-5">
+            <RegionLatencyChart data={chart} labels={labels} />
+          </Card>
+        )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 text-muted-foreground text-xs">
-        <span>0 of {sorted.length} row(s) selected.</span>
-        <div className="flex items-center gap-3">
-          <span className="hidden sm:inline">Rows per page</span>
-          <span className="rounded border border-border bg-card px-2 py-1 font-mono">20</span>
-          <span className="ml-2">Page 1 of 1</span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-7"
-              disabled
-              aria-label="First page"
-            >
-              «
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-7"
-              disabled
-              aria-label="Previous page"
-            >
-              ‹
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-7"
-              disabled
-              aria-label="Next page"
-            >
-              ›
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-7"
-              disabled
-              aria-label="Last page"
-            >
-              »
-            </Button>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-muted-foreground text-xs">
+          <span>0 of {sorted.length} row(s) selected.</span>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline">Rows per page</span>
+            <span className="rounded border border-border bg-card px-2 py-1 font-mono">20</span>
+            <span className="ml-2">Page 1 of 1</span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-7"
+                disabled
+                aria-label="First page"
+              >
+                «
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-7"
+                disabled
+                aria-label="Previous page"
+              >
+                ‹
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-7"
+                disabled
+                aria-label="Next page"
+              >
+                ›
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-7"
+                disabled
+                aria-label="Last page"
+              >
+                »
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </TooltipProvider>
   );
 }
 

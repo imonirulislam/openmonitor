@@ -410,6 +410,9 @@ export const probeLocations = pgTable(
     name: varchar("name", { length: 100 }).notNull(),
     // Stored on every probe result; unique per workspace.
     region: varchar("region", { length: 50 }).notNull(),
+    // Who runs the box. @openmonitor/regions guesses one from the code, which
+    // is wrong for self-hosted boxes reusing an IATA name. NULL = don't claim.
+    provider: varchar("provider", { length: 50 }),
     // Same scrypt format as packages/auth/src/password.ts.
     tokenHash: varchar("token_hash", { length: 255 }).notNull(),
     /**

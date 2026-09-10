@@ -34,6 +34,9 @@ const locationSchema = z.object({
     .min(1)
     .max(50)
     .regex(/^[a-z0-9-]+$/, "lowercase letters, numbers and dashes only"),
+  // Optional. @openmonitor/regions infers one from the code, which is wrong
+  // for a self-hosted box reusing an IATA name; this overrides it.
+  provider: z.string().max(50).optional(),
 });
 
 async function requireEditor() {
@@ -111,6 +114,7 @@ export async function createProbeLocation(formData: FormData) {
       workspaceId: wantsShared ? null : session.user.workspaceId,
       name: parsed.name,
       region: parsed.region,
+      provider: parsed.provider ? parsed.provider : null,
       tokenHash: hashProbeToken(token),
     })
     .returning({ id: schema.probeLocations.id });
