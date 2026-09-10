@@ -10,6 +10,7 @@ import {
   FormCardTitle,
   Input,
   Label,
+  TickSlider,
 } from "@openmonitor/ui";
 import { notFound } from "next/navigation";
 import { MonitorConfigForm, type ProbeLocationChoice } from "~/components/monitor-config-form";
@@ -22,6 +23,16 @@ import {
 } from "~/lib/actions/monitors";
 import { monitorIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
+
+const INTERVAL_OPTIONS = [
+  { value: 30, label: "30s" },
+  { value: 60, label: "1m" },
+  { value: 120, label: "2m" },
+  { value: 300, label: "5m" },
+  { value: 600, label: "10m" },
+  { value: 1800, label: "30m" },
+  { value: 3600, label: "1h" },
+];
 
 export default async function EditMonitorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: idOrSlug } = await params;
@@ -107,15 +118,19 @@ export default async function EditMonitorPage({ params }: { params: Promise<{ id
           </FormCardDescription>
         </FormCardHeader>
         <FormCardContent>
-          <div className="grid grid-cols-2 gap-3">
-            <Field
-              label="Interval (seconds)"
+          <div className="mb-5">
+            <p className="mb-1 font-medium text-sm">How often to check</p>
+            <p className="mb-4 text-muted-foreground text-sm">
+              Every selected location probes on this interval, so the request rate is the interval
+              times the number of locations.
+            </p>
+            <TickSlider
               name="intervalSeconds"
-              type="number"
-              defaultValue={String(monitor.intervalSeconds)}
-              min={30}
-              max={3600}
+              options={INTERVAL_OPTIONS}
+              defaultValue={monitor.intervalSeconds}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <Field
               label="Retry count"
               name="retryCount"

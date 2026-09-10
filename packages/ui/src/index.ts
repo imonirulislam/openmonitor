@@ -68,6 +68,7 @@ export {
   MetricCardValue,
   type MetricCardVariant,
 } from "./metric-card";
+export { Note } from "./note";
 export { RegionLatencyChart, type RegionLatencyPoint } from "./region-latency-chart";
 export {
   Section,
@@ -135,6 +136,7 @@ export {
 export { Switch } from "./switch";
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 export { ThemeProvider, ThemeToggle } from "./theme";
+export { type TickOption, TickSlider } from "./tick-slider";
 export { TimingPhasesChart } from "./timing-phases-chart";
 export { ToastFlash } from "./toast-flash";
 export { withToastRedirect } from "./toast-redirect";

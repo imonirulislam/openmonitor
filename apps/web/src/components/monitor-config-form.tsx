@@ -32,6 +32,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  Note,
   Select,
   Switch,
   Textarea,
@@ -107,6 +108,19 @@ const TYPE_OPTIONS: Array<{
 
 const HTTP_ASSERTION_TYPES = ["status", "header", "textBody"] as const;
 const DNS_ASSERTION_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS"] as const;
+
+const LOCATION_GROUPS = [
+  {
+    key: "shared" as const,
+    label: "Shared locations",
+    hint: "Run by whoever operates this deployment and offered to every workspace.",
+  },
+  {
+    key: "private" as const,
+    label: "This workspace",
+    hint: "Probe locations you added and only this workspace can use.",
+  },
+];
 
 export interface ProbeLocationChoice {
   id: string;
@@ -643,7 +657,7 @@ export function MonitorConfigForm({
                       to one status using the monitor's region policy.
                     </FormDescription>
                     <FormControl>
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-4">
                         {probeLocations.length === 0 ? (
                           <p className="text-muted-foreground text-sm">
                             No probe locations configured yet. Add one in{" "}
@@ -653,35 +667,76 @@ export function MonitorConfigForm({
                             .
                           </p>
                         ) : (
-                          probeLocations.map((loc) => {
-                            const selected = (field.value ?? []).includes(loc.id);
+                          LOCATION_GROUPS.map(({ key, label, hint }) => {
+                            const group = probeLocations.filter((l) =>
+                              key === "shared" ? l.shared : !l.shared,
+                            );
+                            if (group.length === 0) return null;
+                            const chosen = (field.value ?? []).filter((id) =>
+                              group.some((l) => l.id === id),
+                            );
+                            const allSelected = chosen.length === group.length;
                             return (
-                              <label key={loc.id} className="flex items-center gap-2 text-sm">
-                                <Checkbox
-                                  checked={selected}
-                                  onCheckedChange={(checked: boolean) => {
-                                    const next = new Set(field.value ?? []);
-                                    if (checked) next.add(loc.id);
-                                    else next.delete(loc.id);
-                                    field.onChange([...next]);
-                                  }}
-                                />
-                                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                                  {loc.region}
-                                </code>
-                                <span>{loc.name}</span>
-                                {loc.shared ? null : (
-                                  <span className="text-muted-foreground text-xs">private</span>
-                                )}
-                              </label>
+                              <div key={key} className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                  <FormLabel className="font-normal">
+                                    {label}{" "}
+                                    <span className="align-baseline font-mono text-muted-foreground/70 text-xs tabular-nums">
+                                      ({chosen.length}/{group.length})
+                                    </span>
+                                  </FormLabel>
+                                  <button
+                                    type="button"
+                                    className="text-muted-foreground text-xs hover:text-foreground"
+                                    onClick={() => {
+                                      const next = new Set(field.value ?? []);
+                                      for (const l of group) {
+                                        if (allSelected) next.delete(l.id);
+                                        else next.add(l.id);
+                                      }
+                                      field.onChange([...next]);
+                                    }}
+                                  >
+                                    {allSelected ? "Clear all" : "Select all"}
+                                  </button>
+                                </div>
+                                <p className="text-muted-foreground text-xs">{hint}</p>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  {group.map((loc) => (
+                                    <label
+                                      key={loc.id}
+                                      className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm"
+                                    >
+                                      <Checkbox
+                                        checked={(field.value ?? []).includes(loc.id)}
+                                        onCheckedChange={(checked: boolean) => {
+                                          const next = new Set(field.value ?? []);
+                                          if (checked) next.add(loc.id);
+                                          else next.delete(loc.id);
+                                          field.onChange([...next]);
+                                        }}
+                                      />
+                                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                                        {loc.region}
+                                      </code>
+                                      <span className="truncate">{loc.name}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
                             );
                           })
                         )}
                         {probeLocations.length > 0 && (field.value ?? []).length === 0 ? (
-                          <p className="text-destructive text-xs">
-                            No region selected — nothing will probe this monitor and its status will
-                            stay unknown.
-                          </p>
+                          <Note tone="error">
+                            Nothing probes this monitor while no location is selected, so its status
+                            stays unknown.
+                          </Note>
+                        ) : (field.value ?? []).length === 1 && probeLocations.length > 1 ? (
+                          <Note tone="warning">
+                            One location means one network path. A second makes it possible to tell
+                            an outage apart from a route problem.
+                          </Note>
                         ) : null}
                       </div>
                     </FormControl>
