@@ -322,6 +322,8 @@ export type PhaseBucket = {
   avg: number;
   p95: number;
   ok: number;
+  degraded: number;
+  down: number;
   total: number;
   dns: number;
   connect: number;
@@ -351,6 +353,8 @@ export async function phaseBuckets(
       toUInt32(round(ifNotFinite(avg(latency_ms), 0)))                        AS avg,
       toUInt32(round(ifNotFinite(quantile(0.95)(latency_ms), 0)))             AS p95,
       toUInt32(countIf(status = 'up'))                        AS ok,
+      toUInt32(countIf(status = 'degraded'))                  AS degraded,
+      toUInt32(countIf(status = 'down'))                      AS down,
       toUInt32(count())                                       AS total,
       toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_dns_ms), 0)))      AS dns,
       toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_connect_ms), 0)))  AS connect,

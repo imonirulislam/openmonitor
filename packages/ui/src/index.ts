@@ -142,3 +142,4 @@ export { ToastFlash } from "./toast-flash";
 export { withToastRedirect } from "./toast-redirect";
 export { Toaster, toast } from "./toaster";
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
+export { type UptimeBar, UptimeBarChart } from "./uptime-bar-chart";

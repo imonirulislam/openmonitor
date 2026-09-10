@@ -171,7 +171,7 @@ export function MonitorRegions({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {sorted.map((r) => (
+              {sorted.map((r, i) => (
                 <tr key={r.code} className="transition-colors hover:bg-muted/30">
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export function MonitorRegions({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="h-10 flex-1">
-                        <Sparkline data={r.trend} />
+                        <Sparkline data={r.trend} index={i} />
                       </div>
                       <div className="flex flex-col items-end font-mono text-[10px] text-muted-foreground tabular-nums">
                         <span>{r.max}ms</span>
@@ -313,7 +313,7 @@ function SortHeader({
 }
 
 /** Tiny inline sparkline. Stroke is `--color-success` so green sells the visual. */
-function Sparkline({ data }: { data: number[] }) {
+function Sparkline({ data, index = 0 }: { data: number[]; index?: number }) {
   const points = data.map((v, i) => ({ i, v }));
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -325,9 +325,12 @@ function Sparkline({ data }: { data: number[] }) {
           stroke="var(--color-success)"
           strokeWidth={1.5}
           dot={false}
-          // Matches the charts, which use recharts' default animation. This was
-          // opted out, so the table read as static next to them.
-          animationDuration={800}
+          // A line drawing itself inside a 24px cell is easy to miss, so the
+          // rows stagger — the table fills in as a cascade rather than each
+          // sparkline animating invisibly on its own.
+          animationDuration={1200}
+          animationBegin={index * 80}
+          animationEasing="ease-out"
         />
       </LineChart>
     </ResponsiveContainer>

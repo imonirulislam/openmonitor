@@ -18,9 +18,8 @@ import {
   SectionDescription,
   SectionHeader,
   SectionTitle,
-  StatusTracker,
   TimingPhasesChart,
-  type TrackerDay,
+  UptimeBarChart,
 } from "@openmonitor/ui";
 import { formatDistanceToNowStrict } from "date-fns";
 import { notFound } from "next/navigation";
@@ -86,34 +85,12 @@ export default async function OverviewPage({
   // stats:         status counts and the five latency percentiles over 24h.
   // buckets:       per-phase latency, bucketed by the chart's r= control.
   // regionBuckets: the same window split per region, for the lines chart.
-  const [regionStats, stats, buckets, regionBuckets, days] = await Promise.all([
+  const [regionStats, stats, buckets, regionBuckets] = await Promise.all([
     regionLatency(id, since),
     latencyStats(id, since),
     fetchPhaseBuckets(id, since, bucketSeconds, quantileNumber),
     regionLatencyBuckets(id, since, bucketSeconds, quantileNumber),
-    dailyBuckets(id, Math.ceil(periodHours / 24), "UTC"),
   ]);
-
-  // DayBucket carries counts; the tracker wants a status per day too.
-  const tracker: TrackerDay[] = days.map((d) => ({
-    date: d.date,
-    total: d.total,
-    ok: d.ok,
-    degraded: d.degraded,
-    down: d.down,
-    unknown: d.unknown,
-    failed: d.down,
-    status:
-      d.total === 0
-        ? "no_data"
-        : d.down > 0
-          ? "down"
-          : d.degraded > 0
-            ? "degraded"
-            : d.ok > 0
-              ? "up"
-              : "unknown",
-  }));
 
   const regionStatuses = await conn
     .select({
@@ -221,14 +198,10 @@ export default async function OverviewPage({
       <Section>
         <SectionHeader>
           <SectionTitle>Uptime</SectionTitle>
-          <SectionDescription>One bar per day across every region</SectionDescription>
+          <SectionDescription>Probes per bucket across every region</SectionDescription>
         </SectionHeader>
         <Card className="p-5">
-          {tracker.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No probe results in this window.</p>
-          ) : (
-            <StatusTracker days={tracker} />
-          )}
+          <UptimeBarChart data={buckets} />
         </Card>
       </Section>
 
