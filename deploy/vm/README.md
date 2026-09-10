@@ -124,6 +124,12 @@ docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d -
 Point an A record at the box for `CLICKHOUSE_HOSTNAME` **before** starting, or Caddy's first
 certificate attempt fails and it backs off.
 
+**Behind Cloudflare, leave the record unproxied (grey cloud) until the certificate exists.**
+Caddy validates over HTTP-01, which needs a plain-HTTP answer on :80; proxied, the challenge
+gets a 308 to HTTPS and issuance never completes. The symptom is Cloudflare **525 — SSL
+handshake failed**: it reaches the box, and Caddy has no certificate for that name to present.
+Turn the proxy back on afterwards if you want it; renewals reuse the stored certificate.
+
 ### First admin
 
 The database is empty and there is no signup page, so create the first account before you try
@@ -174,6 +180,13 @@ cp deploy/vm/conf.d/chui.caddy.example deploy/vm/conf.d/chui.caddy
 docker run --rm caddy:2-alpine caddy hash-password --plaintext 'a long password'
 $EDITOR deploy/vm/conf.d/chui.caddy    # set the hostname and paste the hash
 docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env restart caddy
+```
+
+Same DNS rule as above — grey cloud first, or you get a 525 with no certificate to present.
+Check issuance with:
+
+```bash
+docker compose -f deploy/vm/docker-compose.yml logs caddy | grep -iE 'acme|certificate|error'
 ```
 
 **Don't skip the basic auth.** ch-ui's own sign-in is a ClickHouse connection test, not an
