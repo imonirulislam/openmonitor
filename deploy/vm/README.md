@@ -124,11 +124,12 @@ docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d -
 Point an A record at the box for `CLICKHOUSE_HOSTNAME` **before** starting, or Caddy's first
 certificate attempt fails and it backs off.
 
-**Behind Cloudflare, leave the record unproxied (grey cloud) until the certificate exists.**
-Caddy validates over HTTP-01, which needs a plain-HTTP answer on :80; proxied, the challenge
-gets a 308 to HTTPS and issuance never completes. The symptom is Cloudflare **525 — SSL
-handshake failed**: it reaches the box, and Caddy has no certificate for that name to present.
-Turn the proxy back on afterwards if you want it; renewals reuse the stored certificate.
+Behind Cloudflare the proxy can stay on: Cloudflare forwards `/.well-known/acme-challenge/`
+to origin :80, so HTTP-01 completes. Caddy tries TLS-ALPN-01 first and that one *does* fail
+behind a proxy (`Cannot negotiate ALPN protocol "acme-tls/1"`) — harmless, it falls back.
+
+Grey-cloud the record only if issuance keeps failing; check the log before assuming DNS is at
+fault.
 
 ### First admin
 
@@ -179,15 +180,22 @@ To put it on a hostname instead, point an A record at this box and drop in a vho
 cp deploy/vm/conf.d/chui.caddy.example deploy/vm/conf.d/chui.caddy
 docker run --rm caddy:2-alpine caddy hash-password --plaintext 'a long password'
 $EDITOR deploy/vm/conf.d/chui.caddy    # set the hostname and paste the hash
-docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env restart caddy
+docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d caddy
 ```
 
-Same DNS rule as above — grey cloud first, or you get a 525 with no certificate to present.
-Check issuance with:
+`up -d`, not `restart`: the conf.d mount was added to the compose file, and `restart` reuses
+the container's existing mounts. Miss that and the import silently matches nothing — a glob
+with no files is not an error, so Caddy starts cleanly managing only ClickHouse.
+
+Confirm the hostname is actually managed before looking anywhere else:
 
 ```bash
-docker compose -f deploy/vm/docker-compose.yml logs caddy | grep -iE 'acme|certificate|error'
+docker compose -f deploy/vm/docker-compose.yml logs caddy | grep 'automatic TLS' | tail -1
 ```
+
+That line lists every domain Caddy will get a certificate for. If the new hostname isn't in
+it, no amount of DNS work will help — Caddy hasn't loaded the vhost. Cloudflare reports that
+as **525**, which looks like a TLS problem and isn't.
 
 **Don't skip the basic auth.** ch-ui's own sign-in is a ClickHouse connection test, not an
 account check: it accepts any credentials and tells you whether ClickHouse liked them. Public
