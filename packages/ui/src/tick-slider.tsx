@@ -6,12 +6,8 @@ import { cn } from "./cn";
 export type TickOption = { value: number; label: string };
 
 /**
- * Discrete slider over a fixed set of values, with the choices printed as
- * ticks underneath.
- *
- * The range input slides over the *index*, because the values aren't evenly
- * spaced (30s → 1h), and a hidden input carries the real value so this drops
- * into a plain form action with no client state to thread.
+ * Discrete slider with the choices as ticks. Slides over the index because the
+ * values aren't evenly spaced; a hidden input posts the real value.
  */
 export function TickSlider({
   name,

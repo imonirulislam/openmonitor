@@ -24,11 +24,7 @@ const SERIES = [
   { key: "degraded", label: "Degraded", color: "var(--color-warning)" },
 ] as const;
 
-/**
- * Probes per bucket, stacked by outcome. Bar height is the request count, so a
- * short bar means a partial or sparse bucket rather than a problem — a
- * fixed-height tracker can't show that difference.
- */
+/** Probes per bucket, stacked by outcome. Height is the count, so a short bar is a sparse one. */
 export function UptimeBarChart({ data }: { data: UptimeBar[] }) {
   if (data.length === 0) {
     return (

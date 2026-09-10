@@ -699,10 +699,10 @@ export function MonitorConfigForm({
                                           field.onChange([...next]);
                                         }}
                                       />
+                                      <span className="font-mono">{loc.region}</span>
                                       <span aria-hidden>{loc.info.flag}</span>
-                                      <span className="truncate">{loc.info.location}</span>
-                                      <span className="ml-auto font-mono text-muted-foreground text-xs">
-                                        {loc.region}
+                                      <span className="truncate text-muted-foreground">
+                                        {loc.info.location}
                                       </span>
                                     </label>
                                   ))}

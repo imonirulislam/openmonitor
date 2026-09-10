@@ -23,7 +23,7 @@ import { RowAction, RowActions } from "~/components/row-actions";
  * region, joined with each region's current status from `monitor_region_status`.
  */
 
-/** Resolved once per row so the flag, code and tooltip agree. */
+/** Resolved once per row so flag, code and tooltip agree. */
 function regionOf(r: RegionRow) {
   return getRegionInfo(r.code, { label: r.name, provider: r.provider });
 }
@@ -346,9 +346,7 @@ function Sparkline({ data, index = 0 }: { data: number[]; index?: number }) {
           stroke="var(--color-success)"
           strokeWidth={1.5}
           dot={false}
-          // A line drawing itself inside a 24px cell is easy to miss, so the
-          // rows stagger — the table fills in as a cascade rather than each
-          // sparkline animating invisibly on its own.
+          // Staggered: a line drawing itself in a 24px cell is easy to miss.
           animationDuration={1200}
           animationBegin={index * 80}
           animationEasing="ease-out"

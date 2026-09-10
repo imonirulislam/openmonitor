@@ -1,20 +1,6 @@
 /**
- * Display metadata for probe location region codes.
- *
- * A static catalogue rather than database columns, because the useful part —
- * "iad is Ashburn, Virginia" — is public knowledge, not per-deployment data,
- * and asking an operator to type a continent for every location is friction
- * for something we can look up.
- *
- * Locations here are user-created with arbitrary codes, so the catalogue can't
- * be exhaustive. Unknown codes fall back to the caller's own label under a
- * "Private" continent, which is what makes this safe to ship without a
- * migration: a self-hoster who calls their box `hetzner-fsn1` gets their own
- * name, not a wrong guess.
- *
- * Client-safe and dependency-free, so the region picker, the admin tables and
- * the public API can all use it. It deliberately isn't in @openmonitor/db —
- * that package is server-only and the picker is a client component.
+ * Region code → city, flag, continent, provider. Unknown codes fall back to the
+ * caller's label under "Private". Client-safe, so not in db (server-only).
  */
 
 export const CONTINENTS = [
@@ -35,18 +21,11 @@ export type RegionInfo = {
   location: string;
   flag: string;
   continent: Continent;
-  /**
-   * Who runs it. Inferred from the code unless the caller passes the stored
-   * value, which always wins — the inference is a suggestion, not a fact.
-   */
+  /** Inferred from the code; a stored value passed in wins. */
   provider: string;
 };
 
-/**
- * IATA-style codes as used by Fly.io, plus the AWS/GCP-style region names most
- * people meet elsewhere. Keyed by the exact string stored in
- * `probe_locations.region`.
- */
+/** Fly's IATA codes plus AWS/GCP region names, keyed as stored. */
 const CATALOGUE: Record<string, Omit<RegionInfo, "code">> = {
   // North America
   atl: {
@@ -216,9 +195,6 @@ export function getRegionInfo(
   opts?: { label?: string; provider?: string | null },
 ): RegionInfo {
   const known = CATALOGUE[code.toLowerCase()];
-  // A stored provider always wins: the catalogue infers one from the code,
-  // which is wrong for a self-hosted box reusing an IATA name. `sin` on Contabo
-  // was being labelled "fly".
   if (known) return { code, ...known, provider: opts?.provider ?? known.provider };
   return {
     code,

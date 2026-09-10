@@ -21,12 +21,7 @@ import {
   setProbeLocationMonitors,
 } from "~/lib/actions/probe-locations";
 
-/**
- * Provider as a tag, distinguishing a declared value from an inferred one. The
- * catalogue guesses from the region code, which is wrong the moment a
- * self-hosted box reuses an IATA name — so a guess is shown greyed with a
- * tooltip saying so, rather than stated as fact.
- */
+/** Provider tag. A guess from the region code renders greyed, not as fact. */
 function ProviderTag({
   region,
   name,
@@ -65,7 +60,7 @@ export interface ProbeLocationRow {
   id: string;
   name: string;
   region: string;
-  /** Operator-declared. Null shows the catalogue's guess, marked as such. */
+  /** Operator-declared; null falls back to the catalogue's guess. */
   provider: string | null;
   enabled: boolean;
   lastSeenAt: Date | null;
