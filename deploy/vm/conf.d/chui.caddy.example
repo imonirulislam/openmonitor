@@ -1,0 +1,16 @@
+# ch-ui, the ClickHouse browser, on a public hostname.
+#
+# Copy to chui.caddy and set the hostname. Its own sign-in is a ClickHouse
+# connection test rather than an account check — it accepts anything and reports
+# whether ClickHouse liked it — so on the open internet that's a credential
+# oracle against the datastore. Caddy authenticates first and ch-ui never sees
+# an unauthenticated request.
+#
+# Generate the hash:
+#   docker run --rm caddy:2-alpine caddy hash-password --plaintext 'your-password'
+chui.example.com {
+	basic_auth {
+		admin $2a$14$REPLACE_WITH_YOUR_BCRYPT_HASH
+	}
+	reverse_proxy ch-ui:3488
+}

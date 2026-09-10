@@ -1,0 +1,2 @@
+conf.d/*.caddy
+!conf.d/*.example

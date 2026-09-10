@@ -38,7 +38,8 @@ sudo ufw allow 80,443/tcp     # Caddy: certificate issuance and ClickHouse over 
 sudo ufw enable
 ```
 
-Nothing else needs opening. ClickHouse isn't published, and ch-ui binds to loopback.
+Nothing else needs opening. ClickHouse isn't published directly, and ch-ui binds to
+loopback unless you give it a vhost.
 
 ## 4. Unattended upgrades and fail2ban
 
@@ -156,8 +157,33 @@ docker compose -f deploy/vm/docker-compose.yml logs checker | tail
 `Settings → Probe locations` should show **Last seen** ticking within one check interval.
 `401 unauthorized` in the checker log means the probe token doesn't match a location.
 
-ch-ui: `ssh -L 5436:127.0.0.1:5436 om@host`, then <http://localhost:5436>. Sign in with the
-ClickHouse credentials.
+### ch-ui
+
+By default it binds to loopback only — reach it over a tunnel:
+
+```bash
+ssh -L 5436:127.0.0.1:5436 om@host   # then http://localhost:5436
+```
+
+Sign in with the ClickHouse credentials.
+
+To put it on a hostname instead, point an A record at this box and drop in a vhost:
+
+```bash
+cp deploy/vm/conf.d/chui.caddy.example deploy/vm/conf.d/chui.caddy
+docker run --rm caddy:2-alpine caddy hash-password --plaintext 'a long password'
+$EDITOR deploy/vm/conf.d/chui.caddy    # set the hostname and paste the hash
+docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env restart caddy
+```
+
+**Don't skip the basic auth.** ch-ui's own sign-in is a ClickHouse connection test, not an
+account check: it accepts any credentials and tells you whether ClickHouse liked them. Public
+and unauthenticated, that's a credential oracle against the datastore. Caddy authenticates
+first so ch-ui never sees an unauthenticated request.
+
+Vhosts live in `conf.d/` rather than the Caddyfile because Caddy also fronts ClickHouse — a bad
+directive would fail the whole config and take the datastore's TLS with it. `conf.d/*.caddy` is
+gitignored; the `.example` is checked in.
 
 ## Rootless and probe timings
 

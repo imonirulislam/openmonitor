@@ -38,10 +38,10 @@ services:
   #
   #   ssh -L 5436:127.0.0.1:5436 user@your-vm    then http://localhost:5436
   #
-  # Its sign-in is a ClickHouse connection test, so the database password gates
-  # it, but it also has a public-dashboard feature. A tunnel costs nothing and
-  # removes the question. To publish it instead, give it a hostname in the
-  # Caddyfile and put `basic_auth` in front.
+  # Loopback only, reached over an SSH tunnel. To publish it, copy
+  # conf.d/chui.caddy.example — that vhost puts Caddy's basic auth in front,
+  # which matters because ch-ui's sign-in is a ClickHouse connection test rather
+  # than an account check.
   ch-ui:
     image: ghcr.io/caioricciuti/ch-ui:latest
     restart: unless-stopped
@@ -65,6 +65,7 @@ services:
       CLICKHOUSE_HOSTNAME: ${CLICKHOUSE_HOSTNAME}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./conf.d:/etc/caddy/conf.d:ro
       - caddy-data:/data
       - caddy-config:/config
     ports:
@@ -72,6 +73,7 @@ services:
       - "443:443"
     depends_on:
       clickhouse: { condition: service_healthy }
+      ch-ui: { condition: service_started }
 
   migrate:
     build:

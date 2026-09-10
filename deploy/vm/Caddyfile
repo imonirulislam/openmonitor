@@ -1,5 +1,12 @@
-# Only ClickHouse is proxied. Everything else on this box either talks outbound
-# (checker, notifier) or is reachable on the compose network.
+# ClickHouse over TLS. Vercel functions have no stable egress IP on Hobby, so an
+# allowlist isn't available and 8123 would otherwise carry the password as
+# plaintext HTTP Basic.
 {$CLICKHOUSE_HOSTNAME} {
 	reverse_proxy clickhouse:8123
 }
+
+# Anything else the operator opts into. Kept out of this file because Caddy
+# fronts ClickHouse: a bad directive here would fail the whole config and take
+# the datastore's TLS down with it. A glob matching no files is not an error, so
+# the default deployment publishes ClickHouse and nothing more.
+import /etc/caddy/conf.d/*.caddy
