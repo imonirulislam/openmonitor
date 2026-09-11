@@ -21,6 +21,7 @@ import {
   PanelTopIcon,
   ScanEyeIcon,
   WrenchIcon,
+  ZapIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -33,6 +34,7 @@ const NAV = [
     items: [
       { href: "/", label: "Overview", icon: GaugeIcon, exact: true },
       { href: "/monitors", label: "Monitors", icon: ActivityIcon },
+      { href: "/incidents", label: "Incidents", icon: ZapIcon },
       { href: "/heartbeats", label: "Heartbeats", icon: HeartPulseIcon },
     ],
   },
@@ -63,14 +65,14 @@ export function AppSidebar({
   workspaces: WorkspaceOption[];
 }) {
   const pathname = usePathname();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
 
   return (
     <Sidebar>
       <SidebarHeader>
         <WorkspaceSwitcher current={current} workspaces={workspaces} />
-        {!collapsed ? <SidebarTrigger className="shrink-0" /> : null}
+        {!collapsed && !isMobile ? <SidebarTrigger className="shrink-0" /> : null}
       </SidebarHeader>
 
       <SidebarContent>
@@ -85,7 +87,7 @@ export function AppSidebar({
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
                 <SidebarMenuButton key={item.href} asChild isActive={isActive} tooltip={item.label}>
-                  <Link href={item.href}>
+                  <Link href={item.href} onClick={() => setOpenMobile(false)}>
                     <Icon />
                     <span>{item.label}</span>
                   </Link>
@@ -98,7 +100,7 @@ export function AppSidebar({
 
       <SidebarFooter className="flex flex-col gap-1">
         {user ? <UserMenu user={user} /> : null}
-        {collapsed ? <SidebarTrigger className="mx-auto" /> : null}
+        {collapsed && !isMobile ? <SidebarTrigger className="mx-auto" /> : null}
       </SidebarFooter>
     </Sidebar>
   );
