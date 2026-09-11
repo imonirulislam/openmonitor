@@ -29,7 +29,9 @@ export function UptimeBarChart({ data, empty }: { data: UptimeBar[]; empty?: str
   if (data.length === 0) {
     return (
       <div className="flex h-[130px] items-center justify-center rounded-md border border-dashed bg-muted/20">
-        <p className="text-muted-foreground text-sm">{empty ?? "No probe results in this window."}</p>
+        <p className="text-muted-foreground text-sm">
+          {empty ?? "No probe results in this window."}
+        </p>
       </div>
     );
   }
