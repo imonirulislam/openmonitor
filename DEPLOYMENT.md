@@ -124,6 +124,16 @@ Secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_{MARKETING,STATUS_P
 `DATABASE_URL`, `CLICKHOUSE_URL`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD`. The runner needs to reach both databases — if ClickHouse is
 on a private VM, migrate from somewhere that can.
 
+## Keeping the status page warm
+
+A serverless function that hasn't been hit is cold, and measured cold start on the status
+page is ~3.7s against ~0.5s warm. A status page is by definition first opened when something
+has already broken, so that cold start lands on the worst possible request.
+
+Vercel Cron won't fix it: Hobby is 2 jobs once a day. Point a monitor at the status page
+instead — the checker probes on its own interval, so the page stays warm and you also find
+out when your status page is down, which is worth knowing on its own.
+
 ## Status page URLs
 
 Resolved in this order:

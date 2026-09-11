@@ -30,15 +30,17 @@ const PALETTE = [
 export function RegionLatencyChart({
   data,
   labels,
+  empty,
 }: {
   data: RegionLatencyPoint[];
+  empty?: string;
   /** Region code → display name. Falls back to the code. */
   labels?: Record<string, string>;
 }) {
   if (data.length === 0) {
     return (
       <div className="flex h-[220px] items-center justify-center rounded-md border border-dashed bg-muted/20">
-        <p className="text-muted-foreground text-sm">No data in this window.</p>
+        <p className="text-muted-foreground text-sm">{empty ?? "No data in this window."}</p>
       </div>
     );
   }

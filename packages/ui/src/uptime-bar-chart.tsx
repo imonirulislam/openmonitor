@@ -25,11 +25,11 @@ const SERIES = [
 ] as const;
 
 /** Probes per bucket, stacked by outcome. Height is the count, so a short bar is a sparse one. */
-export function UptimeBarChart({ data }: { data: UptimeBar[] }) {
+export function UptimeBarChart({ data, empty }: { data: UptimeBar[]; empty?: string }) {
   if (data.length === 0) {
     return (
       <div className="flex h-[130px] items-center justify-center rounded-md border border-dashed bg-muted/20">
-        <p className="text-muted-foreground text-sm">No probe results in this window.</p>
+        <p className="text-muted-foreground text-sm">{empty ?? "No probe results in this window."}</p>
       </div>
     );
   }

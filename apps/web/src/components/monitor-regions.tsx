@@ -59,12 +59,14 @@ export function MonitorRegions({
   monitorId,
   chart,
   labels,
+  empty,
 }: {
   regions: RegionRow[];
   monitorId: string;
   /** Long-format buckets for the Chart tab, from regionLatencyBuckets(). */
   chart: RegionLatencyPoint[];
   labels?: Record<string, string>;
+  empty?: string;
 }) {
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean } | null>(null);
   const [view, setView] = useState<"table" | "chart">("table");
@@ -242,7 +244,7 @@ export function MonitorRegions({
           </Card>
         ) : (
           <Card className="p-5">
-            <RegionLatencyChart data={chart} labels={labels} />
+            <RegionLatencyChart data={chart} labels={labels} empty={empty} />
           </Card>
         )}
 

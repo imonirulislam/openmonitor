@@ -121,6 +121,19 @@ export default async function OverviewPage({
   const nameByRegion = new Map(locationNames.map((l) => [l.region, l.name]));
   const providerByRegion = new Map(locationNames.map((l) => [l.region, l.provider]));
   // Catalogue name where we know the code, the operator's own name otherwise.
+  const assignedCount = (
+    await conn
+      .select({ id: schema.probeLocationMonitors.probeLocationId })
+      .from(schema.probeLocationMonitors)
+      .where(eq(schema.probeLocationMonitors.monitorId, id))
+  ).length;
+  const emptyReason =
+    assignedCount === 0
+      ? "No probe location is assigned, so nothing checks this monitor."
+      : regionStats.length === 0
+        ? "Waiting for the first result from the assigned locations."
+        : "No data in this window — try a longer period.";
+
   const regionLabels = Object.fromEntries(
     regionStats.map((r) => [
       r.region,
@@ -217,7 +230,7 @@ export default async function OverviewPage({
           <SectionDescription>Probes per bucket across every region</SectionDescription>
         </SectionHeader>
         <Card className="p-5">
-          <UptimeBarChart data={buckets} />
+          <UptimeBarChart data={buckets} empty={emptyReason} />
         </Card>
       </Section>
 
@@ -245,6 +258,7 @@ export default async function OverviewPage({
         monitorId={idOrSlug}
         chart={regionBuckets}
         labels={regionLabels}
+        empty={emptyReason}
       />
 
       <MonitorTimeline monitorId={id} workspaceId={workspaceId} />
