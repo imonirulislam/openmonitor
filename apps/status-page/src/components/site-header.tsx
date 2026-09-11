@@ -27,7 +27,7 @@ function pagePrefixFromPathname(pathname: string): string {
   return `/${segments[0]}/${segments[1]}`;
 }
 
-export function SiteHeader({ title }: { title: string }) {
+export function SiteHeader({ title, logoUrl }: { title: string; logoUrl?: string | null }) {
   const pathname = usePathname();
   const prefix = pagePrefixFromPathname(pathname);
   const statusHref = prefix || "/";
@@ -41,9 +41,14 @@ export function SiteHeader({ title }: { title: string }) {
     <header className="border-b border-border">
       <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-4 px-4">
         <Link href={statusHref} className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-md bg-foreground text-background">
-            <ActivityIcon className="size-4" />
-          </div>
+          {logoUrl ? (
+            // biome-ignore lint/performance/noImgElement: tenant-supplied URL, any host
+            <img src={logoUrl} alt="" className="size-7 w-auto max-w-32 object-contain" />
+          ) : (
+            <div className="flex size-7 items-center justify-center rounded-md bg-foreground text-background">
+              <ActivityIcon className="size-4" />
+            </div>
+          )}
           <span className="hidden font-semibold text-sm sm:inline">{title}</span>
         </Link>
 

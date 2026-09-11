@@ -5,6 +5,7 @@ const FALLBACK = process.env.NEXT_PUBLIC_STATUS_TITLE ?? "OpenMonitor";
 
 export type PageIdentity = {
   title: string;
+  logoUrl?: string | null;
   host?: string;
   contactUrl?: string | null;
   homepageUrl?: string | null;
@@ -26,6 +27,7 @@ export async function pageIdentity(): Promise<PageIdentity> {
     const summary = await api().getStatus({ host });
     return {
       title: summary.page.name || FALLBACK,
+      logoUrl: summary.page.logoUrl,
       host,
       contactUrl: summary.page.contactUrl,
       homepageUrl: summary.page.homepageUrl,

@@ -152,13 +152,6 @@ export async function StatusPageView({
     >
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-12 px-4 py-10 sm:py-14">
         <BrandingHead branding={summary.page} />
-        {summary.page.logoUrl ? (
-          <PageLogo
-            name={summary.page.name}
-            logoUrl={summary.page.logoUrl}
-            homepageUrl={summary.page.homepageUrl}
-          />
-        ) : null}
 
         <Status variant={variant}>
           <StatusHeader>
@@ -243,36 +236,6 @@ export async function StatusPageView({
  * Renders the page logo + name. When `homepageUrl` is set, the whole block is
  * wrapped in an external link.
  */
-function PageLogo({
-  name,
-  logoUrl,
-  homepageUrl,
-}: {
-  name: string;
-  logoUrl: string;
-  homepageUrl: string | null;
-}) {
-  const inner = (
-    <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={logoUrl} alt={`${name} logo`} className="h-8 w-auto" />
-      <span className="font-semibold text-lg tracking-tight">{name}</span>
-    </>
-  );
-  if (homepageUrl) {
-    return (
-      <a
-        href={homepageUrl}
-        className="flex items-center gap-3 hover:opacity-80"
-        target="_blank"
-        rel="noreferrer"
-      >
-        {inner}
-      </a>
-    );
-  }
-  return <div className="flex items-center gap-3">{inner}</div>;
-}
 
 const GROUP_STATUS_LABEL: Record<ComponentStatus, string> = {
   up: "Operational",

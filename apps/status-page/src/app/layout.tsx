@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <ThemeProvider defaultTheme="dark">
           <div className="flex min-h-screen flex-col">
-            <SiteHeader title={page.title} />
+            <SiteHeader title={page.title} logoUrl={page.logoUrl} />
             <div className="flex-1">{children}</div>
             <SiteFooter
               title={page.title}
