@@ -1,9 +1,6 @@
 import { db, desc, eq, schema } from "@openmonitor/db";
 import {
-  Badge,
   Button,
-  Card,
-  LocalTime,
   SectionDescription,
   SectionHeader,
   SectionHeaderRow,
@@ -11,6 +8,7 @@ import {
 } from "@openmonitor/ui";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
+import { HeartbeatsTable } from "~/components/heartbeats-table";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function HeartbeatsIndex() {
@@ -37,67 +35,17 @@ export default async function HeartbeatsIndex() {
         </Button>
       </SectionHeaderRow>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {rows.map((h) => (
-          <Card key={h.id} className="p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <Link
-                  href={`/heartbeats/${h.slug}`}
-                  className="font-semibold text-base hover:underline"
-                >
-                  {h.name}
-                </Link>
-                <p className="mt-0.5 font-mono text-muted-foreground text-xs">{h.slug}</p>
-              </div>
-              <Badge
-                variant={
-                  h.currentStatus === "up"
-                    ? "success"
-                    : h.currentStatus === "down"
-                      ? "destructive"
-                      : "default"
-                }
-              >
-                {h.currentStatus}
-              </Badge>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-              <span>
-                expected{" "}
-                <span className="font-semibold text-foreground tabular-nums normal-case">
-                  every {h.expectedIntervalSeconds}s
-                </span>
-              </span>
-              <span>
-                grace{" "}
-                <span className="font-semibold text-foreground tabular-nums normal-case">
-                  {h.graceSeconds}s
-                </span>
-              </span>
-              {h.lastPingAt ? (
-                <span>
-                  last{" "}
-                  <span className="font-semibold text-foreground normal-case">
-                    <LocalTime date={h.lastPingAt.toISOString()} format="LLL d, HH:mm" />
-                  </span>
-                </span>
-              ) : (
-                <span>never pinged</span>
-              )}
-            </div>
-          </Card>
-        ))}
-        {rows.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground text-sm">
-            No heartbeats yet.{" "}
-            <Link href="/heartbeats/new" className="underline">
-              Create one
-            </Link>
-            .
-          </Card>
-        ) : null}
-      </div>
+      <HeartbeatsTable
+        rows={rows.map((h) => ({
+          id: h.id,
+          slug: h.slug,
+          name: h.name,
+          currentStatus: h.currentStatus,
+          expectedIntervalSeconds: h.expectedIntervalSeconds,
+          graceSeconds: h.graceSeconds,
+          lastPingAt: h.lastPingAt?.toISOString() ?? null,
+        }))}
+      />
     </div>
   );
 }

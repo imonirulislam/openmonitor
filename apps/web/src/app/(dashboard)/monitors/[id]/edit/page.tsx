@@ -1,4 +1,4 @@
-import { type Assertion, asc, db, eq, isNull, or, schema } from "@openmonitor/db";
+import { type Assertion, and, asc, db, eq, inArray, isNull, or, schema } from "@openmonitor/db";
 import {
   Button,
   FormCard,
@@ -13,10 +13,12 @@ import {
   TickSlider,
 } from "@openmonitor/ui";
 import { notFound } from "next/navigation";
+import { CheckboxPicker } from "~/components/checkbox-picker";
 import { MonitorConfigForm, type ProbeLocationChoice } from "~/components/monitor-config-form";
 import { MonitorResponseTimeForm } from "~/components/monitor-response-time-form";
 import {
   deleteMonitor,
+  updateMonitorChannels,
   updateMonitorConfig,
   updateMonitorResponseTime,
   updateMonitorSchedule,
@@ -44,6 +46,27 @@ export default async function EditMonitorPage({ params }: { params: Promise<{ id
     .where(eq(schema.monitors.id, id))
     .limit(1);
   if (!monitor) notFound();
+
+  const channels = await db()
+    .select({ id: schema.notificationChannels.id, name: schema.notificationChannels.name })
+    .from(schema.notificationChannels)
+    .where(eq(schema.notificationChannels.workspaceId, monitor.workspaceId))
+    .orderBy(asc(schema.notificationChannels.name));
+  const subscribedChannels =
+    channels.length > 0
+      ? await db()
+          .select({ channelId: schema.monitorChannels.channelId })
+          .from(schema.monitorChannels)
+          .where(
+            and(
+              eq(schema.monitorChannels.monitorId, id),
+              inArray(
+                schema.monitorChannels.channelId,
+                channels.map((c) => c.id),
+              ),
+            ),
+          )
+      : [];
 
   const locations = await db()
     .select({
@@ -110,6 +133,29 @@ export default async function EditMonitorPage({ params }: { params: Promise<{ id
       />
 
       {/* Schedule */}
+      <FormCard asForm action={updateMonitorChannels.bind(null, id)}>
+        <FormCardHeader>
+          <FormCardTitle>Notifications</FormCardTitle>
+          <FormCardDescription>
+            Which channels post when this monitor goes degraded or down.
+          </FormCardDescription>
+        </FormCardHeader>
+        <FormCardContent>
+          <CheckboxPicker
+            items={channels}
+            name="channelIds"
+            defaultSelected={subscribedChannels.map((c) => c.channelId)}
+            idPrefix="channel"
+            empty="No notification channels yet — add one under Channels."
+            hint="Unchecking every channel silences this monitor."
+          />
+        </FormCardContent>
+        <FormCardFooter>
+          <FormCardFooterInfo>Also editable from the channel's own page.</FormCardFooterInfo>
+          <Button type="submit">Save notifications</Button>
+        </FormCardFooter>
+      </FormCard>
+
       <FormCard asForm action={updateMonitorSchedule.bind(null, id)}>
         <FormCardHeader>
           <FormCardTitle>Schedule & retries</FormCardTitle>

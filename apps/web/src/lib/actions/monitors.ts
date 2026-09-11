@@ -5,6 +5,7 @@ import {
   assertion as assertionSchema,
   db,
   eq,
+  inArray,
   isNull,
   monitorKinds,
   or,
@@ -387,6 +388,56 @@ const scheduleSchema = z.object({
     .optional()
     .nullable(),
 });
+
+/**
+ * Replaces a monitor's channel subscriptions. The mirror of the monitor picker
+ * on the channels page — same join table, addressed from the other side.
+ */
+export async function updateMonitorChannels(id: string, formData: FormData) {
+  const ws = await requireEditor();
+  const addr = await monitorSlug(id);
+
+  const [monitor] = await db()
+    .select({ id: schema.monitors.id, name: schema.monitors.name })
+    .from(schema.monitors)
+    .where(monitorScope(id, ws.workspaceId))
+    .limit(1);
+  if (!monitor) throw new Error("monitor not found");
+
+  const requested = [...new Set(formData.getAll("channelIds").map(String).filter(Boolean))];
+  const channels =
+    requested.length > 0
+      ? await db()
+          .select({ id: schema.notificationChannels.id })
+          .from(schema.notificationChannels)
+          .where(
+            and(
+              inArray(schema.notificationChannels.id, requested),
+              eq(schema.notificationChannels.workspaceId, ws.workspaceId),
+            ),
+          )
+      : [];
+  if (channels.length !== requested.length) throw new Error("forbidden");
+
+  await db().transaction(async (tx) => {
+    await tx.delete(schema.monitorChannels).where(eq(schema.monitorChannels.monitorId, id));
+    if (channels.length > 0) {
+      await tx
+        .insert(schema.monitorChannels)
+        .values(channels.map((c) => ({ monitorId: id, channelId: c.id })));
+    }
+  });
+
+  await logAudit({
+    action: "monitor.updated.channels",
+    targetType: "monitor",
+    targetId: id,
+    targetLabel: monitor.name,
+    metadata: { channelIds: channels.map((c) => c.id) },
+  });
+  revalidatePath("/channels");
+  redirect(withToastRedirect(`/monitors/${addr}/edit`, "Notifications saved"));
+}
 
 export async function updateMonitorSchedule(id: string, formData: FormData) {
   const ws = await requireEditor();

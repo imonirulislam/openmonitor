@@ -1,6 +1,5 @@
 import { db, desc, eq, schema } from "@openmonitor/db";
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -9,14 +8,13 @@ import {
   DateTimeLocalInput,
   Input,
   Label,
-  LocalTime,
   SectionGroupTitle,
   SectionLabel,
   Separator,
   Textarea,
 } from "@openmonitor/ui";
+import { MaintenancesTable } from "~/components/maintenances-table";
 import { MonitorMultiSelect } from "~/components/monitor-multi-select";
-import { RowActionAction, RowActionSeparator, RowActions } from "~/components/row-actions";
 import { cancelMaintenance, createMaintenance, deleteMaintenance } from "~/lib/actions/maintenance";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
@@ -89,44 +87,20 @@ export default async function MaintenancePage() {
 
       <div className="flex flex-col gap-3">
         <SectionLabel>Past and upcoming</SectionLabel>
-        <ul className="flex flex-col gap-2">
-          {maintenances.map((m) => (
-            <li key={m.id}>
-              <Card>
-                <CardContent className="pt-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-medium text-sm">{m.title}</h3>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="info">{m.status}</Badge>
-                      <RowActions>
-                        {m.status !== "cancelled" && m.status !== "completed" ? (
-                          <>
-                            <RowActionAction action={cancelMaintenance.bind(null, m.id)}>
-                              Cancel
-                            </RowActionAction>
-                            <RowActionSeparator />
-                          </>
-                        ) : null}
-                        <RowActionAction action={deleteMaintenance.bind(null, m.id)} destructive>
-                          Delete
-                        </RowActionAction>
-                      </RowActions>
-                    </div>
-                  </div>
-                  <p className="mt-1 font-mono text-muted-foreground text-xs">
-                    <LocalTime date={m.startsAt} /> → <LocalTime date={m.endsAt} />
-                  </p>
-                  {m.description ? (
-                    <p className="mt-2 text-foreground text-sm">{m.description}</p>
-                  ) : null}
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-          {maintenances.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No windows scheduled.</p>
-          ) : null}
-        </ul>
+        <MaintenancesTable
+          rows={maintenances.map((m) => ({
+            id: m.id,
+            title: m.title,
+            description: m.description,
+            status: m.status,
+            startsAt: m.startsAt.toISOString(),
+            endsAt: m.endsAt.toISOString(),
+          }))}
+          showStatus
+          cancelAction={cancelMaintenance}
+          deleteAction={deleteMaintenance}
+          paramScope="mw"
+        />
       </div>
     </div>
   );

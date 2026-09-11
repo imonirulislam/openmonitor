@@ -3,6 +3,7 @@
 import { Badge, LocalTime } from "@openmonitor/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
+import { RowActionAction, RowActionSeparator, RowActions } from "./row-actions";
 
 export type MaintenanceRow = {
   id: string;
@@ -13,7 +14,7 @@ export type MaintenanceRow = {
   endsAt: string;
 };
 
-const columns: ColumnDef<MaintenanceRow>[] = [
+const BASE_COLUMNS: ColumnDef<MaintenanceRow>[] = [
   {
     accessorKey: "title",
     header: "Title",
@@ -56,14 +57,72 @@ const columns: ColumnDef<MaintenanceRow>[] = [
   },
 ];
 
-export function MaintenancesTable({ rows }: { rows: MaintenanceRow[] }) {
+/**
+ * Shared by the status page's maintenances tab and the workspace-wide list.
+ * The workspace list owns the windows, so it gets status and row actions; the
+ * page tab is a read-only view of what's attached to that page.
+ */
+export function MaintenancesTable({
+  rows,
+  showStatus = false,
+  cancelAction,
+  deleteAction,
+  paramScope,
+}: {
+  rows: MaintenanceRow[];
+  showStatus?: boolean;
+  cancelAction?: (id: string) => Promise<void>;
+  deleteAction?: (id: string) => Promise<void>;
+  paramScope?: string;
+}) {
+  const columns: ColumnDef<MaintenanceRow>[] = [...BASE_COLUMNS];
+
+  if (showStatus) {
+    columns.splice(1, 0, {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => <Badge variant="info">{row.original.status}</Badge>,
+    });
+  }
+
+  if (cancelAction || deleteAction) {
+    columns.push({
+      id: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const open = row.original.status !== "cancelled" && row.original.status !== "completed";
+        return (
+          <div className="flex justify-end">
+            <RowActions>
+              {cancelAction && open ? (
+                <>
+                  <RowActionAction action={cancelAction.bind(null, row.original.id)}>
+                    Cancel
+                  </RowActionAction>
+                  <RowActionSeparator />
+                </>
+              ) : null}
+              {deleteAction ? (
+                <RowActionAction action={deleteAction.bind(null, row.original.id)} destructive>
+                  Delete
+                </RowActionAction>
+              ) : null}
+            </RowActions>
+          </div>
+        );
+      },
+    });
+  }
+
   return (
     <DataTable
       data={rows}
       columns={columns}
       searchFields={["title", "description"]}
       filterPlaceholder="Filter maintenances…"
-      emptyMessage="No maintenances yet."
+      emptyMessage="No maintenance windows scheduled."
+      paramScope={paramScope}
     />
   );
 }

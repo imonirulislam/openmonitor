@@ -14,7 +14,7 @@ import {
 } from "@openmonitor/ui";
 import { SettingsIcon } from "lucide-react";
 import { useState } from "react";
-import { ChannelMonitorPicker, type PickerMonitor } from "./channel-monitor-picker";
+import { CheckboxPicker, type PickerItem } from "./checkbox-picker";
 
 /** Edit a channel and its monitor subscriptions in one save. */
 export function ChannelSheet({
@@ -25,7 +25,7 @@ export function ChannelSheet({
 }: {
   action: (formData: FormData) => void | Promise<void>;
   channel: { id: string; name: string; webhookUrl: string; enabled: boolean };
-  monitors: PickerMonitor[];
+  monitors: PickerItem[];
   subscribed: string[];
 }) {
   const [enabled, setEnabled] = useState(channel.enabled);
@@ -78,10 +78,13 @@ export function ChannelSheet({
 
           <div className="flex flex-col gap-1.5">
             <Label>Monitors</Label>
-            <ChannelMonitorPicker
-              monitors={monitors}
+            <CheckboxPicker
+              items={monitors}
+              name="monitorIds"
               defaultSelected={subscribed}
               idPrefix={`edit-${channel.id}`}
+              empty="No monitors in this workspace yet."
+              hint="Alerts go only to the monitors checked here."
             />
           </div>
 
