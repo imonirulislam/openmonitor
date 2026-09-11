@@ -1,5 +1,14 @@
 import { db, desc, eq, schema } from "@openmonitor/db";
-import { Badge, Button, Card, LocalTime, SectionGroupTitle, Separator } from "@openmonitor/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  LocalTime,
+  SectionDescription,
+  SectionHeader,
+  SectionHeaderRow,
+  SectionTitle,
+} from "@openmonitor/ui";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
@@ -14,20 +23,19 @@ export default async function HeartbeatsIndex() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <SectionGroupTitle>Heartbeats</SectionGroupTitle>
-          <p className="mt-1 text-muted-foreground text-sm">
+      <SectionHeaderRow>
+        <SectionHeader>
+          <SectionTitle>Heartbeats</SectionTitle>
+          <SectionDescription>
             Push-based monitors. Cron jobs hit a token URL on each run; we alert when pings stop.
-          </p>
-        </div>
-        <Button asChild>
+          </SectionDescription>
+        </SectionHeader>
+        <Button asChild size="sm">
           <Link href="/heartbeats/new">
             <PlusIcon /> New heartbeat
           </Link>
         </Button>
-      </header>
-      <Separator />
+      </SectionHeaderRow>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {rows.map((h) => (

@@ -15,8 +15,9 @@ import {
   FormCardTitle,
   Input,
   Label,
-  SectionGroupTitle,
-  Separator,
+  SectionDescription,
+  SectionHeader,
+  SectionTitle,
 } from "@openmonitor/ui";
 import { TrashIcon } from "lucide-react";
 import {
@@ -58,14 +59,12 @@ export default async function ChannelsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <SectionGroupTitle>Notification channels</SectionGroupTitle>
-        <p className="mt-1 text-muted-foreground text-sm">
+      <SectionHeader>
+        <SectionTitle>Notification channels</SectionTitle>
+        <SectionDescription>
           Slack webhooks that receive alerts when linked monitors change state.
-        </p>
-      </header>
-
-      <Separator />
+        </SectionDescription>
+      </SectionHeader>
 
       <FormCard asForm action={createSlackChannel}>
         <FormCardHeader>

@@ -39,8 +39,8 @@ export function LatencyChart({ data }: { data: Point[] }) {
         <AreaChart data={formatted} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="latency-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="oklch(0.62 0.19 260)" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="oklch(0.62 0.19 260)" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
@@ -79,7 +79,7 @@ export function LatencyChart({ data }: { data: Point[] }) {
           <Area
             type="monotone"
             dataKey="avg"
-            stroke="oklch(0.62 0.19 260)"
+            stroke="var(--color-chart-1)"
             strokeWidth={1.5}
             fill="url(#latency-fill)"
             isAnimationActive={false}
@@ -87,7 +87,7 @@ export function LatencyChart({ data }: { data: Point[] }) {
           <Line
             type="monotone"
             dataKey="p95"
-            stroke="oklch(0.77 0.16 70)"
+            stroke="var(--color-chart-3)"
             strokeWidth={1.5}
             dot={false}
             isAnimationActive={false}

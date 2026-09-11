@@ -30,11 +30,11 @@ type Point = {
 };
 
 const PHASES = [
-  { key: "dns", label: "DNS", color: "oklch(0.62 0.19 260)" }, // blue
-  { key: "connect", label: "Connect", color: "oklch(0.72 0.16 160)" }, // teal-green
-  { key: "tls", label: "TLS", color: "oklch(0.77 0.16 70)" }, // amber
-  { key: "ttfb", label: "TTFB", color: "oklch(0.55 0.22 305)" }, // purple
-  { key: "transfer", label: "Transfer", color: "oklch(0.66 0.24 15)" }, // red-pink
+  { key: "dns", label: "DNS", color: "var(--color-chart-1)" },
+  { key: "connect", label: "Connect", color: "var(--color-chart-2)" },
+  { key: "tls", label: "TLS", color: "var(--color-chart-3)" },
+  { key: "ttfb", label: "TTFB", color: "var(--color-chart-5)" },
+  { key: "transfer", label: "Transfer", color: "var(--color-chart-4)" },
 ] as const;
 
 export function TimingPhasesChart({

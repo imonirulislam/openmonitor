@@ -104,6 +104,7 @@ export {
   SidebarTrigger,
   useSidebar,
 } from "./sidebar";
+export { Skeleton } from "./skeleton";
 export {
   Status,
   StatusContent,

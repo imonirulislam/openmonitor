@@ -17,21 +17,14 @@ export type RegionLatencyPoint = {
   value: number;
 };
 
-/**
- * Fixed hues rather than theme vars — these have to stay distinguishable from
- * each other, which `--color-primary` and friends don't guarantee. Assigned by
- * sorted region name so a region keeps its colour across renders and matches
- * the table below the chart.
- */
+/** Assigned by sorted region name, so a region keeps its colour across renders. */
 const PALETTE = [
-  "oklch(0.62 0.19 260)",
-  "oklch(0.70 0.17 145)",
-  "oklch(0.72 0.18 60)",
-  "oklch(0.63 0.22 15)",
-  "oklch(0.65 0.19 310)",
-  "oklch(0.70 0.14 200)",
-  "oklch(0.60 0.16 90)",
-  "oklch(0.68 0.20 340)",
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+  "var(--color-chart-6)",
 ];
 
 export function RegionLatencyChart({
