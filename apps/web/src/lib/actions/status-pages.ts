@@ -283,7 +283,7 @@ export async function updateStatusPageBranding(id: string, formData: FormData) {
   redirect(withToastRedirect(`/status-pages/${addr}/edit`, "Branding saved"));
 }
 
-/** Save the optional homepage + contact links. Both can be empty to hide. */
+/** Save the optional homepage + contact links, and the footer attribution. */
 export async function updateStatusPageLinks(id: string, formData: FormData) {
   const ws = await requireEditor();
   const addr = await statusPageSlug(id);
@@ -303,6 +303,8 @@ export async function updateStatusPageLinks(id: string, formData: FormData) {
     .set({
       homepageUrl: parsed.homepageUrl ?? null,
       contactUrl: parsed.contactUrl ?? null,
+      // See monitors.ts — an unchecked box submits nothing at all.
+      showAttribution: formData.get("showAttribution") === "true",
       updatedAt: new Date(),
     })
     .where(pageScope(id, ws.workspaceId));

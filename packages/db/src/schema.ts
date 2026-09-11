@@ -195,6 +195,9 @@ export const statusPages = pgTable(
     //   - contactUrl is a footer link (also accepts `mailto:`).
     homepageUrl: text("homepage_url"),
     contactUrl: text("contact_url"),
+    // "Monitored by OpenMonitor" in the footer. On by default; the operator of
+    // a deployment decides whether a page may drop it.
+    showAttribution: boolean("show_attribution").notNull().default(true),
     // Optional scrypt password hash. When set, the public API requires a
     // signed unlock token in the request and the status-page front-end
     // redirects unauth'd visitors to /unlock.

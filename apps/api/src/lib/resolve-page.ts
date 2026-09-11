@@ -40,6 +40,7 @@ const PAGE_COLUMNS = {
   customCss: schema.statusPages.customCss,
   homepageUrl: schema.statusPages.homepageUrl,
   contactUrl: schema.statusPages.contactUrl,
+  showAttribution: schema.statusPages.showAttribution,
   passwordHash: schema.statusPages.passwordHash,
 } as const;
 

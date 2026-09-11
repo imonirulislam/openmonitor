@@ -14,11 +14,13 @@ export function SiteFooter({
   host,
   contactUrl,
   homepageUrl,
+  showAttribution = true,
 }: {
   title: string;
   host?: string;
   contactUrl?: string | null;
   homepageUrl?: string | null;
+  showAttribution?: boolean;
 }) {
   // The feed route resolves the same way /v1/status does, so handing it this
   // page's host gets the right feed without adding a field to the payload.
@@ -58,15 +60,19 @@ export function SiteFooter({
           >
             <GithubIcon className="size-3.5" />
           </a>
-          <span aria-hidden>·</span>
-          <a
-            href={MARKETING_URL}
-            rel="noreferrer"
-            target="_blank"
-            className="transition-colors hover:text-foreground"
-          >
-            Powered by OpenMonitor
-          </a>
+          {showAttribution ? (
+            <>
+              <span aria-hidden>·</span>
+              <a
+                href={MARKETING_URL}
+                rel="noreferrer"
+                target="_blank"
+                className="transition-colors hover:text-foreground"
+              >
+                Monitored by OpenMonitor
+              </a>
+            </>
+          ) : null}
         </span>
       </div>
     </footer>

@@ -57,6 +57,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               host={page.host}
               contactUrl={page.contactUrl}
               homepageUrl={page.homepageUrl}
+              showAttribution={page.showAttribution}
             />
           </div>
         </ThemeProvider>

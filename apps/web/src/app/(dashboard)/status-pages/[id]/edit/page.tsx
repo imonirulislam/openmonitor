@@ -227,6 +227,21 @@ export default async function StatusPageSettings({ params }: { params: Promise<{
                 hide.
               </p>
             </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="showAttribution"
+                  value="true"
+                  defaultChecked={page.showAttribution}
+                  className="size-4 rounded border-border"
+                />
+                <span className="text-sm">Show “Monitored by OpenMonitor” in the footer</span>
+              </label>
+              <p className="text-muted-foreground text-xs">
+                The GitHub link stays either way — this only controls the wordmark.
+              </p>
+            </div>
           </FormCardContent>
           <FormCardFooter>
             <FormCardFooterInfo>Both links are optional.</FormCardFooterInfo>

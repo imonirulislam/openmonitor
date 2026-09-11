@@ -169,6 +169,13 @@
       "when": 1777635000000,
       "tag": "0023_page_component_surface",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1777636000000,
+      "tag": "0024_status_page_attribution",
+      "breakpoints": true
     }
   ]
 }

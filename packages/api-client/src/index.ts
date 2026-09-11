@@ -36,6 +36,8 @@ export type StatusPageBranding = {
   customCss: string | null;
   homepageUrl: string | null;
   contactUrl: string | null;
+  /** Whether the footer carries "Monitored by OpenMonitor". */
+  showAttribution: boolean;
 };
 
 export type StatusComponent = {

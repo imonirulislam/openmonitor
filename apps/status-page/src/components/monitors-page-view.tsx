@@ -1,5 +1,5 @@
 import { NotFoundError, RequiresPasswordError } from "@openmonitor/api-client";
-import { SectionMetaTitle, Separator } from "@openmonitor/ui";
+import { SectionMetaTitle, Separator, StatusBlank } from "@openmonitor/ui";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -81,10 +81,10 @@ export async function MonitorsPageView({
           </Link>
         ))}
         {monitors.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Nothing published here yet. A component set to show on the metrics tab appears with its
-            response times.
-          </p>
+          <StatusBlank
+            title="No public monitors"
+            description="No public monitors have been added to this page."
+          />
         ) : null}
       </div>
     </main>

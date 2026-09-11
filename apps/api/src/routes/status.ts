@@ -341,6 +341,7 @@ statusRoutes.get("/v1/status", async (c) => {
       customCss: page.customCss,
       homepageUrl: page.homepageUrl,
       contactUrl: page.contactUrl,
+      showAttribution: page.showAttribution,
     },
     components: visibleComponents.map((c) => ({
       id: c.id,

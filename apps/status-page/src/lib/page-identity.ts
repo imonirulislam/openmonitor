@@ -6,6 +6,7 @@ const FALLBACK = process.env.NEXT_PUBLIC_STATUS_TITLE ?? "OpenMonitor";
 export type PageIdentity = {
   title: string;
   logoUrl?: string | null;
+  showAttribution: boolean;
   host?: string;
   contactUrl?: string | null;
   homepageUrl?: string | null;
@@ -28,6 +29,7 @@ export async function pageIdentity(): Promise<PageIdentity> {
     return {
       title: summary.page.name || FALLBACK,
       logoUrl: summary.page.logoUrl,
+      showAttribution: summary.page.showAttribution,
       host,
       contactUrl: summary.page.contactUrl,
       homepageUrl: summary.page.homepageUrl,
@@ -35,6 +37,6 @@ export async function pageIdentity(): Promise<PageIdentity> {
   } catch {
     // Password-protected, unreachable, or no page for this host. The chrome
     // still has to render.
-    return { title: FALLBACK, host };
+    return { title: FALLBACK, host, showAttribution: true };
   }
 }

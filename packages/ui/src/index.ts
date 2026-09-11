@@ -123,6 +123,7 @@ export {
   StatusTitle,
   type StatusVariant,
 } from "./status";
+export { StatusBlank } from "./status-blank";
 export {
   type EventAffected,
   type EventUpdate,
