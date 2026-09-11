@@ -25,4 +25,4 @@ COPY packages ./packages
 COPY apps/api ./apps/api
 WORKDIR /repo/apps/api
 EXPOSE 5002
-CMD ["node_modules/.bin/tsx", "src/index.ts"]
+CMD ["/repo/node_modules/.bin/tsx", "src/index.ts"]

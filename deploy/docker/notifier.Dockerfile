@@ -20,4 +20,4 @@ COPY --from=deps /repo ./
 COPY packages ./packages
 COPY apps/notifier ./apps/notifier
 WORKDIR /repo/apps/notifier
-CMD ["node_modules/.bin/tsx", "src/index.ts"]
+CMD ["/repo/node_modules/.bin/tsx", "src/index.ts"]

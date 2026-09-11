@@ -31,4 +31,4 @@ COPY --from=build /repo/packages /app/packages
 COPY --from=build /repo/apps/status-page /app/apps/status-page
 WORKDIR /app/apps/status-page
 EXPOSE 5003
-CMD ["node_modules/.bin/next", "start", "--port", "5003"]
+CMD ["/app/node_modules/.bin/next", "start", "--port", "5003"]

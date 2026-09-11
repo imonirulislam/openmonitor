@@ -28,4 +28,4 @@ COPY --from=build /repo/packages /app/packages
 COPY --from=build /repo/apps/marketing /app/apps/marketing
 WORKDIR /app/apps/marketing
 EXPOSE 5005
-CMD ["node_modules/.bin/next", "start", "--port", "5005"]
+CMD ["/app/node_modules/.bin/next", "start", "--port", "5005"]

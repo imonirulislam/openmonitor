@@ -124,8 +124,8 @@ services:
       - sh
       - -c
       - |
-        cd /repo/packages/db && node_modules/.bin/tsx src/migrate.ts
-        cd /repo/packages/clickhouse && node_modules/.bin/tsx src/migrate.ts
+        cd /repo/packages/db && /repo/node_modules/.bin/tsx src/migrate.ts
+        cd /repo/packages/clickhouse && /repo/node_modules/.bin/tsx src/migrate.ts
 
   # Demo data — opt in with: docker compose --profile seed up seed
   # Kept out of the default `up` so a real deployment never gets a known-password
@@ -147,7 +147,7 @@ services:
       migrate:
         condition: service_completed_successfully
     working_dir: /repo/packages/db
-    command: ["node_modules/.bin/tsx", "src/seed.ts"]
+    command: ["/repo/node_modules/.bin/tsx", "src/seed.ts"]
 
   api:
     build:

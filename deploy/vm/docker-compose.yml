@@ -93,8 +93,8 @@ services:
       - sh
       - -c
       - |
-        cd /repo/packages/db && node_modules/.bin/tsx src/migrate.ts
-        cd /repo/packages/clickhouse && node_modules/.bin/tsx src/migrate.ts
+        cd /repo/packages/db && /repo/node_modules/.bin/tsx src/migrate.ts
+        cd /repo/packages/clickhouse && /repo/node_modules/.bin/tsx src/migrate.ts
 
   notifier:
     build:
