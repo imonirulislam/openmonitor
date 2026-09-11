@@ -8,6 +8,7 @@ import type { NextConfig } from "next";
  */
 const config: NextConfig = {
   reactStrictMode: true,
+  experimental: { optimizePackageImports: ["@openmonitor/ui"] },
   transpilePackages: ["@openmonitor/ui"],
   // Traced server files resolve into the workspace-root node_modules, above
   // this app. Without this the trace paths are relative to apps/marketing, and

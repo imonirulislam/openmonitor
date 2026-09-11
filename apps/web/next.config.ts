@@ -15,6 +15,9 @@ const config: NextConfig = {
   ],
   experimental: {
     serverActions: { bodySizeLimit: "1mb" },
+    // Barrel imports rewritten to direct ones; keeps recharts out of routes
+    // that don't chart anything.
+    optimizePackageImports: ["@openmonitor/ui"],
   },
   // See apps/marketing/next.config.ts — traced files live above this app.
   outputFileTracingRoot: path.resolve(import.meta.dirname, "../.."),

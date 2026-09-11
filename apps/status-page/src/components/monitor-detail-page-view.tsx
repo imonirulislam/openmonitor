@@ -2,7 +2,6 @@ import { NotFoundError, RequiresPasswordError } from "@openmonitor/api-client";
 import {
   Card,
   type FeedEvent,
-  LatencyChart,
   SectionMetaTitle,
   Separator,
   StatusEventFeed,
@@ -14,6 +13,7 @@ import { notFound, redirect } from "next/navigation";
 import { MonitorDetail } from "~/components/monitor-detail";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";
+import { LazyLatencyChart } from "./lazy-latency-chart";
 
 type MonitorStatus = "up" | "down" | "degraded" | "unknown";
 
@@ -138,7 +138,7 @@ export async function MonitorDetailPageView({
           </span>
         </div>
         <div className="mt-4">
-          <LatencyChart data={latency.buckets} />
+          <LazyLatencyChart data={latency.buckets} />
         </div>
       </Card>
 
