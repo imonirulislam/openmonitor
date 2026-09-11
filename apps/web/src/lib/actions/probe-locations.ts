@@ -15,8 +15,8 @@ import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { auth } from "~/auth";
 import { isOperator } from "~/lib/operator";
+import { requireAdmin, requireEditor } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 const PATH = "/settings/probe-locations";
@@ -39,20 +39,6 @@ const locationSchema = z.object({
   provider: z.string().max(50).optional(),
 });
 
-async function requireEditor() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  if (session.user.role === "viewer") throw new Error("forbidden");
-  if (!session.user.workspaceId) throw new Error("no workspace bound to session");
-  return session;
-}
-
-async function requireAdmin() {
-  const session = await requireEditor();
-  if (session.user.role !== "admin") throw new Error("forbidden");
-  return session;
-}
-
 /**
  * Loads a location the caller is allowed to change, and decides who that is.
  *
@@ -66,7 +52,7 @@ async function requireAdmin() {
  * workspace_members, so anyone who creates a workspace is an admin of it.
  */
 async function requireMutableLocation(id: string) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
 
   const [location] = await db()
     .select({
@@ -75,19 +61,19 @@ async function requireMutableLocation(id: string) {
       workspaceId: schema.probeLocations.workspaceId,
     })
     .from(schema.probeLocations)
-    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)))
+    .where(and(eq(schema.probeLocations.id, id), visibleTo(ws.workspaceId)))
     .limit(1);
   if (!location) throw new Error("probe location not found");
 
   if (location.workspaceId === null) {
-    if (!isOperator(session.user.email)) {
+    if (!isOperator(ws.email)) {
       throw new Error("forbidden: shared probe locations are managed by the instance operator");
     }
-  } else if (session.user.role !== "admin") {
+  } else if (ws.role !== "admin") {
     throw new Error("forbidden");
   }
 
-  return { session, location };
+  return { ws, location };
 }
 
 /**
@@ -96,14 +82,14 @@ async function requireMutableLocation(id: string) {
  * losing it means rotating.
  */
 export async function createProbeLocation(formData: FormData) {
-  const session = await requireAdmin();
+  const ws = await requireAdmin();
   const parsed = parseOrFlash(locationSchema, Object.fromEntries(formData), PATH);
 
   // Default to a private location owned by the caller's workspace. Only an
   // instance operator can add to the shared fleet, because every other tenant
   // then gets to select it.
   const wantsShared = formData.get("shared") === "on";
-  if (wantsShared && !isOperator(session.user.email)) {
+  if (wantsShared && !isOperator(ws.email)) {
     throw new Error("forbidden: only the instance operator can create shared locations");
   }
 
@@ -111,7 +97,7 @@ export async function createProbeLocation(formData: FormData) {
   const [created] = await db()
     .insert(schema.probeLocations)
     .values({
-      workspaceId: wantsShared ? null : session.user.workspaceId,
+      workspaceId: wantsShared ? null : ws.workspaceId,
       name: parsed.name,
       region: parsed.region,
       provider: parsed.provider ? parsed.provider : null,
@@ -222,12 +208,12 @@ export async function deleteProbeLocation(id: string) {
  * owns, which also means an editor never needs rights over the location itself.
  */
 export async function setProbeLocationMonitors(id: string, monitorIds: string[]) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
 
   const [location] = await db()
     .select({ id: schema.probeLocations.id })
     .from(schema.probeLocations)
-    .where(and(eq(schema.probeLocations.id, id), visibleTo(session.user.workspaceId)))
+    .where(and(eq(schema.probeLocations.id, id), visibleTo(ws.workspaceId)))
     .limit(1);
   if (!location) throw new Error("probe location not found");
 
@@ -236,7 +222,7 @@ export async function setProbeLocationMonitors(id: string, monitorIds: string[])
   const owned = await db()
     .select({ id: schema.monitors.id })
     .from(schema.monitors)
-    .where(eq(schema.monitors.workspaceId, session.user.workspaceId));
+    .where(eq(schema.monitors.workspaceId, ws.workspaceId));
   const ownedIds = new Set(owned.map((m) => m.id));
   const toAssign = monitorIds.filter((m) => ownedIds.has(m));
 
@@ -251,7 +237,7 @@ export async function setProbeLocationMonitors(id: string, monitorIds: string[])
             tx
               .select({ id: schema.monitors.id })
               .from(schema.monitors)
-              .where(eq(schema.monitors.workspaceId, session.user.workspaceId)),
+              .where(eq(schema.monitors.workspaceId, ws.workspaceId)),
           ),
         ),
       );

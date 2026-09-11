@@ -111,6 +111,29 @@ export async function getCurrentUser(): Promise<{
   return user;
 }
 
+export type CurrentWorkspace = Awaited<ReturnType<typeof getCurrentWorkspace>>;
+
+/**
+ * Editor-or-better in the workspace the user is *looking at*.
+ *
+ * Every write goes through here rather than reading the session directly: the
+ * JWT's workspaceId and role are whatever they were at sign-in, so a switched
+ * workspace would write rows into the previous one and be gated on the
+ * previous role.
+ */
+export async function requireEditor(): Promise<CurrentWorkspace> {
+  const ws = await getCurrentWorkspace();
+  if (ws.role === "viewer") throw new Error("forbidden: editor role required");
+  return ws;
+}
+
+/** Admin of the current workspace. */
+export async function requireAdmin(): Promise<CurrentWorkspace> {
+  const ws = await getCurrentWorkspace();
+  if (ws.role !== "admin") throw new Error("forbidden: admin role required");
+  return ws;
+}
+
 /** Convenience wrapper for routes that just need the workspace id. */
 export async function getCurrentWorkspaceId(): Promise<string> {
   return (await getCurrentWorkspace()).workspaceId;

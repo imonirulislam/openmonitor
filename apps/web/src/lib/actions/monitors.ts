@@ -15,9 +15,9 @@ import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { auth } from "~/auth";
 import { logAudit } from "~/lib/audit";
 import { monitorSlug } from "~/lib/resolve-entity";
+import { requireEditor } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 // HTML checkboxes don't submit a value when unchecked, so the field is
@@ -176,18 +176,6 @@ function configToColumns(parsed: z.infer<typeof configSchema>) {
   };
 }
 
-async function requireEditor() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  if (session.user.role === "viewer") {
-    throw new Error("forbidden: editor role required");
-  }
-  if (!session.user.workspaceId) {
-    throw new Error("no workspace bound to session");
-  }
-  return session;
-}
-
 /**
  * Scope all monitor reads/writes to the current workspace. The combination
  * `(monitor_id, workspace_id)` ensures a malicious or buggy client can't pass
@@ -248,19 +236,19 @@ async function syncProbeLocations(
 }
 
 export async function createMonitor(formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const parsed = parseConfigPayload(formData, "/monitors/new");
   const cols = configToColumns(parsed);
   const created = await db().transaction(async (tx) => {
     const [row] = await tx
       .insert(schema.monitors)
       .values({
-        workspaceId: session.user.workspaceId,
+        workspaceId: ws.workspaceId,
         ...cols,
       })
       .returning({ id: schema.monitors.id, slug: schema.monitors.slug });
     if (row) {
-      await syncProbeLocations(tx, row.id, session.user.workspaceId, parsed.probeLocationIds);
+      await syncProbeLocations(tx, row.id, ws.workspaceId, parsed.probeLocationIds);
     }
     return row;
   });
@@ -285,7 +273,7 @@ export async function createMonitor(formData: FormData) {
  * response-time live on their own actions.
  */
 export async function updateMonitorConfig(id: string, formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const addr = await monitorSlug(id);
   const parsed = parseConfigPayload(formData, `/monitors/${addr}/edit`);
   const cols = configToColumns(parsed);
@@ -296,8 +284,8 @@ export async function updateMonitorConfig(id: string, formData: FormData) {
         ...cols,
         updatedAt: new Date(),
       })
-      .where(monitorScope(id, session.user.workspaceId));
-    await syncProbeLocations(tx, id, session.user.workspaceId, parsed.probeLocationIds);
+      .where(monitorScope(id, ws.workspaceId));
+    await syncProbeLocations(tx, id, ws.workspaceId, parsed.probeLocationIds);
   });
   await logAudit({
     action: "monitor.updated.config",
@@ -311,7 +299,7 @@ export async function updateMonitorConfig(id: string, formData: FormData) {
 }
 
 export async function updateMonitorResponseTime(id: string, formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const addr = await monitorSlug(id);
   const raw = formData.get("payload");
   let json: unknown = {};
@@ -330,7 +318,7 @@ export async function updateMonitorResponseTime(id: string, formData: FormData) 
       timeoutMs: parsed.timeoutMs,
       updatedAt: new Date(),
     })
-    .where(monitorScope(id, session.user.workspaceId));
+    .where(monitorScope(id, ws.workspaceId));
   await logAudit({
     action: "monitor.updated.response_time",
     targetType: "monitor",
@@ -343,13 +331,13 @@ export async function updateMonitorResponseTime(id: string, formData: FormData) 
 }
 
 export async function deleteMonitor(id: string) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const [existing] = await db()
     .select({ name: schema.monitors.name })
     .from(schema.monitors)
-    .where(monitorScope(id, session.user.workspaceId))
+    .where(monitorScope(id, ws.workspaceId))
     .limit(1);
-  await db().delete(schema.monitors).where(monitorScope(id, session.user.workspaceId));
+  await db().delete(schema.monitors).where(monitorScope(id, ws.workspaceId));
   await logAudit({
     action: "monitor.deleted",
     targetType: "monitor",
@@ -365,11 +353,11 @@ export async function deleteMonitor(id: string) {
  * action toolbar. Returns toast on the listing page either way.
  */
 export async function toggleMonitorEnabled(id: string, next: boolean) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   await db()
     .update(schema.monitors)
     .set({ enabled: next, updatedAt: new Date() })
-    .where(monitorScope(id, session.user.workspaceId));
+    .where(monitorScope(id, ws.workspaceId));
   await logAudit({
     action: next ? "monitor.enabled" : "monitor.disabled",
     targetType: "monitor",
@@ -401,7 +389,7 @@ const scheduleSchema = z.object({
 });
 
 export async function updateMonitorSchedule(id: string, formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const addr = await monitorSlug(id);
   const parsed = parseOrFlash(
     scheduleSchema,
@@ -423,11 +411,11 @@ export async function updateMonitorSchedule(id: string, formData: FormData) {
       enabled,
       updatedAt: new Date(),
     })
-    .where(monitorScope(id, session.user.workspaceId));
+    .where(monitorScope(id, ws.workspaceId));
   const [m] = await db()
     .select({ name: schema.monitors.name })
     .from(schema.monitors)
-    .where(monitorScope(id, session.user.workspaceId))
+    .where(monitorScope(id, ws.workspaceId))
     .limit(1);
   await logAudit({
     action: "monitor.updated.schedule",

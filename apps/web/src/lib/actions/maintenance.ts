@@ -5,7 +5,7 @@ import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { auth } from "~/auth";
+import { requireEditor } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 const maintenanceSchema = z.object({
@@ -20,16 +20,8 @@ const maintenanceSchema = z.object({
   recurrenceUntil: z.string().datetime().optional(),
 });
 
-async function requireEditor() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  if (session.user.role === "viewer") throw new Error("forbidden");
-  if (!session.user.workspaceId) throw new Error("no workspace bound to session");
-  return session;
-}
-
 export async function createMaintenance(formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const monitorIds = formData.getAll("monitorIds").map(String);
   const rrule = (formData.get("recurrenceRule") as string | null)?.trim();
   const ruleUntil = (formData.get("recurrenceUntil") as string | null)?.trim();
@@ -55,7 +47,7 @@ export async function createMaintenance(formData: FormData) {
         .where(
           and(
             inArray(schema.monitors.id, parsed.monitorIds),
-            eq(schema.monitors.workspaceId, session.user.workspaceId),
+            eq(schema.monitors.workspaceId, ws.workspaceId),
           ),
         );
       if (valid.length !== parsed.monitorIds.length) {
@@ -66,14 +58,14 @@ export async function createMaintenance(formData: FormData) {
     const [m] = await tx
       .insert(schema.maintenances)
       .values({
-        workspaceId: session.user.workspaceId,
+        workspaceId: ws.workspaceId,
         title: parsed.title,
         description: parsed.description ?? null,
         startsAt: new Date(parsed.startsAt),
         endsAt: new Date(parsed.endsAt),
         recurrenceRule: parsed.recurrenceRule ?? null,
         recurrenceUntil: parsed.recurrenceUntil ? new Date(parsed.recurrenceUntil) : null,
-        createdBy: session.user.id,
+        createdBy: ws.userId,
       })
       .returning({ id: schema.maintenances.id });
     if (!m) throw new Error("failed to create maintenance");
@@ -98,7 +90,7 @@ export async function createMaintenance(formData: FormData) {
         : [];
 
     await tx.insert(schema.events).values({
-      workspaceId: session.user.workspaceId,
+      workspaceId: ws.workspaceId,
       type: "maintenance.scheduled",
       payload: {
         maintenance: {
@@ -120,29 +112,23 @@ export async function createMaintenance(formData: FormData) {
 
 /** Cancel an upcoming or in-progress maintenance window. */
 export async function cancelMaintenance(id: string) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   await db()
     .update(schema.maintenances)
     .set({ status: "cancelled", updatedAt: new Date() })
     .where(
-      and(
-        eq(schema.maintenances.id, id),
-        eq(schema.maintenances.workspaceId, session.user.workspaceId),
-      ),
+      and(eq(schema.maintenances.id, id), eq(schema.maintenances.workspaceId, ws.workspaceId)),
     );
   revalidatePath("/maintenance");
   redirect(withToastRedirect("/maintenance", "Maintenance cancelled", "info"));
 }
 
 export async function deleteMaintenance(id: string) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   await db()
     .delete(schema.maintenances)
     .where(
-      and(
-        eq(schema.maintenances.id, id),
-        eq(schema.maintenances.workspaceId, session.user.workspaceId),
-      ),
+      and(eq(schema.maintenances.id, id), eq(schema.maintenances.workspaceId, ws.workspaceId)),
     );
   revalidatePath("/maintenance");
   redirect(withToastRedirect("/maintenance", "Maintenance deleted", "info"));

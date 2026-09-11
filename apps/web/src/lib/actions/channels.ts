@@ -5,7 +5,7 @@ import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { auth } from "~/auth";
+import { requireEditor } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 const slackChannelSchema = z.object({
@@ -17,14 +17,6 @@ const slackChannelSchema = z.object({
 // tell "unchecked" from "not in this form".
 function readEnabled(formData: FormData): boolean {
   return formData.get("enabled") === "true";
-}
-
-async function requireEditor() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  if (session.user.role === "viewer") throw new Error("forbidden");
-  if (!session.user.workspaceId) throw new Error("no workspace bound to session");
-  return session;
 }
 
 /**
@@ -44,15 +36,15 @@ async function resolveMonitorIds(formData: FormData, workspaceId: string): Promi
 }
 
 export async function createSlackChannel(formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const parsed = parseOrFlash(slackChannelSchema, Object.fromEntries(formData), "/channels");
-  const monitorIds = await resolveMonitorIds(formData, session.user.workspaceId);
+  const monitorIds = await resolveMonitorIds(formData, ws.workspaceId);
 
   await db().transaction(async (tx) => {
     const [channel] = await tx
       .insert(schema.notificationChannels)
       .values({
-        workspaceId: session.user.workspaceId,
+        workspaceId: ws.workspaceId,
         type: "slack",
         name: parsed.name,
         config: { webhookUrl: parsed.webhookUrl },
@@ -73,9 +65,9 @@ export async function createSlackChannel(formData: FormData) {
 const updateChannelSchema = slackChannelSchema.extend({ id: z.string().uuid() });
 
 export async function updateChannel(formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const parsed = parseOrFlash(updateChannelSchema, Object.fromEntries(formData), "/channels");
-  const monitorIds = await resolveMonitorIds(formData, session.user.workspaceId);
+  const monitorIds = await resolveMonitorIds(formData, ws.workspaceId);
 
   await db().transaction(async (tx) => {
     const [channel] = await tx
@@ -89,7 +81,7 @@ export async function updateChannel(formData: FormData) {
       .where(
         and(
           eq(schema.notificationChannels.id, parsed.id),
-          eq(schema.notificationChannels.workspaceId, session.user.workspaceId),
+          eq(schema.notificationChannels.workspaceId, ws.workspaceId),
         ),
       )
       .returning({ id: schema.notificationChannels.id });
@@ -111,13 +103,13 @@ export async function updateChannel(formData: FormData) {
 }
 
 export async function deleteChannel(id: string) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   await db()
     .delete(schema.notificationChannels)
     .where(
       and(
         eq(schema.notificationChannels.id, id),
-        eq(schema.notificationChannels.workspaceId, session.user.workspaceId),
+        eq(schema.notificationChannels.workspaceId, ws.workspaceId),
       ),
     );
   revalidatePath("/channels");
@@ -125,18 +117,13 @@ export async function deleteChannel(id: string) {
 }
 
 export async function linkMonitorToChannel(monitorId: string, channelId: string) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   // Verify both belong to current workspace before linking, so a poisoned
   // request can't link cross-workspace.
   const [monitor] = await db()
     .select({ id: schema.monitors.id })
     .from(schema.monitors)
-    .where(
-      and(
-        eq(schema.monitors.id, monitorId),
-        eq(schema.monitors.workspaceId, session.user.workspaceId),
-      ),
-    )
+    .where(and(eq(schema.monitors.id, monitorId), eq(schema.monitors.workspaceId, ws.workspaceId)))
     .limit(1);
   const [channel] = await db()
     .select({ id: schema.notificationChannels.id })
@@ -144,7 +131,7 @@ export async function linkMonitorToChannel(monitorId: string, channelId: string)
     .where(
       and(
         eq(schema.notificationChannels.id, channelId),
-        eq(schema.notificationChannels.workspaceId, session.user.workspaceId),
+        eq(schema.notificationChannels.workspaceId, ws.workspaceId),
       ),
     )
     .limit(1);

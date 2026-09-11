@@ -3,7 +3,7 @@
 import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth } from "~/auth";
+import { getCurrentWorkspace } from "~/lib/workspace";
 
 const API_URL = process.env.API_URL ?? "http://localhost:5002";
 const PROBE_API_KEY = process.env.PROBE_API_KEY ?? "";
@@ -15,9 +15,8 @@ const PROBE_API_KEY = process.env.PROBE_API_KEY ?? "";
  * sweep through DevTools.
  */
 export async function runRetentionAction() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  if (session.user.role !== "admin") {
+  const ws = await getCurrentWorkspace();
+  if (ws.role !== "admin") {
     redirect(withToastRedirect("/settings/system", "Admin role required", "error"));
   }
   const res = await fetch(`${API_URL}/v1/system/scheduler/run`, {

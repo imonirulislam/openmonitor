@@ -5,9 +5,9 @@ import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { auth } from "~/auth";
 import { logAudit } from "~/lib/audit";
 import { incidentNumber } from "~/lib/resolve-entity";
+import { requireEditor } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
 
 const createIncidentSchema = z.object({
@@ -25,16 +25,8 @@ const updateSchema = z.object({
   message: z.string().min(1).max(5000),
 });
 
-async function requireEditor() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  if (session.user.role === "viewer") throw new Error("forbidden");
-  if (!session.user.workspaceId) throw new Error("no workspace bound to session");
-  return session;
-}
-
 export async function createIncident(formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const monitorIds = formData.getAll("monitorIds").map(String);
   const parsed = parseOrFlash(
     createIncidentSchema,
@@ -61,7 +53,7 @@ export async function createIncident(formData: FormData) {
         .where(
           and(
             inArray(schema.monitors.id, parsed.monitorIds),
-            eq(schema.monitors.workspaceId, session.user.workspaceId),
+            eq(schema.monitors.workspaceId, ws.workspaceId),
           ),
         );
       if (valid.length !== parsed.monitorIds.length) {
@@ -72,12 +64,12 @@ export async function createIncident(formData: FormData) {
     const [incident] = await tx
       .insert(schema.incidents)
       .values({
-        workspaceId: session.user.workspaceId,
-        number: await nextIncidentNumber(tx, session.user.workspaceId),
+        workspaceId: ws.workspaceId,
+        number: await nextIncidentNumber(tx, ws.workspaceId),
         title: parsed.title,
         severity: parsed.severity,
         status: parsed.status,
-        createdBy: session.user.id,
+        createdBy: ws.userId,
       })
       .returning({ id: schema.incidents.id, number: schema.incidents.number });
     if (!incident) throw new Error("failed to create incident");
@@ -86,7 +78,7 @@ export async function createIncident(formData: FormData) {
       incidentId: incident.id,
       status: parsed.status,
       message: parsed.message,
-      createdBy: session.user.id,
+      createdBy: ws.userId,
     });
 
     if (parsed.monitorIds.length > 0) {
@@ -109,7 +101,7 @@ export async function createIncident(formData: FormData) {
         : [];
 
     await tx.insert(schema.events).values({
-      workspaceId: session.user.workspaceId,
+      workspaceId: ws.workspaceId,
       type: "incident.created",
       payload: {
         incident: {
@@ -141,7 +133,7 @@ export async function createIncident(formData: FormData) {
 }
 
 export async function postIncidentUpdate(incidentId: string, formData: FormData) {
-  const session = await requireEditor();
+  const ws = await requireEditor();
   const addr = await incidentNumber(incidentId);
   const parsed = parseOrFlash(
     updateSchema,
@@ -158,10 +150,7 @@ export async function postIncidentUpdate(incidentId: string, formData: FormData)
       .select()
       .from(schema.incidents)
       .where(
-        and(
-          eq(schema.incidents.id, incidentId),
-          eq(schema.incidents.workspaceId, session.user.workspaceId),
-        ),
+        and(eq(schema.incidents.id, incidentId), eq(schema.incidents.workspaceId, ws.workspaceId)),
       )
       .limit(1);
     if (!incident) throw new Error("incident not found in workspace");
@@ -170,7 +159,7 @@ export async function postIncidentUpdate(incidentId: string, formData: FormData)
       incidentId,
       status: parsed.status,
       message: parsed.message,
-      createdBy: session.user.id,
+      createdBy: ws.userId,
     });
 
     const updates: Partial<typeof schema.incidents.$inferInsert> = {
@@ -188,7 +177,7 @@ export async function postIncidentUpdate(incidentId: string, formData: FormData)
       .where(eq(schema.incidentMonitors.incidentId, incidentId));
 
     await tx.insert(schema.events).values({
-      workspaceId: session.user.workspaceId,
+      workspaceId: ws.workspaceId,
       type: parsed.status === "resolved" ? "incident.resolved" : "incident.updated",
       payload: {
         incident: {
