@@ -45,6 +45,7 @@ const componentSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).nullable(),
   staticStatus: z.enum(["up", "down", "degraded", "unknown"]).nullable(),
+  surface: z.enum(["status", "metrics", "both"]).default("status"),
 });
 
 const groupSchema = z.object({
@@ -203,6 +204,8 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
             name: c.name,
             description: c.description,
             staticStatus: c.type === "static" ? (c.staticStatus ?? "up") : null,
+            // Only a monitor has response times to publish.
+            surface: c.type === "monitor" ? c.surface : "status",
             groupId: entry.groupId,
             position: entry.position,
             groupPosition: entry.groupPosition,
@@ -231,6 +234,7 @@ export async function updatePageComponentsTree(pageId: string, formData: FormDat
           name: c.name,
           description: c.description,
           staticStatus: c.type === "static" ? (c.staticStatus ?? "up") : null,
+          surface: c.type === "monitor" ? c.surface : "status",
           groupId: entry.groupId,
           position: entry.position,
           groupPosition: entry.groupPosition,

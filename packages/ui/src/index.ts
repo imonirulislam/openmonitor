@@ -70,6 +70,7 @@ export {
   type MetricCardVariant,
 } from "./metric-card";
 export { Note } from "./note";
+export { PercentileChart, type PercentilePoint } from "./percentile-chart";
 export { RegionLatencyChart, type RegionLatencyPoint } from "./region-latency-chart";
 export {
   Section,

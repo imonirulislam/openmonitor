@@ -29,6 +29,7 @@ export default async function StatusPageComponents({
       name: schema.pageComponents.name,
       description: schema.pageComponents.description,
       staticStatus: schema.pageComponents.staticStatus,
+      surface: schema.pageComponents.surface,
       groupId: schema.pageComponents.groupId,
       position: schema.pageComponents.position,
       groupPosition: schema.pageComponents.groupPosition,

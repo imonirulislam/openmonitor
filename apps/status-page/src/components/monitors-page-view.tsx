@@ -1,25 +1,21 @@
-import {
-  type MonitorHistory,
-  NotFoundError,
-  RequiresPasswordError,
-  type StatusComponent,
-} from "@openmonitor/api-client";
+import { NotFoundError, RequiresPasswordError } from "@openmonitor/api-client";
 import { SectionMetaTitle, Separator } from "@openmonitor/ui";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { MonitorListRow } from "~/components/monitor-list-row";
+import { LazyPercentileChart } from "~/components/lazy-percentile-chart";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";
-import { LocalTzHistories } from "~/lib/use-local-tz-history";
 
 const TITLE = process.env.NEXT_PUBLIC_STATUS_TITLE ?? "OpenMonitor";
 
-type MonitorStatus = "up" | "down" | "degraded" | "unknown";
-
 /**
- * Renders the monitors-list tab body for a given (workspace, page) pair, with
- * per-monitor links that resolve via `monitorHref` to the right detail route
- * (root or slug-scoped).
+ * Response times for the dependencies a page chooses to publish.
+ *
+ * Deliberately not the component list: these are services whose speed is worth
+ * showing — often third parties — and whose outage must not read as this
+ * page's own. That separation lives in `page_components.surface`; the Status
+ * tab renders the `status` set, this one the `metrics` set.
  */
 export async function MonitorsPageView({
   workspace,
@@ -49,66 +45,48 @@ export async function MonitorsPageView({
     throw err;
   }
 
-  const monitorComponents = summary.components.filter(
-    (c): c is StatusComponent & { monitorSlug: string } =>
-      c.type === "monitor" && c.monitorSlug !== null,
+  const monitors = summary.metricMonitors;
+  const series = await api().getMonitorPercentiles(
+    monitors.map((m) => m.monitorSlug),
+    { hours: 24, workspace, page, host, unlock },
   );
-  const histories = await api().getMonitorHistories(
-    monitorComponents.map((c) => c.monitorSlug),
-    { days: 90, workspace, page, host, unlock },
-  );
-  const historyBySlug = new Map<string, MonitorHistory>(histories.map((h) => [h.monitor.slug, h]));
-
-  const incidentCountBySlug = new Map<string, number>();
-  for (const i of [...summary.incidents, ...summary.pastIncidents]) {
-    for (const a of i.affected) {
-      incidentCountBySlug.set(a.slug, (incidentCountBySlug.get(a.slug) ?? 0) + 1);
-    }
-  }
+  const bySlug = new Map(series.map((s) => [s.monitor.slug, s.buckets]));
 
   return (
-    <LocalTzHistories
-      slugs={monitorComponents.map((c) => c.monitorSlug)}
-      serverTz={histories[0]?.tz ?? "UTC"}
-      scope={{ workspace, page, host, unlock }}
-    >
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 sm:py-14">
-        <header>
-          <h1 className="font-semibold text-2xl tracking-tight">{summary.page.name ?? TITLE}</h1>
-          <p className="mt-1 text-muted-foreground text-sm">
-            {monitorComponents.length} monitored{" "}
-            {monitorComponents.length === 1 ? "service" : "services"}.
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 sm:py-14">
+      <header>
+        <h1 className="font-semibold text-2xl tracking-tight">{summary.page.name ?? TITLE}</h1>
+        <p className="mt-1 text-muted-foreground text-sm">
+          Response times for the services this page publishes.
+        </p>
+      </header>
+
+      <SectionMetaTitle meta="Last 24 hours">Monitors</SectionMetaTitle>
+      <Separator />
+
+      <div className="flex flex-col gap-6">
+        {monitors.map((m) => (
+          <Link
+            key={m.id}
+            href={monitorHref(m.monitorSlug)}
+            className="-mx-3 -my-2 flex flex-col gap-2 rounded-lg border border-transparent px-3 py-2 transition-colors hover:border-border hover:bg-muted/40"
+          >
+            <div className="flex flex-wrap items-baseline gap-2">
+              <span className="font-medium text-sm">{m.name}</span>
+              {m.description ? (
+                <span className="text-muted-foreground text-xs">{m.description}</span>
+              ) : null}
+            </div>
+            <LazyPercentileChart data={bySlug.get(m.monitorSlug) ?? []} />
+          </Link>
+        ))}
+        {monitors.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            Nothing published here yet. A component set to show on the metrics tab appears with its
+            response times.
           </p>
-        </header>
-
-        <SectionMetaTitle meta="Last 90 days">All monitors</SectionMetaTitle>
-        <Separator />
-
-        <div className="flex flex-col gap-4">
-          {monitorComponents.map((c) => {
-            const initialHistory = historyBySlug.get(c.monitorSlug);
-            if (!initialHistory) return null;
-            return (
-              <MonitorListRow
-                key={c.id}
-                monitor={{
-                  id: c.id,
-                  slug: c.monitorSlug,
-                  name: c.name,
-                  description: c.description,
-                  status: c.status as MonitorStatus,
-                }}
-                initialHistory={initialHistory}
-                incidentCount={incidentCountBySlug.get(c.monitorSlug) ?? 0}
-                href={monitorHref(c.monitorSlug)}
-              />
-            );
-          })}
-          {monitorComponents.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No monitors configured.</p>
-          ) : null}
-        </div>
-      </main>
-    </LocalTzHistories>
+        ) : null}
+      </div>
+    </main>
   );
 }

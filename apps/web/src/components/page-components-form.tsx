@@ -98,6 +98,7 @@ export function PageComponentsForm({
       name: "",
       description: null,
       staticStatus: "up",
+      surface: "status",
     };
   }
 
@@ -112,6 +113,7 @@ export function PageComponentsForm({
       name: m.name,
       description: m.description,
       staticStatus: null,
+      surface: "status",
     };
   }
 

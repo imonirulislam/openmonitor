@@ -1,6 +1,9 @@
+import { GithubIcon } from "lucide-react";
 import { TimeZoneLabel } from "./time-zone-label";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5002";
+const REPO_URL = process.env.NEXT_PUBLIC_REPO_URL ?? "https://github.com/imonirulislam/openmonitor";
+const MARKETING_URL = process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://openmonitor.app";
 
 /**
  * One-line footer: page identity and zone on the left, links and attribution
@@ -47,8 +50,19 @@ export function SiteFooter({
             </span>
           ))}
           <a
-            href="https://github.com/imonirulislam/openmonitor"
+            href={REPO_URL}
             rel="noreferrer"
+            target="_blank"
+            aria-label="OpenMonitor on GitHub"
+            className="transition-colors hover:text-foreground"
+          >
+            <GithubIcon className="size-3.5" />
+          </a>
+          <span aria-hidden>·</span>
+          <a
+            href={MARKETING_URL}
+            rel="noreferrer"
+            target="_blank"
             className="transition-colors hover:text-foreground"
           >
             Powered by OpenMonitor

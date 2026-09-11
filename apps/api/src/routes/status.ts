@@ -5,7 +5,13 @@ import rrulePkg from "rrule";
 
 const { rrulestr } = rrulePkg as unknown as typeof import("rrule");
 
-import { type DayBucket, dailyBucketsMany, latencyBuckets } from "@openmonitor/clickhouse";
+import {
+  type DayBucket,
+  dailyBucketsMany,
+  type LatencyPercentileBucket,
+  latencyBuckets,
+  latencyPercentilesMany,
+} from "@openmonitor/clickhouse";
 import { and, asc, db, desc, eq, gte, inArray, schema, sql } from "@openmonitor/db";
 import { resolveStatusPage } from "../lib/resolve-page";
 import { verifyUnlockToken } from "../lib/unlock-token";
@@ -60,6 +66,7 @@ statusRoutes.get("/v1/status", async (c) => {
     .select({
       id: schema.pageComponents.id,
       type: schema.pageComponents.type,
+      surface: schema.pageComponents.surface,
       monitorSlug: schema.monitors.slug,
       monitorEnabled: schema.monitors.enabled,
       name: schema.pageComponents.name,
@@ -83,8 +90,15 @@ statusRoutes.get("/v1/status", async (c) => {
 
   // Hide monitor-typed components whose underlying monitor has been disabled.
   // Static components always surface.
-  const visibleComponents = componentRows.filter(
+  const enabledComponents = componentRows.filter(
     (c) => c.type === "static" || c.monitorEnabled === true,
+  );
+  // The uptime list, and the only set the page's overall status is computed
+  // from. A metrics-only component is a dependency we show without claiming
+  // its outage as ours.
+  const visibleComponents = enabledComponents.filter((c) => c.surface !== "metrics");
+  const metricComponents = enabledComponents.filter(
+    (c) => c.surface !== "status" && c.type === "monitor" && c.monitorSlug,
   );
 
   const componentGroupRows = await conn
@@ -337,6 +351,12 @@ statusRoutes.get("/v1/status", async (c) => {
       status: c.type === "monitor" ? (c.monitorStatus ?? "unknown") : (c.staticStatus ?? "unknown"),
       lastCheckedAt: c.lastCheckedAt?.toISOString() ?? null,
       groupId: c.groupId,
+    })),
+    metricMonitors: metricComponents.map((c) => ({
+      id: c.id,
+      monitorSlug: c.monitorSlug,
+      name: c.name,
+      description: c.description,
     })),
     componentGroups: componentGroupRows.map((g) => ({
       id: g.id,
@@ -616,6 +636,46 @@ statusRoutes.get("/v1/monitors/:slug/history", async (c) => {
 
   const [history] = await buildHistories(conn, page.workspaceId, [monitor], days, tz);
   return c.json(history);
+});
+
+// Registered before the `:slug` routes, same as the history batch.
+statusRoutes.get("/v1/monitors/latency", async (c) => {
+  const ctx = await historyRequest(c);
+  if ("denied" in ctx) return ctx.denied;
+  const { conn, page } = ctx;
+  const hours = Math.min(Math.max(Number(c.req.query("hours") ?? 24), 1), 168);
+
+  const slugs = [
+    ...new Set(
+      (c.req.query("slugs") ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ];
+  const monitors = await monitorsOnPage(conn, page, slugs);
+  const bySlug = new Map(monitors.map((m) => [m.slug, m]));
+  const ordered = slugs.map((s) => bySlug.get(s)).filter((m) => m !== undefined);
+  if (ordered.length === 0) return c.json({ hours, monitors: [] });
+
+  const buckets = await latencyPercentilesMany(
+    ordered.map((m) => m.id),
+    hours,
+  );
+  const byMonitor = new Map<string, LatencyPercentileBucket[]>();
+  for (const row of buckets) {
+    const list = byMonitor.get(row.monitorId);
+    if (list) list.push(row);
+    else byMonitor.set(row.monitorId, [row]);
+  }
+
+  return c.json({
+    hours,
+    monitors: ordered.map((m) => ({
+      monitor: { id: m.id, slug: m.slug, name: m.name },
+      buckets: (byMonitor.get(m.id) ?? []).map(({ monitorId: _id, ...b }) => b),
+    })),
+  });
 });
 
 statusRoutes.get("/v1/monitors/:slug/latency", async (c) => {

@@ -25,6 +25,8 @@ export type ComponentDraft = {
   name: string;
   description: string | null;
   staticStatus: "up" | "down" | "degraded" | "unknown" | null;
+  /** Which public tab this shows on. Monitor components only. */
+  surface: "status" | "metrics" | "both";
 };
 
 export type GroupDraft = {
@@ -48,6 +50,7 @@ export type LoadedComponent = {
   name: string;
   description: string | null;
   staticStatus: "up" | "down" | "degraded" | "unknown" | null;
+  surface: "status" | "metrics" | "both";
   groupId: string | null;
   position: number;
   groupPosition: number;
@@ -100,6 +103,7 @@ export function buildInitialState(loaded: LoadedComponent[], groups: LoadedGroup
       name: c.name,
       description: c.description,
       staticStatus: c.staticStatus,
+      surface: c.surface,
     };
   }
 
@@ -151,5 +155,6 @@ export function serializeComponent(c: ComponentDraft) {
     name: c.name,
     description: c.description,
     staticStatus: c.type === "static" ? c.staticStatus : null,
+    surface: c.surface,
   };
 }

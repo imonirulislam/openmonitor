@@ -59,9 +59,24 @@ export type StatusComponentGroup = {
   defaultOpen: boolean;
 };
 
+/** A dependency shown on the metrics tab only — never counted as page status. */
+export type MetricMonitor = {
+  id: string;
+  monitorSlug: string;
+  name: string;
+  description: string | null;
+};
+
+export type LatencyPercentiles = {
+  monitor: { id: string; slug: string; name: string };
+  buckets: { bucket: string; p50: number; p90: number; p99: number }[];
+};
+
 export type StatusSummary = {
   page: StatusPageBranding;
   components: StatusComponent[];
+  /** Monitors on the metrics tab. Empty unless a component opts in. */
+  metricMonitors: MetricMonitor[];
   componentGroups: StatusComponentGroup[];
   incidents: StatusIncident[];
   maintenances: StatusMaintenance[];
@@ -159,6 +174,32 @@ export class ApiClient {
   }
 
   /** Histories for several monitors in one request; keyed by the caller's slug order. */
+  /** Latency percentiles for the metrics tab, one request for the whole page. */
+  async getMonitorPercentiles(
+    slugs: string[],
+    options: {
+      hours?: number;
+      workspace?: string;
+      page?: string;
+      host?: string;
+      unlock?: string;
+    } = {},
+  ): Promise<LatencyPercentiles[]> {
+    if (slugs.length === 0) return [];
+    const params = new URLSearchParams({
+      slugs: slugs.join(","),
+      hours: String(options.hours ?? 24),
+    });
+    if (options.workspace) params.set("workspace", options.workspace);
+    if (options.page) params.set("page", options.page);
+    if (options.host) params.set("host", options.host);
+    if (options.unlock) params.set("unlock", options.unlock);
+    const res = await this.get<{ monitors: LatencyPercentiles[] }>(
+      `/v1/monitors/latency?${params.toString()}`,
+    );
+    return res.monitors;
+  }
+
   async getMonitorHistories(
     slugs: string[],
     options: {

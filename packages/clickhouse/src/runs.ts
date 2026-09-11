@@ -185,6 +185,46 @@ export type LatencyBucket = {
  * p95 is the one aggregate that can't be derived from a rollup — percentiles
  * aren't additive — so it reads raw rows. ClickHouse computes it natively.
  */
+export type LatencyPercentileBucket = {
+  monitorId: string;
+  bucket: string;
+  p50: number;
+  p90: number;
+  p99: number;
+};
+
+/**
+ * p50/p90/p99 per bucket for several monitors at once — the public metrics
+ * tab. Separate from `latencyBuckets`, which the admin chart reads for avg/p95.
+ */
+export async function latencyPercentilesMany(
+  monitorIds: string[],
+  hours: number,
+  bucketMinutes = 30,
+): Promise<LatencyPercentileBucket[]> {
+  if (monitorIds.length === 0) return [];
+  return rows<LatencyPercentileBucket>(
+    `
+    SELECT
+      toString(monitor_id) AS monitorId,
+      formatDateTime(
+        toStartOfInterval(checked_at, INTERVAL {bucketMinutes:UInt32} MINUTE),
+        '%Y-%m-%dT%H:%i:00Z'
+      ) AS bucket,
+      toUInt32(round(ifNotFinite(quantile(0.5)(latency_ms), 0)))  AS p50,
+      toUInt32(round(ifNotFinite(quantile(0.9)(latency_ms), 0)))  AS p90,
+      toUInt32(round(ifNotFinite(quantile(0.99)(latency_ms), 0))) AS p99
+    FROM monitor_runs
+    WHERE monitor_id IN {monitorIds:Array(UUID)}
+      AND checked_at >= now() - INTERVAL {hours:UInt32} HOUR
+      AND status != 'down'
+    GROUP BY monitor_id, bucket
+    ORDER BY monitor_id, bucket ASC
+    `,
+    { monitorIds, hours, bucketMinutes },
+  );
+}
+
 export async function latencyBuckets(monitorId: string, hours: number): Promise<LatencyBucket[]> {
   return rows<LatencyBucket>(
     `

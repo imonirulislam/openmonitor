@@ -220,6 +220,18 @@ export const statusPages = pgTable(
 // header. Replaces the original status_page_monitors join table.
 
 export const pageComponentTypeEnum = pgEnum("page_component_type", ["monitor", "static"]);
+/**
+ * Which tab a component appears on. `status` is the uptime list and the only
+ * one that counts toward the page's overall status; `metrics` is the latency
+ * tab, for dependencies you want visible without their outage reading as
+ * yours. openstatus couples the two — a public monitor is always a status
+ * component too — which is wrong for third-party services.
+ */
+export const pageComponentSurfaceEnum = pgEnum("page_component_surface", [
+  "status",
+  "metrics",
+  "both",
+]);
 
 export const pageComponentGroups = pgTable(
   "page_component_groups",
@@ -250,6 +262,7 @@ export const pageComponents = pgTable(
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
     type: pageComponentTypeEnum("type").notNull().default("monitor"),
+    surface: pageComponentSurfaceEnum("surface").notNull().default("status"),
     // monitor_id is required when type='monitor', null when type='static'. The
     // CHECK constraint below enforces this. ON DELETE CASCADE keeps a
     // monitor delete from leaving orphan monitor-typed components.

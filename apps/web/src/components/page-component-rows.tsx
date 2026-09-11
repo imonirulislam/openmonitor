@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, cn, Input } from "@openmonitor/ui";
+import { Button, Card, cn, Input, Select } from "@openmonitor/ui";
 import { Link2Icon, Link2OffIcon, Trash2Icon } from "lucide-react";
 import { AddComponentMenu } from "./page-component-add-menu";
 import {
@@ -63,6 +63,18 @@ export function ComponentRow({
           </>
         )}
       </div>
+      {isStatic ? null : (
+        <Select
+          value={component.surface}
+          onChange={(e) => onChange({ surface: e.target.value as ComponentDraft["surface"] })}
+          aria-label="Where it shows"
+          className="h-8 w-36 shrink-0 text-xs"
+        >
+          <option value="status">Status only</option>
+          <option value="metrics">Metrics only</option>
+          <option value="both">Status + metrics</option>
+        </Select>
+      )}
       <span
         aria-label={`status ${component.monitorStatus ?? component.staticStatus ?? "unknown"}`}
         className={cn("size-2 shrink-0 rounded-full", dotClass)}
