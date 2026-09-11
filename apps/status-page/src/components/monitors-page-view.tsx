@@ -1,4 +1,9 @@
-import { NotFoundError, RequiresPasswordError } from "@openmonitor/api-client";
+import {
+  type MonitorHistory,
+  NotFoundError,
+  RequiresPasswordError,
+  type StatusComponent,
+} from "@openmonitor/api-client";
 import { SectionMetaTitle, Separator } from "@openmonitor/ui";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -44,13 +49,14 @@ export async function MonitorsPageView({
   }
 
   const monitorComponents = summary.components.filter(
-    (c) => c.type === "monitor" && c.monitorSlug !== null,
+    (c): c is StatusComponent & { monitorSlug: string } =>
+      c.type === "monitor" && c.monitorSlug !== null,
   );
-  const histories = await Promise.all(
-    monitorComponents.map((c) =>
-      api().getMonitorHistory(c.monitorSlug!, { days: 90, workspace, page, host, unlock }),
-    ),
+  const histories = await api().getMonitorHistories(
+    monitorComponents.map((c) => c.monitorSlug),
+    { days: 90, workspace, page, host, unlock },
   );
+  const historyBySlug = new Map<string, MonitorHistory>(histories.map((h) => [h.monitor.slug, h]));
 
   const incidentCountBySlug = new Map<string, number>();
   for (const i of [...summary.incidents, ...summary.pastIncidents]) {
@@ -73,22 +79,22 @@ export async function MonitorsPageView({
       <Separator />
 
       <div className="flex flex-col gap-4">
-        {monitorComponents.map((c, idx) => {
-          const initialHistory = histories[idx];
+        {monitorComponents.map((c) => {
+          const initialHistory = historyBySlug.get(c.monitorSlug);
           if (!initialHistory) return null;
           return (
             <MonitorListRow
               key={c.id}
               monitor={{
                 id: c.id,
-                slug: c.monitorSlug!,
+                slug: c.monitorSlug,
                 name: c.name,
                 description: c.description,
                 status: c.status as MonitorStatus,
               }}
               initialHistory={initialHistory}
-              incidentCount={incidentCountBySlug.get(c.monitorSlug!) ?? 0}
-              href={monitorHref(c.monitorSlug!)}
+              incidentCount={incidentCountBySlug.get(c.monitorSlug) ?? 0}
+              href={monitorHref(c.monitorSlug)}
             />
           );
         })}

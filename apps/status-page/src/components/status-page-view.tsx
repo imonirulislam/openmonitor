@@ -66,15 +66,11 @@ export async function StatusPageView({
     (c): c is StatusComponent & { monitorSlug: string } =>
       c.type === "monitor" && c.monitorSlug !== null,
   );
-  const histories = await Promise.all(
-    monitorComponents.map((c) =>
-      api().getMonitorHistory(c.monitorSlug, { days: 90, workspace, page, host, unlock }),
-    ),
+  const histories = await api().getMonitorHistories(
+    monitorComponents.map((c) => c.monitorSlug),
+    { days: 90, workspace, page, host, unlock },
   );
-  const historyBySlug = new Map<string, MonitorHistory>();
-  for (let i = 0; i < monitorComponents.length; i++) {
-    historyBySlug.set(monitorComponents[i]!.monitorSlug, histories[i]!);
-  }
+  const historyBySlug = new Map<string, MonitorHistory>(histories.map((h) => [h.monitor.slug, h]));
 
   const overall = computeOverall(summary.components.map((c) => c.status));
   const variant = toStatusVariant(overall);

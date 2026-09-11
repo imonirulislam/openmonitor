@@ -86,6 +86,53 @@ export type DayBucket = {
  * Days with no probes still appear, with zeros — the tracker renders a gap
  * rather than silently shortening the window.
  */
+export type DayBucketFor = DayBucket & { monitorId: string };
+
+/** Daily buckets for several monitors in one query, for pages listing many. */
+export async function dailyBucketsMany(
+  monitorIds: string[],
+  days: number,
+  tz: string,
+): Promise<DayBucketFor[]> {
+  if (monitorIds.length === 0) return [];
+  return rows<DayBucketFor>(
+    `
+    SELECT
+      toString(m.monitor_id)         AS monitorId,
+      formatDateTime(d, '%Y-%m-%d')  AS date,
+      toUInt32(sum(b.total))         AS total,
+      toUInt32(sum(b.ok))            AS ok,
+      toUInt32(sum(b.degraded))      AS degraded,
+      toUInt32(sum(b.down))          AS down,
+      toUInt32(sum(b.unknown))       AS unknown
+    FROM (
+      SELECT arrayJoin({monitorIds:Array(UUID)}) AS monitor_id
+    ) AS m
+    CROSS JOIN (
+      SELECT toDate(toTimeZone(now(), {tz:String})) - arrayJoin(range({days:UInt32})) AS d
+    ) AS days_axis
+    LEFT JOIN (
+      SELECT
+        monitor_id,
+        toDate(toTimeZone(checked_at, {tz:String})) AS d,
+        count()                      AS total,
+        countIf(status = 'up')       AS ok,
+        countIf(status = 'degraded') AS degraded,
+        countIf(status = 'down')     AS down,
+        countIf(status = 'unknown')  AS unknown
+      FROM monitor_runs
+      WHERE monitor_id IN {monitorIds:Array(UUID)}
+        AND checked_at >= toDateTime(
+              toDate(toTimeZone(now(), {tz:String})) - ({days:UInt32} - 1), {tz:String})
+      GROUP BY monitor_id, d
+    ) AS b USING (monitor_id, d)
+    GROUP BY m.monitor_id, d
+    ORDER BY m.monitor_id, d ASC
+    `,
+    { monitorIds, days, tz },
+  );
+}
+
 export async function dailyBuckets(
   monitorId: string,
   days: number,

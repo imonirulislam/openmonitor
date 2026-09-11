@@ -158,6 +158,34 @@ export class ApiClient {
     return this.get<StatusSummary>(`/v1/status${qs ? `?${qs}` : ""}`);
   }
 
+  /** Histories for several monitors in one request; keyed by the caller's slug order. */
+  async getMonitorHistories(
+    slugs: string[],
+    options: {
+      days?: number;
+      tz?: string;
+      workspace?: string;
+      page?: string;
+      host?: string;
+      unlock?: string;
+    } = {},
+  ): Promise<MonitorHistory[]> {
+    if (slugs.length === 0) return [];
+    const params = new URLSearchParams({
+      slugs: slugs.join(","),
+      days: String(options.days ?? 90),
+    });
+    if (options.tz) params.set("tz", options.tz);
+    if (options.workspace) params.set("workspace", options.workspace);
+    if (options.page) params.set("page", options.page);
+    if (options.host) params.set("host", options.host);
+    if (options.unlock) params.set("unlock", options.unlock);
+    const res = await this.get<{ monitors: MonitorHistory[] }>(
+      `/v1/monitors/history?${params.toString()}`,
+    );
+    return res.monitors;
+  }
+
   async getMonitorHistory(
     slug: string,
     options: {
