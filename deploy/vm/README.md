@@ -121,6 +121,10 @@ cp deploy/vm/.env.example deploy/vm/.env && $EDITOR deploy/vm/.env
 docker compose -f deploy/vm/docker-compose.yml --env-file deploy/vm/.env up -d --build
 ```
 
+Upgrading is the same command after `git pull` — always with `--build`. The service
+entrypoints run binaries out of the image's root `node_modules/.bin`, so a restart alone
+leaves a container running the old code against the new compose file.
+
 Point an A record at the box for `CLICKHOUSE_HOSTNAME` **before** starting, or Caddy's first
 certificate attempt fails and it backs off.
 

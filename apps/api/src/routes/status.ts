@@ -587,6 +587,8 @@ statusRoutes.get("/v1/monitors/history", async (c) => {
   if ("denied" in ctx) return ctx.denied;
   const { conn, page, days, tz } = ctx;
 
+  // No cap on the list: page_components already bounds it to one page's
+  // monitors, and truncating here would blank out rows with no error.
   const slugs = [
     ...new Set(
       (c.req.query("slugs") ?? "")
@@ -594,7 +596,7 @@ statusRoutes.get("/v1/monitors/history", async (c) => {
         .map((s) => s.trim())
         .filter(Boolean),
     ),
-  ].slice(0, 100);
+  ];
 
   const monitors = await monitorsOnPage(conn, page, slugs);
   // Preserve the caller's order so it can zip the response against its list.
