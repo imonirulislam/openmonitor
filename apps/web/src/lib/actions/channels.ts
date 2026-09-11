@@ -1,6 +1,6 @@
 "use server";
 
-import { and, db, eq, schema } from "@openmonitor/db";
+import { and, db, eq, inArray, schema } from "@openmonitor/db";
 import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -11,8 +11,13 @@ import { parseOrFlash } from "~/lib/zod-flash";
 const slackChannelSchema = z.object({
   name: z.string().min(1).max(200),
   webhookUrl: z.string().url().startsWith("https://hooks.slack.com/"),
-  enabled: z.coerce.boolean().default(true),
 });
+
+// See monitors.ts — an unchecked box submits nothing, so a Zod default can't
+// tell "unchecked" from "not in this form".
+function readEnabled(formData: FormData): boolean {
+  return formData.get("enabled") === "true";
+}
 
 async function requireEditor() {
   const session = await auth();
@@ -22,20 +27,87 @@ async function requireEditor() {
   return session;
 }
 
+/**
+ * Monitor ids from a checkbox group, checked against the workspace in one
+ * query. A partial match means the request named something it can't see, so
+ * refuse it rather than linking the subset.
+ */
+async function resolveMonitorIds(formData: FormData, workspaceId: string): Promise<string[]> {
+  const ids = [...new Set(formData.getAll("monitorIds").map(String).filter(Boolean))];
+  if (ids.length === 0) return [];
+  const rows = await db()
+    .select({ id: schema.monitors.id })
+    .from(schema.monitors)
+    .where(and(inArray(schema.monitors.id, ids), eq(schema.monitors.workspaceId, workspaceId)));
+  if (rows.length !== ids.length) throw new Error("forbidden");
+  return rows.map((r) => r.id);
+}
+
 export async function createSlackChannel(formData: FormData) {
   const session = await requireEditor();
   const parsed = parseOrFlash(slackChannelSchema, Object.fromEntries(formData), "/channels");
-  await db()
-    .insert(schema.notificationChannels)
-    .values({
-      workspaceId: session.user.workspaceId,
-      type: "slack",
-      name: parsed.name,
-      config: { webhookUrl: parsed.webhookUrl },
-      enabled: parsed.enabled,
-    });
+  const monitorIds = await resolveMonitorIds(formData, session.user.workspaceId);
+
+  await db().transaction(async (tx) => {
+    const [channel] = await tx
+      .insert(schema.notificationChannels)
+      .values({
+        workspaceId: session.user.workspaceId,
+        type: "slack",
+        name: parsed.name,
+        config: { webhookUrl: parsed.webhookUrl },
+      })
+      .returning({ id: schema.notificationChannels.id });
+    if (!channel) throw new Error("failed to create channel");
+    if (monitorIds.length > 0) {
+      await tx
+        .insert(schema.monitorChannels)
+        .values(monitorIds.map((monitorId) => ({ monitorId, channelId: channel.id })));
+    }
+  });
+
   revalidatePath("/channels");
   redirect(withToastRedirect("/channels", `Added channel “${parsed.name}”`));
+}
+
+const updateChannelSchema = slackChannelSchema.extend({ id: z.string().uuid() });
+
+export async function updateChannel(formData: FormData) {
+  const session = await requireEditor();
+  const parsed = parseOrFlash(updateChannelSchema, Object.fromEntries(formData), "/channels");
+  const monitorIds = await resolveMonitorIds(formData, session.user.workspaceId);
+
+  await db().transaction(async (tx) => {
+    const [channel] = await tx
+      .update(schema.notificationChannels)
+      .set({
+        name: parsed.name,
+        config: { webhookUrl: parsed.webhookUrl },
+        enabled: readEnabled(formData),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.notificationChannels.id, parsed.id),
+          eq(schema.notificationChannels.workspaceId, session.user.workspaceId),
+        ),
+      )
+      .returning({ id: schema.notificationChannels.id });
+    if (!channel) throw new Error("forbidden");
+
+    // Replace the subscription set wholesale — unchecking everything has to
+    // mean "no monitors", not "leave the links alone".
+    await tx.delete(schema.monitorChannels).where(eq(schema.monitorChannels.channelId, channel.id));
+    if (monitorIds.length > 0) {
+      await tx
+        .insert(schema.monitorChannels)
+        .values(monitorIds.map((monitorId) => ({ monitorId, channelId: channel.id })));
+    }
+  });
+
+  revalidatePath("/channels");
+  revalidatePath("/monitors");
+  redirect(withToastRedirect("/channels", `Saved “${parsed.name}”`));
 }
 
 export async function deleteChannel(id: string) {

@@ -20,12 +20,9 @@ import {
   SectionTitle,
 } from "@openmonitor/ui";
 import { TrashIcon } from "lucide-react";
-import {
-  createSlackChannel,
-  deleteChannel,
-  linkMonitorToChannel,
-  unlinkMonitorFromChannel,
-} from "~/lib/actions/channels";
+import { ChannelMonitorPicker } from "~/components/channel-monitor-picker";
+import { ChannelSheet } from "~/components/channel-sheet";
+import { createSlackChannel, deleteChannel, updateChannel } from "~/lib/actions/channels";
 import { getCurrentWorkspaceId } from "~/lib/workspace";
 
 export default async function ChannelsPage() {
@@ -92,10 +89,14 @@ export default async function ChannelsPage() {
               From Slack → Incoming Webhooks. Stored as given.
             </p>
           </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Monitors</Label>
+            <ChannelMonitorPicker monitors={monitors} idPrefix="new" />
+          </div>
         </FormCardContent>
         <FormCardFooter>
           <FormCardFooterInfo>
-            A channel receives nothing until a monitor is linked to it below.
+            Pick the monitors now — you can change them later.
           </FormCardFooterInfo>
           <Button type="submit">Add channel</Button>
         </FormCardFooter>
@@ -113,39 +114,47 @@ export default async function ChannelsPage() {
                     {c.type} · {c.enabled ? "enabled" : "disabled"}
                   </p>
                 </div>
-                <form
-                  action={async () => {
-                    "use server";
-                    await deleteChannel(c.id);
-                  }}
-                >
-                  <Button variant="ghost" size="icon" type="submit" aria-label="Delete">
-                    <TrashIcon />
-                  </Button>
-                </form>
+                <div className="flex items-center gap-1">
+                  <ChannelSheet
+                    action={updateChannel}
+                    channel={{
+                      id: c.id,
+                      name: c.name,
+                      webhookUrl: c.config.webhookUrl,
+                      enabled: c.enabled,
+                    }}
+                    monitors={monitors.map((m) => ({ id: m.id, name: m.name }))}
+                    subscribed={[...linked]}
+                  />
+                  <form
+                    action={async () => {
+                      "use server";
+                      await deleteChannel(c.id);
+                    }}
+                  >
+                    <Button variant="ghost" size="icon" type="submit" aria-label="Delete">
+                      <TrashIcon />
+                    </Button>
+                  </form>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Subscribed monitors
+                <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wide">
+                  Subscribed monitors · {linked.size} of {monitors.length}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {monitors.map((m) => {
-                    const isLinked = linked.has(m.id);
-                    return (
-                      <form
-                        key={m.id}
-                        action={async () => {
-                          "use server";
-                          if (isLinked) await unlinkMonitorFromChannel(m.id, c.id);
-                          else await linkMonitorToChannel(m.id, c.id);
-                        }}
-                      >
-                        <button type="submit" className="appearance-none">
-                          <Badge variant={isLinked ? "success" : "outline"}>{m.name}</Badge>
-                        </button>
-                      </form>
-                    );
-                  })}
+                  {monitors
+                    .filter((m) => linked.has(m.id))
+                    .map((m) => (
+                      <Badge key={m.id} variant="outline">
+                        {m.name}
+                      </Badge>
+                    ))}
+                  {linked.size === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      No monitors subscribed — this channel posts nothing.
+                    </p>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
