@@ -27,6 +27,7 @@ import { notFound, redirect } from "next/navigation";
 import { MonitorRow } from "~/components/monitor-row";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";
+import { LocalTzHistories } from "~/lib/use-local-tz-history";
 
 type ComponentStatus = "up" | "down" | "degraded" | "unknown";
 
@@ -144,91 +145,97 @@ export async function StatusPageView({
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-12 px-4 py-10 sm:py-14">
-      <BrandingHead branding={summary.page} />
-      {summary.page.logoUrl ? (
-        <PageLogo
-          name={summary.page.name}
-          logoUrl={summary.page.logoUrl}
-          homepageUrl={summary.page.homepageUrl}
-        />
-      ) : null}
-
-      <Status variant={variant}>
-        <StatusHeader>
-          <StatusIcon />
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <StatusTitle>{headline}</StatusTitle>
-            {subline ? <StatusDescription>{subline}</StatusDescription> : null}
-          </div>
-          {lastCheckedAt ? (
-            <LocalTime
-              date={lastCheckedAt}
-              format="LLL dd, y HH:mm"
-              showTimezone
-              className="ml-auto shrink-0 font-mono text-muted-foreground text-xs"
-            />
-          ) : null}
-        </StatusHeader>
-
-        {summary.incidents.length > 0 || summary.maintenances.length > 0 ? (
-          <StatusContent>
-            {summary.incidents.map((i) => (
-              <StatusEventBanner
-                key={i.id}
-                variant="incident"
-                title={i.title}
-                status={i.status}
-                severity={i.severity}
-                startedAt={i.startedAt}
-                resolvedAt={i.resolvedAt}
-                updates={i.updates}
-                affected={i.affected}
-              />
-            ))}
-            {summary.maintenances.map((m) => (
-              <StatusEventBanner
-                key={m.id}
-                variant="maintenance"
-                title={m.title}
-                startedAt={m.startsAt}
-                resolvedAt={m.endsAt}
-                status={m.status}
-                affected={m.affected}
-              />
-            ))}
-          </StatusContent>
+    <LocalTzHistories
+      slugs={monitorComponents.map((c) => c.monitorSlug)}
+      serverTz={histories[0]?.tz ?? "UTC"}
+      scope={{ workspace, page, host, unlock }}
+    >
+      <main className="mx-auto flex w-full max-w-3xl flex-col gap-12 px-4 py-10 sm:py-14">
+        <BrandingHead branding={summary.page} />
+        {summary.page.logoUrl ? (
+          <PageLogo
+            name={summary.page.name}
+            logoUrl={summary.page.logoUrl}
+            homepageUrl={summary.page.homepageUrl}
+          />
         ) : null}
-      </Status>
 
-      <section className="flex flex-col gap-3">
-        <SectionMetaTitle meta="Last 90 days">Components</SectionMetaTitle>
-        <Separator />
-        <div className="flex flex-col gap-4">
-          {ungrouped.map(renderRow)}
+        <Status variant={variant}>
+          <StatusHeader>
+            <StatusIcon />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <StatusTitle>{headline}</StatusTitle>
+              {subline ? <StatusDescription>{subline}</StatusDescription> : null}
+            </div>
+            {lastCheckedAt ? (
+              <LocalTime
+                date={lastCheckedAt}
+                format="LLL dd, y HH:mm"
+                showTimezone
+                className="ml-auto shrink-0 font-mono text-muted-foreground text-xs"
+              />
+            ) : null}
+          </StatusHeader>
 
-          {summary.componentGroups.map((g) => {
-            const items = byGroupId.get(g.id) ?? [];
-            const groupStatus = computeOverall(items.map((c) => c.status));
-            return (
-              <ComponentGroup key={g.id} group={g} aggregateStatus={groupStatus}>
-                <div className="flex flex-col gap-4">{items.map(renderRow)}</div>
-              </ComponentGroup>
-            );
-          })}
-
-          {summary.components.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No components configured yet.</p>
+          {summary.incidents.length > 0 || summary.maintenances.length > 0 ? (
+            <StatusContent>
+              {summary.incidents.map((i) => (
+                <StatusEventBanner
+                  key={i.id}
+                  variant="incident"
+                  title={i.title}
+                  status={i.status}
+                  severity={i.severity}
+                  startedAt={i.startedAt}
+                  resolvedAt={i.resolvedAt}
+                  updates={i.updates}
+                  affected={i.affected}
+                />
+              ))}
+              {summary.maintenances.map((m) => (
+                <StatusEventBanner
+                  key={m.id}
+                  variant="maintenance"
+                  title={m.title}
+                  startedAt={m.startsAt}
+                  resolvedAt={m.endsAt}
+                  status={m.status}
+                  affected={m.affected}
+                />
+              ))}
+            </StatusContent>
           ) : null}
-        </div>
-      </section>
+        </Status>
 
-      <section className="flex flex-col gap-4">
-        <SectionMetaTitle meta="Last 30 days">Recent events</SectionMetaTitle>
-        <Separator />
-        <StatusEventFeed events={feedEvents} />
-      </section>
-    </main>
+        <section className="flex flex-col gap-3">
+          <SectionMetaTitle meta="Last 90 days">Components</SectionMetaTitle>
+          <Separator />
+          <div className="flex flex-col gap-4">
+            {ungrouped.map(renderRow)}
+
+            {summary.componentGroups.map((g) => {
+              const items = byGroupId.get(g.id) ?? [];
+              const groupStatus = computeOverall(items.map((c) => c.status));
+              return (
+                <ComponentGroup key={g.id} group={g} aggregateStatus={groupStatus}>
+                  <div className="flex flex-col gap-4">{items.map(renderRow)}</div>
+                </ComponentGroup>
+              );
+            })}
+
+            {summary.components.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No components configured yet.</p>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <SectionMetaTitle meta="Last 30 days">Recent events</SectionMetaTitle>
+          <Separator />
+          <StatusEventFeed events={feedEvents} />
+        </section>
+      </main>
+    </LocalTzHistories>
   );
 }
 

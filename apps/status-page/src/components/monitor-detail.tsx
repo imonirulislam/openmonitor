@@ -9,7 +9,7 @@ import {
   type TrackerDay,
 } from "@openmonitor/ui";
 import { useMemo } from "react";
-import { useLocalTzHistory } from "~/lib/use-local-tz-history";
+import { type HistoryScope, useLocalTzHistory } from "~/lib/use-local-tz-history";
 
 type MonitorStatus = "up" | "down" | "degraded" | "unknown";
 
@@ -22,6 +22,7 @@ export function MonitorDetail({
   monitor,
   initialHistory,
   incidentCount,
+  scope,
 }: {
   monitor: {
     name: string;
@@ -31,8 +32,9 @@ export function MonitorDetail({
   };
   initialHistory: MonitorHistory;
   incidentCount: number;
+  scope?: HistoryScope;
 }) {
-  const history = useLocalTzHistory(monitor.slug, initialHistory);
+  const history = useLocalTzHistory(monitor.slug, initialHistory, scope);
   const days = history.days as TrackerDay[];
   const stats = useMemo(() => computeStats(days), [days]);
   const firstDate = days[0]?.date;

@@ -10,6 +10,7 @@ import { notFound, redirect } from "next/navigation";
 import { MonitorListRow } from "~/components/monitor-list-row";
 import { api } from "~/lib/api";
 import { unlockCookieName } from "~/lib/unlock-cookie";
+import { LocalTzHistories } from "~/lib/use-local-tz-history";
 
 const TITLE = process.env.NEXT_PUBLIC_STATUS_TITLE ?? "OpenMonitor";
 
@@ -66,42 +67,48 @@ export async function MonitorsPageView({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 sm:py-14">
-      <header>
-        <h1 className="font-semibold text-2xl tracking-tight">{summary.page.name ?? TITLE}</h1>
-        <p className="mt-1 text-muted-foreground text-sm">
-          {monitorComponents.length} monitored{" "}
-          {monitorComponents.length === 1 ? "service" : "services"}.
-        </p>
-      </header>
+    <LocalTzHistories
+      slugs={monitorComponents.map((c) => c.monitorSlug)}
+      serverTz={histories[0]?.tz ?? "UTC"}
+      scope={{ workspace, page, host, unlock }}
+    >
+      <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 sm:py-14">
+        <header>
+          <h1 className="font-semibold text-2xl tracking-tight">{summary.page.name ?? TITLE}</h1>
+          <p className="mt-1 text-muted-foreground text-sm">
+            {monitorComponents.length} monitored{" "}
+            {monitorComponents.length === 1 ? "service" : "services"}.
+          </p>
+        </header>
 
-      <SectionMetaTitle meta="Last 90 days">All monitors</SectionMetaTitle>
-      <Separator />
+        <SectionMetaTitle meta="Last 90 days">All monitors</SectionMetaTitle>
+        <Separator />
 
-      <div className="flex flex-col gap-4">
-        {monitorComponents.map((c) => {
-          const initialHistory = historyBySlug.get(c.monitorSlug);
-          if (!initialHistory) return null;
-          return (
-            <MonitorListRow
-              key={c.id}
-              monitor={{
-                id: c.id,
-                slug: c.monitorSlug,
-                name: c.name,
-                description: c.description,
-                status: c.status as MonitorStatus,
-              }}
-              initialHistory={initialHistory}
-              incidentCount={incidentCountBySlug.get(c.monitorSlug) ?? 0}
-              href={monitorHref(c.monitorSlug)}
-            />
-          );
-        })}
-        {monitorComponents.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No monitors configured.</p>
-        ) : null}
-      </div>
-    </main>
+        <div className="flex flex-col gap-4">
+          {monitorComponents.map((c) => {
+            const initialHistory = historyBySlug.get(c.monitorSlug);
+            if (!initialHistory) return null;
+            return (
+              <MonitorListRow
+                key={c.id}
+                monitor={{
+                  id: c.id,
+                  slug: c.monitorSlug,
+                  name: c.name,
+                  description: c.description,
+                  status: c.status as MonitorStatus,
+                }}
+                initialHistory={initialHistory}
+                incidentCount={incidentCountBySlug.get(c.monitorSlug) ?? 0}
+                href={monitorHref(c.monitorSlug)}
+              />
+            );
+          })}
+          {monitorComponents.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No monitors configured.</p>
+          ) : null}
+        </div>
+      </main>
+    </LocalTzHistories>
   );
 }

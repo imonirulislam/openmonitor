@@ -128,6 +128,7 @@ export async function MonitorDetailPageView({
         }}
         initialHistory={initialHistory}
         incidentCount={monitorIncidents.length}
+        scope={{ workspace, page, host, unlock }}
       />
 
       <Card className="p-5">
