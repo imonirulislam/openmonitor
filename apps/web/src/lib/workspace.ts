@@ -81,6 +81,36 @@ export async function getCurrentWorkspace(): Promise<{
   };
 }
 
+/**
+ * The signed-in user's profile row. Read from the database rather than the
+ * JWT, whose `name` is frozen at sign-in and would go stale on rename.
+ */
+export async function getCurrentUser(): Promise<{
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+}> {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+  const [user] = await db()
+    .select({
+      id: schema.users.id,
+      email: schema.users.email,
+      name: schema.users.name,
+      image: schema.users.image,
+      lastLoginAt: schema.users.lastLoginAt,
+      createdAt: schema.users.createdAt,
+    })
+    .from(schema.users)
+    .where(eq(schema.users.id, session.user.id))
+    .limit(1);
+  if (!user) redirect("/login");
+  return user;
+}
+
 /** Convenience wrapper for routes that just need the workspace id. */
 export async function getCurrentWorkspaceId(): Promise<string> {
   return (await getCurrentWorkspace()).workspaceId;

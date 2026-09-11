@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Button, LocalTime, Select } from "@openmonitor/ui";
+import { Avatar, Badge, Button, LocalTime, Select } from "@openmonitor/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { changeMemberRole, removeMember, setUserActive } from "~/lib/actions/users";
 import { DataTable } from "./data-table";
@@ -18,17 +18,22 @@ export type MemberRow = {
   canEdit: boolean;
 };
 
-const ROLE_VARIANT: Record<MemberRow["role"], "destructive" | "warning" | "default"> = {
-  admin: "destructive",
-  editor: "warning",
-  viewer: "default",
+const ROLE_VARIANT: Record<MemberRow["role"], "default" | "info" | "outline"> = {
+  admin: "info",
+  editor: "default",
+  viewer: "outline",
 };
 
 const columns: ColumnDef<MemberRow>[] = [
   {
     accessorKey: "email",
     header: "Email",
-    cell: ({ row }) => <span className="text-xs">{row.original.email}</span>,
+    cell: ({ row }) => (
+      <span className="flex items-center gap-2 text-xs">
+        <Avatar size="sm" name={row.original.name} email={row.original.email} />
+        {row.original.email}
+      </span>
+    ),
   },
   {
     accessorKey: "name",

@@ -1,5 +1,5 @@
-import { db, eq, schema } from "@openmonitor/db";
 import {
+  Avatar,
   Button,
   FormCard,
   FormCardContent,
@@ -15,17 +15,11 @@ import {
   SectionHeader,
   SectionTitle,
 } from "@openmonitor/ui";
-import { changeOwnPassword } from "~/lib/actions/users";
-import { getCurrentWorkspace } from "~/lib/workspace";
+import { changeOwnPassword, updateOwnProfile } from "~/lib/actions/users";
+import { getCurrentUser, getCurrentWorkspace } from "~/lib/workspace";
 
 export default async function AccountSettingsPage() {
-  const ws = await getCurrentWorkspace();
-  const [user] = await db()
-    .select()
-    .from(schema.users)
-    .where(eq(schema.users.id, ws.userId))
-    .limit(1);
-  if (!user) throw new Error("user not found");
+  const [ws, user] = await Promise.all([getCurrentWorkspace(), getCurrentUser()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,29 +29,61 @@ export default async function AccountSettingsPage() {
           Your identity and password. These follow you across every workspace you belong to.
         </SectionDescription>
       </SectionHeader>
+
       <div className="flex flex-col gap-6">
-        <FormCard>
+        <FormCard asForm action={updateOwnProfile}>
           <FormCardHeader>
             <FormCardTitle>Profile</FormCardTitle>
-            <FormCardDescription>Identity and current workspace role.</FormCardDescription>
+            <FormCardDescription>
+              Your name is what teammates see next to your actions in audit logs and incidents.
+            </FormCardDescription>
           </FormCardHeader>
           <FormCardContent>
-            <dl className="grid grid-cols-3 gap-x-4 gap-y-3 text-sm">
-              <Detail label="Email" value={user.email} mono />
-              <Detail label="Name" value={user.name ?? "—"} />
-              <Detail label="Role here" value={ws.role} mono />
-              <Detail
+            <div className="flex items-start gap-4">
+              <Avatar
+                size="lg"
+                name={user.name}
+                email={user.email}
+                image={user.image}
+                className="mt-6"
+              />
+              <div className="grid flex-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="name">Display name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    defaultValue={user.name ?? ""}
+                    maxLength={200}
+                    placeholder={user.email.split("@")[0]}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" value={user.email} readOnly disabled />
+                  <p className="text-muted-foreground text-xs">
+                    Your sign-in identity — it can't be changed here.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <dl className="flex flex-wrap gap-x-6 gap-y-1 border-border border-t pt-4 text-xs">
+              <Meta label="Role here" value={ws.role} />
+              <Meta
                 label="Last login"
                 value={user.lastLoginAt ? <LocalTime date={user.lastLoginAt.toISOString()} /> : "—"}
-                mono
               />
-              <Detail
+              <Meta
                 label="Joined"
                 value={<LocalTime date={user.createdAt.toISOString()} format="LLL d, y" />}
-                mono
               />
             </dl>
           </FormCardContent>
+          <FormCardFooter>
+            <FormCardFooterInfo>Visible to everyone in your workspaces.</FormCardFooterInfo>
+            <Button type="submit">Save profile</Button>
+          </FormCardFooter>
         </FormCard>
 
         <FormCard asForm action={changeOwnPassword}>
@@ -78,7 +104,7 @@ export default async function AccountSettingsPage() {
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="newPassword">New password</Label>
                 <Input
@@ -113,13 +139,13 @@ export default async function AccountSettingsPage() {
   );
 }
 
-function Detail({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
+function Meta({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <>
-      <dt className="col-span-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+    <div className="flex items-baseline gap-2">
+      <dt className="font-mono text-[10px] text-muted-foreground uppercase tracking-wide">
         {label}
       </dt>
-      <dd className={`col-span-2 ${mono ? "font-mono text-xs" : ""}`}>{value}</dd>
-    </>
+      <dd className="font-mono">{value}</dd>
+    </div>
   );
 }

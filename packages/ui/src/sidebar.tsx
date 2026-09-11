@@ -148,7 +148,11 @@ export const SidebarHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEl
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex h-14 items-center border-b border-border", className)}
+      className={cn(
+        "flex h-14 items-center gap-2 border-border border-b px-2",
+        "group-data-[state=collapsed]/sidebar:justify-center group-data-[state=collapsed]/sidebar:px-0",
+        className,
+      )}
       {...props}
     />
   ),
@@ -165,6 +169,45 @@ export const SidebarContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivE
   ),
 );
 SidebarContent.displayName = "SidebarContent";
+
+export const SidebarGroup = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("flex flex-col gap-0.5", className)} {...props} />
+  ),
+);
+SidebarGroup.displayName = "SidebarGroup";
+
+/** Section heading above a group of menu buttons. Hidden when collapsed. */
+export const SidebarGroupLabel = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "px-2.5 pt-3 pb-1 font-mono text-[10px] text-muted-foreground/70 uppercase tracking-wider",
+        "group-data-[state=collapsed]/sidebar:hidden",
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
+SidebarGroupLabel.displayName = "SidebarGroupLabel";
+
+/** Divider standing in for a group label when the sidebar is collapsed. */
+export const SidebarGroupDivider = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "mx-auto my-2 hidden w-6 border-border border-t",
+        "group-data-[state=collapsed]/sidebar:block",
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
+SidebarGroupDivider.displayName = "SidebarGroupDivider";
 
 export const SidebarFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
@@ -185,8 +228,8 @@ const sidebarMenuButtonVariants = cva(
   {
     variants: {
       isActive: {
-        true: "bg-muted text-foreground",
-        false: "text-muted-foreground",
+        true: "bg-accent font-medium text-accent-foreground",
+        false: "text-muted-foreground hover:text-foreground",
       },
     },
     defaultVariants: { isActive: false },

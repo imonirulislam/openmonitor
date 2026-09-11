@@ -1,3 +1,4 @@
+export { Avatar, initials } from "./avatar";
 export { Badge, type BadgeProps, badgeVariants } from "./badge";
 export { Button, buttonVariants } from "./button";
 export {
@@ -97,6 +98,9 @@ export {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupDivider,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenuButton,

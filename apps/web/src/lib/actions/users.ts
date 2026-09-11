@@ -36,6 +36,30 @@ const changePasswordSchema = z
     path: ["confirmPassword"],
   });
 
+const profileSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+});
+
+export async function updateOwnProfile(formData: FormData) {
+  const session = await requireSession();
+  const parsed = parseOrFlash(profileSchema, Object.fromEntries(formData), "/settings/account");
+
+  await db()
+    .update(schema.users)
+    .set({ name: parsed.name, updatedAt: new Date() })
+    .where(eq(schema.users.id, session.user.id));
+
+  await logAudit({
+    action: "user.profile_updated",
+    targetType: "user",
+    targetId: session.user.id,
+    targetLabel: session.user.email ?? null,
+  });
+
+  revalidatePath("/settings/account");
+  redirect(withToastRedirect("/settings/account", "Profile updated"));
+}
+
 export async function changeOwnPassword(formData: FormData) {
   const session = await requireSession();
   const parsed = parseOrFlash(

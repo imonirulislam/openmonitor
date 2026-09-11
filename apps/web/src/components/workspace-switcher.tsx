@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Avatar,
   cn,
   DropdownMenu,
   DropdownMenuContent,
@@ -51,20 +52,15 @@ export function WorkspaceSwitcher({
             collapsed ? "justify-center" : "w-full",
           )}
         >
-          <span
-            aria-hidden
-            className="flex size-6 shrink-0 items-center justify-center rounded bg-foreground font-semibold text-background text-xs uppercase"
-          >
-            {(current?.name ?? "?").slice(0, 1)}
-          </span>
+          <Avatar shape="square" size="sm" name={current?.name ?? "?"} />
           {!collapsed ? (
             <>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-medium text-xs leading-none">
                   {current?.name ?? "No workspace"}
                 </span>
-                <span className="truncate font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {current?.role ?? ""}
+                <span className="mt-1 truncate font-mono text-[10px] text-muted-foreground leading-none">
+                  {current?.slug ?? ""}
                 </span>
               </span>
               <ChevronsUpDownIcon className="size-3 text-muted-foreground" />
@@ -101,12 +97,7 @@ export function WorkspaceSwitcher({
               {isPending ? (
                 <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
               ) : (
-                <span
-                  aria-hidden
-                  className="flex size-5 shrink-0 items-center justify-center rounded bg-muted font-semibold text-foreground text-[10px] uppercase"
-                >
-                  {w.name.slice(0, 1)}
-                </span>
+                <Avatar shape="square" size="sm" name={w.name} className="size-5 text-[10px]" />
               )}
               <span className="flex-1 truncate text-sm">{w.name}</span>
               {isCurrent && !isPending ? <CheckIcon className="size-3.5 text-foreground" /> : null}

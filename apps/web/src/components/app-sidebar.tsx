@@ -4,10 +4,12 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupDivider,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenuButton,
   SidebarTrigger,
-  ThemeToggle,
   useSidebar,
 } from "@openmonitor/ui";
 import {
@@ -16,25 +18,39 @@ import {
   CogIcon,
   GaugeIcon,
   HeartPulseIcon,
-  LogOutIcon,
   PanelTopIcon,
   ScanEyeIcon,
   WrenchIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { type SessionUser, UserMenu } from "~/components/user-menu";
 import { type WorkspaceOption, WorkspaceSwitcher } from "~/components/workspace-switcher";
-import { signOutAction } from "~/lib/actions/auth";
 
 const NAV = [
-  { href: "/", label: "Overview", icon: GaugeIcon, exact: true },
-  { href: "/status-pages", label: "Status pages", icon: PanelTopIcon },
-  { href: "/monitors", label: "Monitors", icon: ActivityIcon },
-  { href: "/heartbeats", label: "Heartbeats", icon: HeartPulseIcon },
-  { href: "/maintenance", label: "Maintenance", icon: WrenchIcon },
-  { href: "/channels", label: "Channels", icon: BellIcon },
-  { href: "/audit-logs", label: "Audit logs", icon: ScanEyeIcon },
-  { href: "/settings", label: "Settings", icon: CogIcon },
+  {
+    label: "Monitoring",
+    items: [
+      { href: "/", label: "Overview", icon: GaugeIcon, exact: true },
+      { href: "/monitors", label: "Monitors", icon: ActivityIcon },
+      { href: "/heartbeats", label: "Heartbeats", icon: HeartPulseIcon },
+    ],
+  },
+  {
+    label: "Communication",
+    items: [
+      { href: "/status-pages", label: "Status pages", icon: PanelTopIcon },
+      { href: "/maintenance", label: "Maintenance", icon: WrenchIcon },
+      { href: "/channels", label: "Channels", icon: BellIcon },
+    ],
+  },
+  {
+    label: "Workspace",
+    items: [
+      { href: "/audit-logs", label: "Audit logs", icon: ScanEyeIcon },
+      { href: "/settings", label: "Settings", icon: CogIcon },
+    ],
+  },
 ];
 
 export function AppSidebar({
@@ -42,7 +58,7 @@ export function AppSidebar({
   current,
   workspaces,
 }: {
-  user: { email?: string | null; role?: string | null } | null;
+  user: SessionUser | null;
   current: WorkspaceOption | null;
   workspaces: WorkspaceOption[];
 }) {
@@ -52,57 +68,37 @@ export function AppSidebar({
 
   return (
     <Sidebar>
-      <SidebarHeader className="flex-row items-center gap-2 px-2">
+      <SidebarHeader>
         <WorkspaceSwitcher current={current} workspaces={workspaces} />
-        {!collapsed ? <SidebarTrigger /> : null}
+        {!collapsed ? <SidebarTrigger className="shrink-0" /> : null}
       </SidebarHeader>
 
       <SidebarContent>
-        {NAV.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.exact
-            ? pathname === item.href
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <SidebarMenuButton key={item.href} asChild isActive={isActive} tooltip={item.label}>
-              <Link href={item.href}>
-                <Icon />
-                <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          );
-        })}
+        {NAV.map((group, i) => (
+          <SidebarGroup key={group.label}>
+            {i === 0 ? null : <SidebarGroupDivider />}
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <SidebarMenuButton key={item.href} asChild isActive={isActive} tooltip={item.label}>
+                  <Link href={item.href}>
+                    <Icon />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              );
+            })}
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
-      <SidebarFooter>
-        {!collapsed ? (
-          <div className="flex items-start justify-between gap-2 px-1.5 text-xs">
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-medium">{user?.email}</div>
-              <div className="mt-0.5 font-mono text-[10px] uppercase text-muted-foreground tracking-wide">
-                {user?.role}
-              </div>
-            </div>
-            <ThemeToggle />
-          </div>
-        ) : (
-          <div className="flex justify-center">
-            <ThemeToggle />
-          </div>
-        )}
-        <form action={signOutAction} className="mt-2">
-          <SidebarMenuButton asChild tooltip="Sign out">
-            <button type="submit">
-              <LogOutIcon />
-              <span>Sign out</span>
-            </button>
-          </SidebarMenuButton>
-        </form>
-        {collapsed ? (
-          <div className="mt-1 flex justify-center">
-            <SidebarTrigger />
-          </div>
-        ) : null}
+      <SidebarFooter className="flex flex-col gap-1">
+        {user ? <UserMenu user={user} /> : null}
+        {collapsed ? <SidebarTrigger className="mx-auto" /> : null}
       </SidebarFooter>
     </Sidebar>
   );

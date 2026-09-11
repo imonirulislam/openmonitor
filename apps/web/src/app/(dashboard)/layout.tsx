@@ -1,24 +1,25 @@
 import { SidebarInset, SidebarProvider } from "@openmonitor/ui";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
-import { auth } from "~/auth";
 import { AppSidebar } from "~/components/app-sidebar";
-import { getCurrentWorkspace, getUserWorkspaces } from "~/lib/workspace";
+import { getCurrentUser, getCurrentWorkspace, getUserWorkspaces } from "~/lib/workspace";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const session = await auth();
   const cookieStore = await cookies();
   const stored = cookieStore.get("sidebar_state")?.value;
   const defaultOpen = stored !== "false";
 
-  const ws = await getCurrentWorkspace();
-  const workspaces = await getUserWorkspaces();
+  const [ws, workspaces, user] = await Promise.all([
+    getCurrentWorkspace(),
+    getUserWorkspaces(),
+    getCurrentUser(),
+  ]);
   const current = workspaces.find((w) => w.id === ws.workspaceId) ?? null;
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar
-        user={session?.user ? { email: session.user.email, role: ws.role } : null}
+        user={{ email: user.email, name: user.name, image: user.image, role: ws.role }}
         current={current}
         workspaces={workspaces}
       />
