@@ -147,65 +147,67 @@ export function DataTable<TData, TValue>({
       )}
 
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border bg-muted/30 text-left text-muted-foreground text-xs">
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id}>
-                {hg.headers.map((header) => {
-                  const sortable = header.column.getCanSort();
-                  const dir = header.column.getIsSorted();
-                  return (
-                    <th key={header.id} className="px-4 py-3 font-medium">
-                      {header.isPlaceholder ? null : sortable ? (
-                        <button
-                          type="button"
-                          onClick={header.column.getToggleSortingHandler()}
-                          className={cn(
-                            "inline-flex items-center gap-1 hover:text-foreground",
-                            dir && "text-foreground",
-                          )}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {dir === "asc" ? (
-                            <ChevronUpIcon className="size-3" />
-                          ) : dir === "desc" ? (
-                            <ChevronDownIcon className="size-3" />
-                          ) : (
-                            <ChevronsUpDownIcon className="size-3 opacity-40" />
-                          )}
-                        </button>
-                      ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
-                      )}
-                    </th>
-                  );
-                })}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="divide-y divide-border">
-            {table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-8 text-center text-muted-foreground text-sm"
-                >
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="transition-colors hover:bg-muted/40">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[38rem] text-sm">
+            <thead className="border-b border-border bg-muted/30 text-left text-muted-foreground text-xs">
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => {
+                    const sortable = header.column.getCanSort();
+                    const dir = header.column.getIsSorted();
+                    return (
+                      <th key={header.id} className="px-4 py-3 font-medium">
+                        {header.isPlaceholder ? null : sortable ? (
+                          <button
+                            type="button"
+                            onClick={header.column.getToggleSortingHandler()}
+                            className={cn(
+                              "inline-flex items-center gap-1 hover:text-foreground",
+                              dir && "text-foreground",
+                            )}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {dir === "asc" ? (
+                              <ChevronUpIcon className="size-3" />
+                            ) : dir === "desc" ? (
+                              <ChevronDownIcon className="size-3" />
+                            ) : (
+                              <ChevronsUpDownIcon className="size-3 opacity-40" />
+                            )}
+                          </button>
+                        ) : (
+                          flexRender(header.column.columnDef.header, header.getContext())
+                        )}
+                      </th>
+                    );
+                  })}
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </thead>
+            <tbody className="divide-y divide-border">
+              {table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="px-4 py-8 text-center text-muted-foreground text-sm"
+                  >
+                    {emptyMessage}
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr key={row.id} className="transition-colors hover:bg-muted/40">
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-4 py-3">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       {/* Always-visible pagination chrome: row count + page-size selector on

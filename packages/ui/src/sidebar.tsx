@@ -19,6 +19,22 @@ import {
 } from "react";
 import { Button } from "./button";
 import { cn } from "./cn";
+import { Sheet, SheetContent, SheetTitle } from "./sheet";
+
+const MOBILE_BREAKPOINT = 768;
+
+/** False during SSR and the first paint, so markup matches on hydration. */
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return isMobile;
+}
 
 /**
  * Minimal collapsible sidebar inspired by shadcn/ui's Sidebar but trimmed
@@ -42,6 +58,10 @@ type SidebarContextValue = {
   state: "expanded" | "collapsed";
   open: boolean;
   setOpen: (open: boolean) => void;
+  /** Below the md breakpoint the sidebar is a drawer with its own open state. */
+  isMobile: boolean;
+  openMobile: boolean;
+  setOpenMobile: (open: boolean) => void;
   toggleSidebar: () => void;
 };
 
@@ -80,7 +100,13 @@ export function SidebarProvider({
     [onOpenChange],
   );
 
-  const toggleSidebar = useCallback(() => setOpen(!open), [open, setOpen]);
+  const isMobile = useIsMobile();
+  const [openMobile, setOpenMobile] = useState(false);
+
+  const toggleSidebar = useCallback(() => {
+    if (isMobile) setOpenMobile((v) => !v);
+    else setOpen(!open);
+  }, [isMobile, open, setOpen]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -94,8 +120,16 @@ export function SidebarProvider({
   }, [toggleSidebar]);
 
   const value = useMemo<SidebarContextValue>(
-    () => ({ state: open ? "expanded" : "collapsed", open, setOpen, toggleSidebar }),
-    [open, setOpen, toggleSidebar],
+    () => ({
+      state: open ? "expanded" : "collapsed",
+      open,
+      setOpen,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+    }),
+    [open, setOpen, isMobile, openMobile, toggleSidebar],
   );
 
   return (
@@ -123,8 +157,22 @@ export function SidebarProvider({
 }
 
 export const Sidebar = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => {
-    const { state } = useSidebar();
+  ({ className, children, ...props }, ref) => {
+    const { state, isMobile, openMobile, setOpenMobile } = useSidebar();
+
+    // Portalled, so the provider's collapsed-state group selectors don't reach
+    // the drawer — it always renders in the expanded shape.
+    if (isMobile) {
+      return (
+        <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+          <SheetContent side="left" className="flex w-72 flex-col gap-0 p-0 sm:max-w-72">
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            {children}
+          </SheetContent>
+        </Sheet>
+      );
+    }
+
     return (
       <aside
         ref={ref}
@@ -133,12 +181,14 @@ export const Sidebar = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>
           // Stick to the top of the viewport so the user/role/signout footer
           // stays in view as the main content scrolls. h-screen pins the
           // sidebar to viewport height, not document height.
-          "sticky top-0 flex h-screen flex-col border-r border-border bg-muted/30 transition-[width] duration-200 ease-in-out",
+          "sticky top-0 hidden h-screen flex-col border-border border-r bg-muted/30 transition-[width] duration-200 ease-in-out md:flex",
           "w-[var(--sidebar-w)] data-[state=collapsed]:w-[var(--sidebar-w-icon)]",
           className,
         )}
         {...props}
-      />
+      >
+        {children}
+      </aside>
     );
   },
 );
@@ -268,6 +318,24 @@ export const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButton
   },
 );
 SidebarMenuButton.displayName = "SidebarMenuButton";
+
+/** Top bar carrying the drawer trigger. Only rendered below the md breakpoint. */
+export const SidebarMobileHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, children, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "sticky top-0 z-30 flex h-14 items-center gap-2 border-border border-b bg-background/95 px-3 backdrop-blur md:hidden",
+        className,
+      )}
+      {...props}
+    >
+      <SidebarTrigger />
+      {children}
+    </div>
+  ),
+);
+SidebarMobileHeader.displayName = "SidebarMobileHeader";
 
 /** Toggle button — pair with useSidebar() somewhere in the chrome. */
 export const SidebarTrigger = forwardRef<

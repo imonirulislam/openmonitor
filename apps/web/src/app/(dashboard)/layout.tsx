@@ -1,4 +1,4 @@
-import { SidebarInset, SidebarProvider } from "@openmonitor/ui";
+import { SidebarInset, SidebarMobileHeader, SidebarProvider } from "@openmonitor/ui";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { AppSidebar } from "~/components/app-sidebar";
@@ -24,7 +24,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         workspaces={workspaces}
       />
       <SidebarInset>
-        <div className="mx-auto w-full max-w-5xl px-6 py-8">{children}</div>
+        <SidebarMobileHeader>
+          <span className="truncate font-medium text-sm">{current?.name ?? "OpenMonitor"}</span>
+        </SidebarMobileHeader>
+        <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

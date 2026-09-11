@@ -104,6 +104,7 @@ export {
   SidebarHeader,
   SidebarInset,
   SidebarMenuButton,
+  SidebarMobileHeader,
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
