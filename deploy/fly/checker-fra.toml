@@ -1,0 +1,29 @@
+# Frankfurt probe location. Generated from checker.fly.toml — see
+# deploy/fly/README.md for the create-location-then-deploy order, which
+# matters: `primary_region` only says where the machine runs, while results
+# are attributed to the region on the PROBE_TOKEN.
+
+app = "openmonitor-checker-fra"
+primary_region = "fra"
+
+[build]
+  dockerfile = "../docker/checker.Dockerfile"
+
+[env]
+  API_URL = "https://api.openmonitor.app"
+  CHECKER_DEFAULT_TIMEOUT_MS = "10000"
+  # Deliberately no DATABASE_URL. Probes reach the database only through the
+  # API, so a remote region never holds database credentials — and the checker
+  # falls back to polling for its monitor list, which is the only mode that
+  # works away from the primary region anyway.
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpus = 1
+
+# No [http_service]: the checker dials out and serves nothing. Without one, Fly
+# has no traffic to autostop on, so pin the machine up — a stopped checker is a
+# region that silently reports nothing.
+[[restart]]
+  policy = "always"
