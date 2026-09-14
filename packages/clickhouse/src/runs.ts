@@ -512,14 +512,23 @@ export async function phaseBuckets(
       toUInt32(countIf(status = 'degraded'))                  AS degraded,
       toUInt32(countIf(status = 'down'))                      AS down,
       toUInt32(count())                                       AS total,
-      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_dns_ms), 0)))      AS dns,
-      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_connect_ms), 0)))  AS connect,
-      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_tls_ms), 0)))      AS tls,
-      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_ttfb_ms), 0)))     AS ttfb,
-      toUInt32(round(ifNotFinite(quantile({q:Float64})(latency_transfer_ms), 0))) AS transfer,
-      toUInt32(countIf(latency_ttfb_ms > 0))                  AS phaseSamples
-    FROM monitor_runs
-    WHERE monitor_id = {monitorId:UUID} AND checked_at >= {since:DateTime}
+      -- Phases only count where a request actually completed. A failed probe
+      -- has no phase timings, and the ingest coerces "not reached" to 0, so
+      -- including them drags every percentile toward zero — on real data the
+      -- median TTFB reads 0ms for a monitor that is down two thirds of the
+      -- time. Degraded runs stay in: a slow response is still a response, and
+      -- its phases are exactly what you want when diagnosing slowness.
+      toUInt32(round(ifNotFinite(quantileIf({q:Float64})(latency_dns_ms, completed), 0)))      AS dns,
+      toUInt32(round(ifNotFinite(quantileIf({q:Float64})(latency_connect_ms, completed), 0)))  AS connect,
+      toUInt32(round(ifNotFinite(quantileIf({q:Float64})(latency_tls_ms, completed), 0)))      AS tls,
+      toUInt32(round(ifNotFinite(quantileIf({q:Float64})(latency_ttfb_ms, completed), 0)))     AS ttfb,
+      toUInt32(round(ifNotFinite(quantileIf({q:Float64})(latency_transfer_ms, completed), 0))) AS transfer,
+      toUInt32(countIf(completed AND latency_ttfb_ms > 0))    AS phaseSamples
+    FROM (
+      SELECT *, status IN ('up', 'degraded') AS completed
+      FROM monitor_runs
+      WHERE monitor_id = {monitorId:UUID} AND checked_at >= {since:DateTime}
+    )
     GROUP BY bucket
     ORDER BY bucket ASC
     `,
