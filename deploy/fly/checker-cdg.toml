@@ -1,10 +1,10 @@
-# Frankfurt probe location. Generated from checker.fly.toml — see
+# Paris probe location. Generated from checker.fly.toml — see
 # deploy/fly/README.md for the create-location-then-deploy order, which
 # matters: `primary_region` only says where the machine runs, while results
 # are attributed to the region on the PROBE_TOKEN.
 
-app = "openmonitor-checker-fra"
-primary_region = "fra"
+app = "openmonitor-checker-cdg"
+primary_region = "cdg"
 
 [build]
   dockerfile = "../docker/checker.Dockerfile"

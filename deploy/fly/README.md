@@ -3,7 +3,7 @@
 One Fly app per probe location. The checker dials out and serves nothing, so each app is a
 single always-on 256mb machine with no public address.
 
-`checker.fly.toml` is the template; `checker-fra.toml` is Frankfurt, the first EU location.
+`checker.fly.toml` is the template; `checker-cdg.toml` is Paris, the first EU location.
 
 ## Why Fly and not Railway
 
@@ -28,22 +28,26 @@ single always-on 256mb machine with no public address.
 
 Order matters. The region shown on results comes from the **probe location row**, not from
 `primary_region` — that only says where the machine runs. Set them to the same code or
-Frankfurt machines will report as somewhere else.
+Paris machines will report as somewhere else.
 
-1. Dashboard → Settings → Probe locations → create one with region code `fra`. The token is
+Adding Amsterdam, as a worked example:
+
+1. Dashboard → Settings → Probe locations → create one with region code `ams`. The token is
    shown once; only its SHA-256 hash is stored.
 2. Copy the template and edit `app` + `primary_region` to match that code:
    ```
-   cp deploy/fly/checker.fly.toml deploy/fly/checker-cdg.toml
+   cp deploy/fly/checker.fly.toml deploy/fly/checker-ams.toml
    ```
 3. Check `API_URL` points at the live API — the template assumes
    `https://api.openmonitor.app`.
 4. From the repo root:
    ```
-   fly launch --no-deploy --copy-config --config deploy/fly/checker-fra.toml
-   fly secrets set PROBE_TOKEN=omp_… --config deploy/fly/checker-fra.toml
-   fly deploy --config deploy/fly/checker-fra.toml
+   fly launch --no-deploy --copy-config --config deploy/fly/checker-ams.toml
+   fly secrets set PROBE_TOKEN=omp_… --config deploy/fly/checker-ams.toml
+   fly deploy --config deploy/fly/checker-ams.toml
    ```
+
+Pushing that file to `main` is what deploys it from then on.
 
 ## Deploys
 
@@ -69,7 +73,7 @@ against an API that hasn't.
 ## Checking it works
 
 ```
-fly logs --config deploy/fly/checker-fra.toml
+fly logs --config deploy/fly/checker-cdg.toml
 ```
 
 Then Settings → Probe locations, or `GET /v1/system/checker`, for freshness per region. A
