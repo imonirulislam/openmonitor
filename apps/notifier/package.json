@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
+    "@openmonitor/clickhouse": "workspace:*",
     "@openmonitor/db": "workspace:*",
+    "@openmonitor/diagnostics": "workspace:*",
     "@openmonitor/notifications": "workspace:*",
     "dotenv": "^16.4.5",
     "hono": "^4.13.2",

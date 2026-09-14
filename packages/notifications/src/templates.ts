@@ -25,6 +25,12 @@ export type MonitorDownPayload = {
   error: string | null;
   statusCode: number | null;
   checkedAt: string;
+  /**
+   * Where it's failing and, when the evidence is clear, why. Added by the
+   * notifier at send time; absent when probe history is unavailable, in which
+   * case the alert renders exactly as it did before.
+   */
+  triage?: { spread: string; cause: string | null; evidence: string[] } | null;
 };
 
 export type MonitorRecoveredPayload = {
@@ -144,6 +150,23 @@ function monitorDown(p: MonitorDownPayload): SlackMessage {
                 {
                   type: "section" as const,
                   text: { type: "mrkdwn" as const, text: `*Error*\n\`${p.error}\`` },
+                },
+              ]
+            : []),
+          // Reads before the raw fields do: what's failing and why, with the
+          // evidence beside it so the claim can be checked at a glance.
+          ...(p.triage
+            ? [
+                {
+                  type: "section" as const,
+                  text: {
+                    type: "mrkdwn" as const,
+                    text: [p.triage.spread, p.triage.cause].filter(Boolean).join(" "),
+                  },
+                },
+                {
+                  type: "context" as const,
+                  elements: [{ type: "mrkdwn" as const, text: p.triage.evidence.join("  ·  ") }],
                 },
               ]
             : []),

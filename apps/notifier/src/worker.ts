@@ -1,8 +1,31 @@
+import { outageFacts } from "@openmonitor/clickhouse";
 import { and, db, eq, inArray, rows, schema, sql } from "@openmonitor/db";
+import { classifyOutage } from "@openmonitor/diagnostics";
 import { renderSlackMessage, sendSlack } from "@openmonitor/notifications";
 
 const MAX_ATTEMPTS = 6;
 const BATCH_SIZE = 25;
+
+/**
+ * Adds the region/cause verdict to a `monitor.down` payload. Returns the
+ * payload untouched for every other event type, and on any failure — the
+ * alert matters more than the annotation.
+ */
+async function withTriage(
+  type: string,
+  payload: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  if (type !== "monitor.down") return payload;
+  const monitorId = (payload.monitor as { id?: string } | undefined)?.id;
+  if (!monitorId) return payload;
+  try {
+    const verdict = classifyOutage(await outageFacts(monitorId));
+    return verdict ? { ...payload, triage: verdict } : payload;
+  } catch (err) {
+    console.error("triage failed:", err);
+    return payload;
+  }
+}
 
 // Exponential backoff in seconds, capped at 10 minutes.
 function backoffSeconds(attempts: number): number {
@@ -75,6 +98,11 @@ export async function processBatch(): Promise<{ processed: number; failed: numbe
       continue;
     }
 
+    // A down alert carries what the other regions saw. Best-effort: probe
+    // history lives in ClickHouse, and an alert that doesn't send because
+    // ClickHouse is slow is worse than one without a triage line.
+    const enriched = await withTriage(event.type, payload);
+
     const channels = await conn
       .select()
       .from(schema.notificationChannels)
@@ -93,7 +121,7 @@ export async function processBatch(): Promise<{ processed: number; failed: numbe
       if (channel.type !== "slack") continue;
       const message = renderSlackMessage(
         event.type as Parameters<typeof renderSlackMessage>[0],
-        payload,
+        enriched,
       );
       const res = await sendSlack(channel.config.webhookUrl, message);
       if (!res.ok) {

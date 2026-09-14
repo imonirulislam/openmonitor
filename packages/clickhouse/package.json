@@ -18,7 +18,8 @@
   "dependencies": {
     "@clickhouse/client": "^1.23.1",
     "dotenv": "^16.4.5",
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "@openmonitor/diagnostics": "workspace:*"
   },
   "devDependencies": {
     "@openmonitor/tsconfig": "workspace:*",

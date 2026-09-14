@@ -65,7 +65,9 @@
       "version": "0.0.0",
       "dependencies": {
         "@hono/node-server": "^2.1.1",
+        "@openmonitor/clickhouse": "workspace:*",
         "@openmonitor/db": "workspace:*",
+        "@openmonitor/diagnostics": "workspace:*",
         "@openmonitor/notifications": "workspace:*",
         "dotenv": "^16.4.5",
         "hono": "^4.13.2",
@@ -173,6 +175,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@clickhouse/client": "^1.23.1",
+        "@openmonitor/diagnostics": "workspace:*",
         "dotenv": "^16.4.5",
         "tsx": "^4.19.0",
       },
@@ -201,6 +204,14 @@
         "drizzle-kit": "^0.28.0",
         "tsx": "^4.19.0",
         "typescript": "^5.6.3",
+      },
+    },
+    "packages/diagnostics": {
+      "name": "@openmonitor/diagnostics",
+      "devDependencies": {
+        "@openmonitor/tsconfig": "workspace:*",
+        "@types/bun": "^1.3.14",
+        "typescript": "^5.9.3",
       },
     },
     "packages/notifications": {
@@ -487,6 +498,8 @@
     "@openmonitor/clickhouse": ["@openmonitor/clickhouse@workspace:packages/clickhouse"],
 
     "@openmonitor/db": ["@openmonitor/db@workspace:packages/db"],
+
+    "@openmonitor/diagnostics": ["@openmonitor/diagnostics@workspace:packages/diagnostics"],
 
     "@openmonitor/marketing": ["@openmonitor/marketing@workspace:apps/marketing"],
 

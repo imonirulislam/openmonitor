@@ -8,6 +8,7 @@ COPY packages/api-client/package.json ./packages/api-client/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/db/package.json ./packages/db/
 COPY packages/clickhouse/package.json ./packages/clickhouse/
+COPY packages/diagnostics/package.json ./packages/diagnostics/
 COPY packages/notifications/package.json ./packages/notifications/
 COPY packages/regions/package.json ./packages/regions/
 COPY packages/tsconfig/package.json ./packages/tsconfig/

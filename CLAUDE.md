@@ -48,7 +48,7 @@ Slack-only notifications, Postgres single-tenant.
 | `apps/notifier` | Hono worker | Drains `events` outbox, dispatches Slack messages, retries with backoff. Self-paced loop or cron-driven via `/cron/*` — see its CLAUDE.md |
 | `apps/checker` | Go (stdlib) | Pulls monitor list from API, runs HTTP probes, posts results back |
 
-## The eight packages
+## The nine packages
 
 | Package | Purpose |
 |---|---|
@@ -59,6 +59,7 @@ Slack-only notifications, Postgres single-tenant.
 | `@openmonitor/api-client` | Typed fetch client used by `status-page` (and any future external consumer). |
 | `@openmonitor/ui` | Shared status badges, uptime bar, severity badge. Used by both Next.js apps. |
 | `@openmonitor/regions` | Region code → city, flag, continent, provider. Static catalogue with a per-deployment fallback. |
+| `@openmonitor/diagnostics` | Probe facts → a plain-language verdict on an outage. Pure functions, no I/O — the query lives in `clickhouse`. |
 | `@openmonitor/tsconfig` | Three tsconfig presets: base, node, nextjs. |
 
 ## Cross-cutting rules

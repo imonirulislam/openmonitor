@@ -1,3 +1,4 @@
+import type { OutageFacts, RegionFacts } from "@openmonitor/diagnostics";
 import { ch } from "./client";
 
 export type MonitorStatus = "up" | "degraded" | "down" | "unknown";
@@ -223,6 +224,33 @@ export async function latencyPercentilesMany(
     `,
     { monitorIds, hours, bucketMinutes },
   );
+}
+
+/**
+ * Per-region picture of a monitor over a recent window, for the alert triage
+ * line. Interpretation lives in @openmonitor/diagnostics — this reports only
+ * what the probes saw.
+ */
+export async function outageFacts(monitorId: string, windowMinutes = 15): Promise<OutageFacts> {
+  const regions = await rows<RegionFacts>(
+    `
+    SELECT
+      region,
+      toUInt32(count())                    AS total,
+      toUInt32(countIf(status = 'down'))   AS failed,
+      toUInt32(countIf(status = 'up'))     AS healthy,
+      toString(argMax(status, checked_at)) AS lastStatus,
+      arrayElement(topKIf(1)(error, status = 'down' AND error != ''), 1) AS topError,
+      toUInt32(arrayElement(topKIf(1)(status_code, status = 'down'), 1)) AS topStatusCode
+    FROM monitor_runs
+    WHERE monitor_id = {monitorId:UUID}
+      AND checked_at >= now() - INTERVAL {windowMinutes:UInt32} MINUTE
+    GROUP BY region
+    ORDER BY region ASC
+    `,
+    { monitorId, windowMinutes },
+  );
+  return { windowMinutes, regions };
 }
 
 export async function latencyBuckets(monitorId: string, hours: number): Promise<LatencyBucket[]> {
