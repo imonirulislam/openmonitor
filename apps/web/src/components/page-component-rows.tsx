@@ -68,11 +68,12 @@ export function ComponentRow({
           value={component.surface}
           onChange={(e) => onChange({ surface: e.target.value as ComponentDraft["surface"] })}
           aria-label="Where it shows"
+          title="Status tab counts this monitor toward overall status. Monitors tab only charts its response time — use it for third parties whose outage isn't yours."
           className="h-8 w-36 shrink-0 text-xs"
         >
-          <option value="status">Status only</option>
-          <option value="metrics">Metrics only</option>
-          <option value="both">Status + metrics</option>
+          <option value="status">Status tab</option>
+          <option value="metrics">Monitors tab</option>
+          <option value="both">Both tabs</option>
         </Select>
       )}
       <span

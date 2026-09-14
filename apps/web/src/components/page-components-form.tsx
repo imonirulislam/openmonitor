@@ -12,7 +12,8 @@ import {
   FormCardTitle,
 } from "@openmonitor/ui";
 import { PlusIcon } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { AddComponentMenu } from "./page-component-add-menu";
 import { ComponentRow, GroupRow } from "./page-component-rows";
 import {
@@ -28,6 +29,15 @@ import {
 import { Sortable, SortableItem } from "./sortable";
 
 export type { LoadedComponent, LoadedGroup } from "./page-components-tree";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Saving…" : "Submit"}
+    </Button>
+  );
+}
 
 /**
  * Single-form components editor mirroring openstatus's `/components` tab:
@@ -51,7 +61,6 @@ export function PageComponentsForm({
   monitors: Monitor[];
   action: (formData: FormData) => void | Promise<void>;
 }) {
-  const [pending, startTransition] = useTransition();
   const initial = useMemo(
     () => buildInitialState(initialComponents, initialGroups),
     [initialComponents, initialGroups],
@@ -203,29 +212,36 @@ export function PageComponentsForm({
     setGroupsByKey((prev) => ({ ...prev, [key]: { ...prev[key]!, ...patch } }));
   }
 
-  function handleSubmit(formData: FormData) {
-    const tree = {
-      ungrouped: ungroupedKeys.map((k) => serializeComponent(componentsByKey[k]!)),
-      groups: groupKeys.map((gk) => {
-        const g = groupsByKey[gk]!;
-        return {
-          id: g.id,
-          clientGroupId: g.clientGroupId,
-          name: g.name,
-          defaultOpen: g.defaultOpen,
-          components: g.componentKeys.map((k) => serializeComponent(componentsByKey[k]!)),
-        };
+  // Posted through a hidden input rather than an onSubmit handler: calling the
+  // action imperatively discards its promise, and with it the redirect that
+  // carries the success toast.
+  const treeJson = useMemo(
+    () =>
+      JSON.stringify({
+        ungrouped: ungroupedKeys.map((k) => serializeComponent(componentsByKey[k]!)),
+        groups: groupKeys.map((gk) => {
+          const g = groupsByKey[gk]!;
+          return {
+            id: g.id,
+            clientGroupId: g.clientGroupId,
+            name: g.name,
+            defaultOpen: g.defaultOpen,
+            components: g.componentKeys.map((k) => serializeComponent(componentsByKey[k]!)),
+          };
+        }),
       }),
-    };
-    formData.set("tree", JSON.stringify(tree));
-    startTransition(() => action(formData));
-  }
+    [ungroupedKeys, groupKeys, componentsByKey, groupsByKey],
+  );
 
   return (
-    <FormCard asForm action={handleSubmit}>
+    <FormCard asForm action={action}>
       <FormCardHeader>
         <FormCardTitle>Components</FormCardTitle>
-        <FormCardDescription>Manage your page components</FormCardDescription>
+        <FormCardDescription>
+          Each monitor picks where it appears: the Status tab, where it counts toward overall
+          status, or the Monitors tab, which charts response time only — for third parties whose
+          outage should not read as yours.
+        </FormCardDescription>
       </FormCardHeader>
       <FormCardContent>
         <div className="flex flex-wrap gap-2">
@@ -286,11 +302,10 @@ export function PageComponentsForm({
       </FormCardContent>
       <FormCardFooter>
         <FormCardFooterInfo>Learn more about page components.</FormCardFooterInfo>
-        <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Submit"}
-        </Button>
+        <SubmitButton />
       </FormCardFooter>
       <input type="hidden" name="pageId" value={pageId} />
+      <input type="hidden" name="tree" value={treeJson} />
     </FormCard>
   );
 }
