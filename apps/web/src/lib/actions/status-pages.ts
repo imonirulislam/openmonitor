@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logAudit } from "~/lib/audit";
+import { isOperator } from "~/lib/operator";
 import { statusPageSlug } from "~/lib/resolve-entity";
 import { getCurrentWorkspace } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
@@ -283,7 +284,36 @@ export async function updateStatusPageBranding(id: string, formData: FormData) {
   redirect(withToastRedirect(`/status-pages/${addr}/edit`, "Branding saved"));
 }
 
-/** Save the optional homepage + contact links, and the footer attribution. */
+/**
+ * Toggle the footer wordmark.
+ *
+ * Operator-only, not admin: workspace roles come from `workspace_members`, so
+ * every tenant is an admin of its own page and could quietly strip the
+ * attribution off a deployment it doesn't run. Same reasoning as shared probe
+ * locations — see lib/operator.ts.
+ */
+export async function updateStatusPageAttribution(id: string, formData: FormData) {
+  const ws = await requireEditor();
+  if (!isOperator(ws.email)) {
+    throw new Error("forbidden: attribution is managed by the instance operator");
+  }
+  const addr = await statusPageSlug(id);
+
+  await db()
+    .update(schema.statusPages)
+    // See monitors.ts — an unchecked box submits nothing at all.
+    .set({ showAttribution: formData.get("showAttribution") === "true", updatedAt: new Date() })
+    .where(pageScope(id, ws.workspaceId));
+
+  await logAudit({
+    action: "status_page.attribution_updated",
+    targetType: "user",
+    targetId: id,
+  });
+  redirect(withToastRedirect(`/status-pages/${addr}/edit`, "Attribution saved"));
+}
+
+/** Save the optional homepage + contact links. Both can be empty to hide. */
 export async function updateStatusPageLinks(id: string, formData: FormData) {
   const ws = await requireEditor();
   const addr = await statusPageSlug(id);
@@ -303,8 +333,6 @@ export async function updateStatusPageLinks(id: string, formData: FormData) {
     .set({
       homepageUrl: parsed.homepageUrl ?? null,
       contactUrl: parsed.contactUrl ?? null,
-      // See monitors.ts — an unchecked box submits nothing at all.
-      showAttribution: formData.get("showAttribution") === "true",
       updatedAt: new Date(),
     })
     .where(pageScope(id, ws.workspaceId));

@@ -21,9 +21,11 @@ import {
   deleteStatusPage,
   setStatusPagePassword,
   updateStatusPage,
+  updateStatusPageAttribution,
   updateStatusPageBranding,
   updateStatusPageLinks,
 } from "~/lib/actions/status-pages";
+import { isOperator } from "~/lib/operator";
 import { publicPageUrl } from "~/lib/public-url";
 import { statusPageIdFrom } from "~/lib/resolve-entity";
 import { getCurrentWorkspace } from "~/lib/workspace";
@@ -31,6 +33,8 @@ import { getCurrentWorkspace } from "~/lib/workspace";
 export default async function StatusPageSettings({ params }: { params: Promise<{ id: string }> }) {
   const { id: idOrSlug } = await params;
   const ws = await getCurrentWorkspace();
+  // Mirrors the gate in updateStatusPageAttribution; the action enforces it.
+  const operator = isOperator(ws.email);
   const id = await statusPageIdFrom(idOrSlug, ws.workspaceId);
   const [page] = await db()
     .select()
@@ -227,7 +231,23 @@ export default async function StatusPageSettings({ params }: { params: Promise<{
                 hide.
               </p>
             </div>
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
+          </FormCardContent>
+          <FormCardFooter>
+            <FormCardFooterInfo>Both links are optional.</FormCardFooterInfo>
+            <Button type="submit">Save links</Button>
+          </FormCardFooter>
+        </FormCard>
+
+        {operator ? (
+          <FormCard asForm action={updateStatusPageAttribution.bind(null, id)}>
+            <FormCardHeader>
+              <FormCardTitle>Attribution</FormCardTitle>
+              <FormCardDescription>
+                The wordmark in the public footer. Operator-only — a workspace admin can't strip it
+                from a deployment they don't run.
+              </FormCardDescription>
+            </FormCardHeader>
+            <FormCardContent>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -238,16 +258,13 @@ export default async function StatusPageSettings({ params }: { params: Promise<{
                 />
                 <span className="text-sm">Show “Monitored by OpenMonitor” in the footer</span>
               </label>
-              <p className="text-muted-foreground text-xs">
-                The GitHub link stays either way — this only controls the wordmark.
-              </p>
-            </div>
-          </FormCardContent>
-          <FormCardFooter>
-            <FormCardFooterInfo>Both links are optional.</FormCardFooterInfo>
-            <Button type="submit">Save links</Button>
-          </FormCardFooter>
-        </FormCard>
+            </FormCardContent>
+            <FormCardFooter>
+              <FormCardFooterInfo>The GitHub link stays either way.</FormCardFooterInfo>
+              <Button type="submit">Save attribution</Button>
+            </FormCardFooter>
+          </FormCard>
+        ) : null}
 
         <FormCard asForm action={setStatusPagePassword.bind(null, id)}>
           <FormCardHeader>
