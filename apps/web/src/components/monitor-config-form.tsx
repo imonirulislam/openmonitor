@@ -737,7 +737,8 @@ export function MonitorConfigForm({
                     <FormLabel>Region policy</FormLabel>
                     <FormDescription>
                       How the selected regions reduce to one status. Regions that have never
-                      reported are ignored, so adding one doesn't drag the monitor to unknown.
+                      reported, or have gone quiet, are ignored — so adding one doesn't drag the
+                      monitor to unknown, and a retired one can't outvote the rest.
                     </FormDescription>
                     <FormControl>
                       <Select value={field.value} onChange={(e) => field.onChange(e.target.value)}>

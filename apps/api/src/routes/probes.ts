@@ -10,6 +10,7 @@ import {
   reduceRegionStatuses,
   schema,
   sql,
+  staleAfterMs,
 } from "@openmonitor/db";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -122,11 +123,17 @@ probeRoutes.post("/v1/probes/results", zValidator("json", probeSchema), async (c
       .select({
         region: schema.monitorRegionStatus.region,
         status: schema.monitorRegionStatus.status,
+        lastCheckedAt: schema.monitorRegionStatus.lastCheckedAt,
       })
       .from(schema.monitorRegionStatus)
       .where(eq(schema.monitorRegionStatus.monitorId, body.monitorId));
 
-    const derivedStatus = reduceRegionStatuses(regionRows, monitor.regionPolicy);
+    // A retired location keeps its last row forever, so exclude regions that
+    // have gone quiet — otherwise one dead `up` can outvote a real outage.
+    const derivedStatus = reduceRegionStatuses(regionRows, monitor.regionPolicy, {
+      now: Date.now(),
+      staleAfterMs: staleAfterMs(monitor.intervalSeconds),
+    });
     // Global counter tracks sustained *derived* down-ness, which is what the
     // auto-incident threshold is meant to measure.
     const newConsecutiveFailures = derivedStatus === "down" ? monitor.consecutiveFailures + 1 : 0;

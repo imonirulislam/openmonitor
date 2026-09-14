@@ -5,7 +5,7 @@ import {
   regionLatency,
   regionLatencyBuckets,
 } from "@openmonitor/clickhouse";
-import { and, db, eq, isNull, or, schema } from "@openmonitor/db";
+import { and, db, eq, isNull, or, schema, staleAfterMs } from "@openmonitor/db";
 import { getRegionInfo } from "@openmonitor/regions";
 import {
   Card,
@@ -97,10 +97,19 @@ export default async function OverviewPage({
     .select({
       region: schema.monitorRegionStatus.region,
       status: schema.monitorRegionStatus.status,
+      lastCheckedAt: schema.monitorRegionStatus.lastCheckedAt,
     })
     .from(schema.monitorRegionStatus)
     .where(eq(schema.monitorRegionStatus.monitorId, id));
-  const statusByRegion = new Map(regionStatuses.map((r) => [r.region, r.status]));
+  // A region that has gone quiet stops counting toward the monitor's status,
+  // so show it as unknown rather than as whatever it last reported.
+  const staleBefore = Date.now() - staleAfterMs(monitor.intervalSeconds);
+  const statusByRegion = new Map(
+    regionStatuses.map((r) => [
+      r.region,
+      r.lastCheckedAt && r.lastCheckedAt.getTime() < staleBefore ? "unknown" : r.status,
+    ]),
+  );
 
   // Shared locations (workspaceId IS NULL) are the operator's fleet and a
   // monitor can be assigned to one, so they need naming too — otherwise the

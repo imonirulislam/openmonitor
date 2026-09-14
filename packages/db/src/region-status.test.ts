@@ -107,3 +107,66 @@ describe("ordering does not matter", () => {
     }
   });
 });
+
+describe("stale regions stop voting", () => {
+  const NOW = 1_700_000_000_000;
+  const WINDOW = { now: NOW, staleAfterMs: 90_000 };
+  const at = (region: string, status: MonitorStatus, agoMs: number | null): RegionStatusRow => ({
+    region,
+    status,
+    lastCheckedAt: agoMs === null ? null : new Date(NOW - agoMs),
+  });
+
+  test("a dead `up` region no longer outvotes a live outage", () => {
+    const rows = [at("live", "down", 1_000), at("dead", "up", 3_600_000)];
+    // Counting the dead region makes this 1 of 2 — not a majority — and `up`.
+    expect(reduceRegionStatuses(rows, "majority")).toBe("up");
+    expect(reduceRegionStatuses(rows, "majority", WINDOW)).toBe("down");
+  });
+
+  test("`all` becomes reachable again once the dead region is dropped", () => {
+    const rows = [at("live", "down", 1_000), at("dead", "up", 3_600_000)];
+    expect(reduceRegionStatuses(rows, "all")).toBe("up");
+    expect(reduceRegionStatuses(rows, "all", WINDOW)).toBe("down");
+  });
+
+  test("two live regions still outvote one live healthy region", () => {
+    const rows = [at("a", "down", 1_000), at("b", "down", 2_000), at("c", "up", 3_000)];
+    expect(reduceRegionStatuses(rows, "majority", WINDOW)).toBe("down");
+  });
+
+  test("a region exactly at the window is still fresh", () => {
+    const rows = [at("a", "down", 1_000), at("b", "up", 90_000)];
+    expect(reduceRegionStatuses(rows, "majority", WINDOW)).toBe("up");
+    // One millisecond past and it stops counting.
+    expect(
+      reduceRegionStatuses([at("a", "down", 1_000), at("b", "up", 90_001)], "majority", WINDOW),
+    ).toBe("down");
+  });
+
+  test("a null timestamp keeps voting — it is not evidence of staleness", () => {
+    const rows = [at("a", "down", 1_000), at("seeded", "up", null)];
+    expect(reduceRegionStatuses(rows, "majority", WINDOW)).toBe("up");
+  });
+
+  test("when every row is stale the reduction falls back rather than going unknown", () => {
+    // Backdated `checkedAt` or clock skew must not erase a real status.
+    const rows = [at("a", "down", 3_600_000)];
+    expect(reduceRegionStatuses(rows, "majority", WINDOW)).toBe("down");
+    for (const policy of POLICIES) {
+      expect(reduceRegionStatuses(rows, policy, WINDOW)).toBe("down");
+    }
+  });
+
+  test("omitting the window preserves the old behaviour exactly", () => {
+    const rows = [at("live", "down", 1_000), at("dead", "up", 3_600_000)];
+    for (const policy of POLICIES) {
+      expect(reduceRegionStatuses(rows, policy, undefined)).toBe(
+        reduceRegionStatuses(
+          rows.map(({ region, status }) => ({ region, status })),
+          policy,
+        ),
+      );
+    }
+  });
+});
