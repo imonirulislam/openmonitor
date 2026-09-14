@@ -1,6 +1,7 @@
 import { countRuns } from "@openmonitor/clickhouse";
 import { db, rows, schema, sql } from "@openmonitor/db";
 import { Hono } from "hono";
+import { runDriftDigest } from "../drift-digest";
 import { env } from "../env";
 import { apiKeyAuth } from "../middleware/api-key";
 import { getRetentionStatus, runRetentionSweep } from "../scheduler";
@@ -51,8 +52,16 @@ systemRoutes.get("/v1/system/scheduler", async (c) => {
  * generally can't be told otherwise (Vercel Cron always does).
  */
 systemRoutes.on(["GET", "POST"], "/v1/system/scheduler/run", async (c) => {
-  const result = await runRetentionSweep();
-  return c.json(result);
+  const retention = await runRetentionSweep();
+  // Rides the same daily tick; it self-gates to once a week. Independent of
+  // retention so a failing digest can't stop the sweep that frees disk.
+  let digest: Awaited<ReturnType<typeof runDriftDigest>> | { error: string };
+  try {
+    digest = await runDriftDigest();
+  } catch (err) {
+    digest = { error: err instanceof Error ? err.message : String(err) };
+  }
+  return c.json({ ...retention, digest });
 });
 
 /**

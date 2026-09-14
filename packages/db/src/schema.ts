@@ -59,6 +59,9 @@ export const eventTypeEnum = pgEnum("event_type", [
   // so these route via `monitorIds` like the incident events do.
   "location.silent",
   "location.recovered",
+  // Periodic rather than a reaction to a state change: slow degradation never
+  // crosses a threshold, so nothing else would ever mention it.
+  "digest.drift",
 ]);
 
 // ---------- Auth (Auth.js v5 compatible shape) ----------

@@ -98,6 +98,12 @@ const STATUS_EMOJI: Record<string, string> = {
   resolved: ":white_check_mark:",
 };
 
+export type DriftDigestPayload = {
+  windowDays: number;
+  agoDays: number;
+  monitors: { id: string; name: string; recentP95: number; earlierP95: number; pct: number }[];
+};
+
 export function renderSlackMessage(
   type: EventType,
   payload: Record<string, unknown>,
@@ -113,6 +119,8 @@ export function renderSlackMessage(
     case "incident.updated":
     case "incident.resolved":
       return incidentMessage(type, payload as unknown as IncidentPayload);
+    case "digest.drift":
+      return driftDigest(payload as unknown as DriftDigestPayload);
     case "location.silent":
       return locationSilent(payload as unknown as LocationSilencePayload);
     case "location.recovered":
@@ -184,6 +192,46 @@ function monitorDown(p: MonitorDownPayload): SlackMessage {
           {
             type: "context",
             elements: [{ type: "mrkdwn", text: `Detected at ${p.checkedAt}` }],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * The one message nobody is waiting for, so it leads with the number that
+ * makes it worth reading and keeps to one line per monitor.
+ */
+function driftDigest(p: DriftDigestPayload): SlackMessage {
+  const text = `:chart_with_upwards_trend: ${p.monitors.length} monitor${
+    p.monitors.length === 1 ? " has" : "s have"
+  } slowed down over the last month`;
+  return {
+    text,
+    blocks: [],
+    attachments: [
+      {
+        color: "#f59e0b",
+        blocks: [
+          { type: "header", text: { type: "plain_text", text } },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: p.monitors
+                .map((m) => `• *${m.name}* — p95 ${m.earlierP95}ms → ${m.recentP95}ms (+${m.pct}%)`)
+                .join("\n"),
+            },
+          },
+          {
+            type: "context",
+            elements: [
+              {
+                type: "mrkdwn",
+                text: `Last ${p.windowDays} days vs the same window ${p.agoDays} days earlier. Successful checks only.`,
+              },
+            ],
           },
         ],
       },

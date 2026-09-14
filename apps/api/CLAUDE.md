@@ -14,7 +14,7 @@ inbound Slack webhooks.
 | POST   | `/v1/probes/results`              | `PROBE_API_KEY` | Checker posts probe results |
 | POST   | `/webhooks/slack`                 | Slack signing (TODO) | Slash commands / events |
 | GET    | `/v1/system/scheduler`            | `PROBE_API_KEY` or `CRON_SECRET` | Retention config + last run + row counts |
-| POST   | `/v1/system/scheduler/run`        | `PROBE_API_KEY` or `CRON_SECRET` | Run a retention sweep now |
+| POST   | `/v1/system/scheduler/run`        | `PROBE_API_KEY` or `CRON_SECRET` | Retention sweep, plus the drift digest when a week has passed |
 | GET    | `/v1/system/checker`              | `PROBE_API_KEY` or `CRON_SECRET` | Checker freshness telemetry |
 
 `/v1/system/*` takes two keys because it has two callers with separate lifecycles: the
@@ -46,6 +46,17 @@ dashboard's System page uses `PROBE_API_KEY`, and a hosted scheduler sends `CRON
 3. If it writes data, do the write in a `db().transaction(...)` block and emit any events in
    the same transaction.
 4. If it accepts input, validate with `@hono/zod-validator` — never trust the request body.
+
+## Drift digest
+
+`src/drift-digest.ts` rides the same daily tick and self-gates to once a week via
+`scheduled_task_runs`, so a daily cron is all it needs. It compares each monitor's p95 over
+the last week against the same window a month earlier and emits one `digest.drift` event per
+workspace, with `monitorIds` set so the notifier's existing routing delivers it. Nothing is
+sent when nothing drifted.
+
+It runs after the retention sweep and its failures are caught: a digest that throws must not
+stop the sweep that frees disk.
 
 ## Retention
 

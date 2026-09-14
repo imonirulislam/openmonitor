@@ -21,6 +21,7 @@ export type TaskCounts = Record<string, number>;
  * under whichever spelling.
  */
 export const RETENTION_TASK = "retention";
+export const DRIFT_DIGEST_TASK = "drift-digest";
 
 /**
  * Run a background sweep, time it, and record the outcome durably.

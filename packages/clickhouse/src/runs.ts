@@ -1,4 +1,4 @@
-import type { Baseline, OutageFacts, RegionFacts } from "@openmonitor/diagnostics";
+import type { Baseline, DriftSample, OutageFacts, RegionFacts } from "@openmonitor/diagnostics";
 import { ch } from "./client";
 
 export type MonitorStatus = "up" | "degraded" | "down" | "unknown";
@@ -292,6 +292,44 @@ export async function latencyBaseline(
     { monitorId, region, at: toChDateTime(at), weeks, tz },
   );
   return row ?? { p95: 0, samples: 0 };
+}
+
+/**
+ * Recent p95 against the same-length window a month earlier, for the drift
+ * digest. Only `up` runs: a week containing an outage would otherwise read as
+ * a slowdown.
+ */
+export async function driftSamples(
+  monitorIds: string[],
+  windowDays = 7,
+  agoDays = 28,
+): Promise<DriftSample[]> {
+  if (monitorIds.length === 0) return [];
+  return rows<DriftSample>(
+    `
+    SELECT
+      toString(monitor_id)                                                    AS monitorId,
+      toUInt32(round(ifNotFinite(quantileIf(0.95)(latency_ms, recent), 0)))   AS recentP95,
+      toUInt32(countIf(recent))                                               AS recentSamples,
+      toUInt32(round(ifNotFinite(quantileIf(0.95)(latency_ms, earlier), 0)))  AS earlierP95,
+      toUInt32(countIf(earlier))                                              AS earlierSamples
+    FROM (
+      SELECT
+        monitor_id,
+        latency_ms,
+        checked_at >= now() - INTERVAL {windowDays:UInt32} DAY AS recent,
+        checked_at >= now() - INTERVAL {agoDays:UInt32} DAY - INTERVAL {windowDays:UInt32} DAY
+          AND checked_at < now() - INTERVAL {agoDays:UInt32} DAY                AS earlier
+      FROM monitor_runs
+      WHERE monitor_id IN {monitorIds:Array(UUID)}
+        AND status = 'up'
+        AND checked_at >= now() - INTERVAL {agoDays:UInt32} DAY
+                        - INTERVAL {windowDays:UInt32} DAY
+    )
+    GROUP BY monitor_id
+    `,
+    { monitorIds, windowDays, agoDays },
+  );
 }
 
 export async function latencyBuckets(monitorId: string, hours: number): Promise<LatencyBucket[]> {

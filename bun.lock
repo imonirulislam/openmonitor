@@ -25,6 +25,7 @@
         "@openmonitor/auth": "workspace:*",
         "@openmonitor/clickhouse": "workspace:*",
         "@openmonitor/db": "workspace:*",
+        "@openmonitor/diagnostics": "workspace:*",
         "dotenv": "^16.4.5",
         "hono": "^4.6.0",
         "rrule": "^2.8.1",
