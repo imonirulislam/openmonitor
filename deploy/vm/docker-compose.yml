@@ -106,12 +106,16 @@ services:
       # No NEON_WS_PROXY: Neon terminates the WebSocket itself. The proxy is a
       # local-development shim for plain Postgres.
       NODE_ENV: production
+      # Down alerts carry a region/cause verdict read from monitor_runs. Without
+      # this the alert still sends, just without that line.
+      CLICKHOUSE_URL: http://clickhouse:8123
       # Self-pacing, so there is no cron to configure.
       NOTIFIER_POLL: "on"
       SLACK_DEFAULT_WEBHOOK_URL: ${SLACK_DEFAULT_WEBHOOK_URL:-}
     mem_limit: 512m
     depends_on:
       migrate: { condition: service_completed_successfully }
+      clickhouse: { condition: service_healthy }
 
   checker:
     build:

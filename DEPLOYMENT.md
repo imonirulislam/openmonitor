@@ -78,7 +78,7 @@ GitHub needs only `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_*`, and â€
 | `status-page` | `API_URL`, `NEXT_PUBLIC_API_URL`, optional `NEXT_PUBLIC_STATUS_*` branding |
 | `web` | `AUTH_SECRET`, `AUTH_URL`, `API_URL`, `PROBE_API_KEY`, `OPERATOR_EMAILS`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STATUS_PAGE_URL`, optional `SIGNUPS_ENABLED=on` + `STATUS_PAGE_ROOT_DOMAIN` |
 | `api` | `PROBE_API_KEY`, `PAGE_UNLOCK_SECRET`, `CRON_SECRET`, `SLACK_SIGNING_SECRET`, `STATUS_PAGE_ROOT_DOMAIN`, **`RETENTION_ENABLED=off`** |
-| `notifier` | `CRON_SECRET`, **`NOTIFIER_POLL=off`** |
+| `notifier` | `CRON_SECRET`, **`NOTIFIER_POLL=off`**, `CLICKHOUSE_URL` (for the alert triage line) |
 
 Leave `NEON_WS_PROXY` unset â€” local dev only.
 
