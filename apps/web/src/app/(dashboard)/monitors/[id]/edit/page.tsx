@@ -121,6 +121,7 @@ export default async function EditMonitorPage({ params }: { params: Promise<{ id
           dnsHost: monitor.kind === "dns" ? (monitor.host ?? "") : "",
           followRedirects: monitor.followRedirects,
           assertions: (monitor.assertions ?? []) as Assertion[],
+          regionPolicy: monitor.regionPolicy,
         }}
       />
 
