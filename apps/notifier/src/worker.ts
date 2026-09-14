@@ -1,10 +1,33 @@
-import { outageFacts } from "@openmonitor/clickhouse";
+import { latencyBaseline, outageFacts } from "@openmonitor/clickhouse";
 import { and, db, desc, eq, gte, inArray, lte, rows, schema, sql } from "@openmonitor/db";
-import { classifyOutage, describeRecentChanges } from "@openmonitor/diagnostics";
+import { classifyOutage, compareToBaseline, describeRecentChanges } from "@openmonitor/diagnostics";
 import { renderSlackMessage, sendSlack } from "@openmonitor/notifications";
 
 const MAX_ATTEMPTS = 6;
 const BATCH_SIZE = 25;
+
+/**
+ * Answers "is this actually unusual?" on a degraded alert. The threshold that
+ * fired it is a fixed number that knows nothing about time of day, so the
+ * band's most useful answer is often that nothing is wrong.
+ */
+async function withBaseline(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const monitorId = (payload.monitor as { id?: string } | undefined)?.id;
+  const region = typeof payload.region === "string" ? payload.region : null;
+  const latencyMs = typeof payload.latencyMs === "number" ? payload.latencyMs : null;
+  const checkedAt = typeof payload.checkedAt === "string" ? payload.checkedAt : null;
+  if (!monitorId || !region || latencyMs === null || !checkedAt) return payload;
+
+  try {
+    const at = new Date(checkedAt);
+    if (Number.isNaN(at.getTime())) return payload;
+    const verdict = compareToBaseline(latencyMs, await latencyBaseline(monitorId, region, at));
+    return verdict ? { ...payload, baseline: verdict } : payload;
+  } catch (err) {
+    console.error("baseline lookup failed:", err);
+    return payload;
+  }
+}
 
 /** Config edits to this monitor in the hour before an alert, newest first. */
 async function recentMonitorChanges(monitorId: string, workspaceId: string, before: Date) {
@@ -41,6 +64,7 @@ async function withTriage(
   payload: Record<string, unknown>,
   workspaceId: string,
 ): Promise<Record<string, unknown>> {
+  if (type === "monitor.degraded") return withBaseline(payload);
   if (type !== "monitor.down") return payload;
   const monitorId = (payload.monitor as { id?: string } | undefined)?.id;
   if (!monitorId) return payload;

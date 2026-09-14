@@ -1,4 +1,4 @@
-import type { OutageFacts, RegionFacts } from "@openmonitor/diagnostics";
+import type { Baseline, OutageFacts, RegionFacts } from "@openmonitor/diagnostics";
 import { ch } from "./client";
 
 export type MonitorStatus = "up" | "degraded" | "down" | "unknown";
@@ -251,6 +251,47 @@ export async function outageFacts(monitorId: string, windowMinutes = 15): Promis
     { monitorId, windowMinutes },
   );
   return { windowMinutes, regions };
+}
+
+/**
+ * Typical p95 for this monitor at this hour of the week, from the trailing
+ * `weeks` of probes.
+ *
+ * Three exclusions keep the band honest:
+ *  - only `up` runs count. A failed probe's latency is a timeout, and letting
+ *    previously-degraded runs in would drift the band toward the bad state
+ *    until nothing looks unusual any more.
+ *  - the hour before `at` is dropped, so an ongoing slowdown can't inflate the
+ *    baseline it is about to be compared against.
+ *  - the hour-of-week match is computed in `tz`, not the server's zone, or a
+ *    monitor's "usual 3am" silently shifts.
+ */
+export async function latencyBaseline(
+  monitorId: string,
+  region: string,
+  at: Date,
+  weeks = 4,
+  tz = "UTC",
+): Promise<Baseline> {
+  const [row] = await rows<Baseline>(
+    `
+    SELECT
+      toUInt32(round(ifNotFinite(quantile(0.95)(latency_ms), 0))) AS p95,
+      toUInt32(count())                                           AS samples
+    FROM monitor_runs
+    WHERE monitor_id = {monitorId:UUID}
+      AND region = {region:String}
+      AND status = 'up'
+      AND checked_at >= {at:DateTime} - INTERVAL {weeks:UInt32} WEEK
+      AND checked_at <  {at:DateTime} - INTERVAL 1 HOUR
+      AND toDayOfWeek(toTimeZone(checked_at, {tz:String}))
+        = toDayOfWeek(toTimeZone({at:DateTime}, {tz:String}))
+      AND toHour(toTimeZone(checked_at, {tz:String}))
+        = toHour(toTimeZone({at:DateTime}, {tz:String}))
+    `,
+    { monitorId, region, at: toChDateTime(at), weeks, tz },
+  );
+  return row ?? { p95: 0, samples: 0 };
 }
 
 export async function latencyBuckets(monitorId: string, hours: number): Promise<LatencyBucket[]> {

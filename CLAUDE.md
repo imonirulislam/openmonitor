@@ -59,7 +59,7 @@ Slack-only notifications, Postgres single-tenant.
 | `@openmonitor/api-client` | Typed fetch client used by `status-page` (and any future external consumer). |
 | `@openmonitor/ui` | Shared status badges, uptime bar, severity badge. Used by both Next.js apps. |
 | `@openmonitor/regions` | Region code → city, flag, continent, provider. Static catalogue with a per-deployment fallback. |
-| `@openmonitor/diagnostics` | Probe facts → a plain-language verdict on an outage. Pure functions, no I/O — the query lives in `clickhouse`. |
+| `@openmonitor/diagnostics` | Probe facts → a plain-language verdict: where an outage is failing, whether a slowdown is unusual for the hour, what changed first. Pure functions, no I/O — the queries live in `clickhouse`. |
 | `@openmonitor/tsconfig` | Three tsconfig presets: base, node, nextjs. |
 
 ## Cross-cutting rules

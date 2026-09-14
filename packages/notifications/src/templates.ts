@@ -49,6 +49,11 @@ export type MonitorDegradedPayload = {
   /** Threshold the latency exceeded; null when degraded for non-latency reasons. */
   degradedAfterMs: number | null;
   checkedAt: string;
+  /**
+   * How this reading compares to the monitor's usual for this hour of the
+   * week. Added by the notifier; absent when there isn't enough history.
+   */
+  baseline?: { unusual: boolean; text: string } | null;
 };
 
 export type LocationSilencePayload = {
@@ -207,6 +212,19 @@ function monitorDegraded(p: MonitorDegradedPayload): SlackMessage {
               { type: "mrkdwn", text: `*Latency*\n${observed} (threshold ${threshold})` },
             ],
           },
+          // The threshold that fired this knows nothing about time of day, so
+          // the band gets to contradict it — usually by saying it's fine.
+          ...(p.baseline
+            ? [
+                {
+                  type: "section" as const,
+                  text: {
+                    type: "mrkdwn" as const,
+                    text: `${p.baseline.unusual ? ":chart_with_upwards_trend:" : ":white_check_mark:"} ${p.baseline.text}`,
+                  },
+                },
+              ]
+            : []),
           {
             type: "context",
             elements: [{ type: "mrkdwn", text: `Detected at ${p.checkedAt}` }],
