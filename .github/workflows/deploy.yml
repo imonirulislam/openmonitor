@@ -93,7 +93,9 @@ jobs:
         id: fly
         run: |
           set -euo pipefail
-          CONFIGS="$(ls deploy/fly/checker-*.toml 2>/dev/null | jq -R . | jq -sc .)"
+          # No match must yield [] and not kill this job — a failure here
+          # would stop every app deploying, not just the checker.
+          CONFIGS="$( { ls deploy/fly/checker-*.toml 2>/dev/null || true; } | jq -R . | jq -sc .)"
           echo "Deploy targets: $CONFIGS"
           echo "configs=$CONFIGS" >> "$GITHUB_OUTPUT"
 
@@ -204,7 +206,9 @@ jobs:
         config: ${{ fromJSON(needs.changes.outputs.fly-configs) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # Pinned like every other action here; Fly documents @master, which is
+      # a moving target on a job that holds a deploy token.
+      - uses: superfly/flyctl-actions/setup-flyctl@1.6
       # Run from the repo root: the Dockerfile copies apps/checker/, so the
       # root is the build context, while `dockerfile` in the config resolves
       # relative to the config file. Deploy only — the app and its PROBE_TOKEN
