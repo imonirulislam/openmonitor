@@ -42,10 +42,13 @@ Adding Amsterdam, as a worked example:
    `https://api.openmonitor.app`.
 4. From the repo root:
    ```
-   fly launch --no-deploy --copy-config --config deploy/fly/checker-ams.toml
+   fly launch --no-deploy --copy-config --org open-monitor --config deploy/fly/checker-ams.toml
    fly secrets set PROBE_TOKEN=omp_… --config deploy/fly/checker-ams.toml
    fly deploy --config deploy/fly/checker-ams.toml
    ```
+
+   `--org open-monitor` matters: apps default to the personal org, and the org token CI
+   holds won't deploy them.
 
 Pushing that file to `main` is what deploys it from then on.
 
@@ -56,15 +59,21 @@ Pushing that file to `main` is what deploys it from then on.
 `deploy/fly/checker-*.toml`, so a new region ships as soon as its file lands — nothing to
 register. `checker.fly.toml` is the template and is never deployed.
 
-Needs one repo secret in the `production` environment:
+Needs one repo secret in the `production` environment. `tokens create deploy` is scoped to a
+single app, so use `tokens create org` — one token covers every location, including ones
+added later:
 
 ```
-gh secret set FLY_API_TOKEN --env production --body "$(fly tokens create deploy -x 8760h)"
+fly tokens create org -o open-monitor -x 8760h -n "github-actions checker" \
+  | gh secret set FLY_API_TOKEN --env production
 ```
 
-An org-wide deploy token covers every location. The job only ever runs `flyctl deploy` —
-creating the app and setting `PROBE_TOKEN` stay manual, so CI can't invent a location that
-has no matching row in the dashboard.
+Piped so the token never lands in shell history. There are two orgs on this account —
+`personal` and `open-monitor` — so `-o` is not optional; without it flyctl prompts, and a
+token minted against `personal` fails on every app here.
+
+The job only ever runs `flyctl deploy` — creating the app and setting `PROBE_TOKEN` stay
+manual, so CI can't invent a location that has no matching row in the dashboard.
 
 Regions deploy independently (`fail-fast: false`): one failing leaves the rest up. CI's
 `go build` + `go vet` gate the deploy, and it waits on `api` so the checker never ships
