@@ -29,6 +29,8 @@ jobs:
       web: ${{ steps.filter.outputs.web }}
       api: ${{ steps.filter.outputs.api }}
       schema: ${{ steps.filter.outputs.schema }}
+      checker: ${{ steps.filter.outputs.checker }}
+      fly-configs: ${{ steps.fly.outputs.configs }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,6 +83,19 @@ jobs:
           matches "^apps/api/|$DATA"                            && echo "api=true"         >> "$GITHUB_OUTPUT" || echo "api=false"         >> "$GITHUB_OUTPUT"
           # Migrations are cheap and idempotent, so err towards running them.
           matches "^packages/(db|clickhouse)/"                  && echo "schema=true"      >> "$GITHUB_OUTPUT" || echo "schema=false"      >> "$GITHUB_OUTPUT"
+          # The checker is Go and shares no packages/ code — only its own
+          # source, its Dockerfile, and the per-region Fly configs.
+          matches "^apps/checker/|^deploy/docker/checker\.Dockerfile|^deploy/fly/.*\.toml" && echo "checker=true" >> "$GITHUB_OUTPUT" || echo "checker=false" >> "$GITHUB_OUTPUT"
+
+      # One Fly app per probe location, so adding a region is adding a file
+      # under deploy/fly/. checker.fly.toml is the template and is skipped.
+      - name: Collect probe-location configs
+        id: fly
+        run: |
+          set -euo pipefail
+          CONFIGS="$(ls deploy/fly/checker-*.toml 2>/dev/null | jq -R . | jq -sc .)"
+          echo "Deploy targets: $CONFIGS"
+          echo "configs=$CONFIGS" >> "$GITHUB_OUTPUT"
 
   ci:
     uses: ./.github/workflows/ci.yml
@@ -170,3 +185,30 @@ jobs:
           project-id: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
           org-id: ${{ secrets.VERCEL_ORG_ID }}
           token: ${{ secrets.VERCEL_TOKEN }}
+
+  # Each probe location is a separate Fly app: the region is a property of the
+  # PROBE_TOKEN, so one app scaled across regions would report every result
+  # under a single location. Fans out, and a failure in one region leaves the
+  # others deployed rather than cancelling them.
+  checker:
+    needs: [changes, ci, api]
+    if: >-
+      always() && needs.changes.outputs.checker == 'true'
+      && needs.ci.result == 'success' && needs.api.result != 'failure'
+      && needs.changes.outputs.fly-configs != '[]'
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ${{ fromJSON(needs.changes.outputs.fly-configs) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # Run from the repo root: the Dockerfile copies apps/checker/, so the
+      # root is the build context, while `dockerfile` in the config resolves
+      # relative to the config file. Deploy only — the app and its PROBE_TOKEN
+      # are created once by hand, per deploy/fly/README.md.
+      - run: flyctl deploy --config ${{ matrix.config }} --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

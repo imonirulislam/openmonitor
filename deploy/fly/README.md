@@ -45,6 +45,27 @@ Frankfurt machines will report as somewhere else.
    fly deploy --config deploy/fly/checker-fra.toml
    ```
 
+## Deploys
+
+`.github/workflows/deploy.yml` deploys every location on a push to `main` that touches
+`apps/checker/`, `deploy/docker/checker.Dockerfile`, or a config here. It fans out over
+`deploy/fly/checker-*.toml`, so a new region ships as soon as its file lands — nothing to
+register. `checker.fly.toml` is the template and is never deployed.
+
+Needs one repo secret in the `production` environment:
+
+```
+gh secret set FLY_API_TOKEN --env production --body "$(fly tokens create deploy -x 8760h)"
+```
+
+An org-wide deploy token covers every location. The job only ever runs `flyctl deploy` —
+creating the app and setting `PROBE_TOKEN` stay manual, so CI can't invent a location that
+has no matching row in the dashboard.
+
+Regions deploy independently (`fail-fast: false`): one failing leaves the rest up. CI's
+`go build` + `go vet` gate the deploy, and it waits on `api` so the checker never ships
+against an API that hasn't.
+
 ## Checking it works
 
 ```
