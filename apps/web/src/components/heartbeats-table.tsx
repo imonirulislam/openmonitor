@@ -15,6 +15,17 @@ export type HeartbeatRow = {
   lastPingAt: string | null;
 };
 
+/** 86400 reads as "24h", not "86400s". Seconds stay in the form inputs. */
+function formatSeconds(total: number): string {
+  if (total < 60) return `${total}s`;
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  if (minutes < 60) return seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
+}
+
 const STATUS_VARIANT: Record<HeartbeatRow["currentStatus"], "success" | "destructive" | "default"> =
   {
     up: "success",
@@ -54,7 +65,7 @@ const columns: ColumnDef<HeartbeatRow>[] = [
     header: "Expected",
     cell: ({ row }) => (
       <span className="font-mono text-xs tabular-nums">
-        every {row.original.expectedIntervalSeconds}s
+        every {formatSeconds(row.original.expectedIntervalSeconds)}
       </span>
     ),
   },
@@ -62,7 +73,9 @@ const columns: ColumnDef<HeartbeatRow>[] = [
     accessorKey: "graceSeconds",
     header: "Grace",
     cell: ({ row }) => (
-      <span className="font-mono text-xs tabular-nums">{row.original.graceSeconds}s</span>
+      <span className="font-mono text-xs tabular-nums">
+        {formatSeconds(row.original.graceSeconds)}
+      </span>
     ),
   },
   {
