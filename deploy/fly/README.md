@@ -3,7 +3,17 @@
 One Fly app per probe location. The checker dials out and serves nothing, so each app is a
 single always-on 256mb machine with no public address.
 
-`checker.fly.toml` is the template; `checker-cdg.toml` is Paris, the first EU location.
+`checker.fly.toml` is the template. `checker-cdg.toml` (Paris) and `checker-iad.toml`
+(Ashburn) are the live locations — `fly launch` rewrote the first into its own format, so
+keep new ones in that shape.
+
+## Region policy
+
+Monitors default to `regionPolicy: "any"`, which reads as *one region down ⇒ monitor down*.
+With two locations that doubles the false-alarm surface: a blip in Ashburn alerts on a
+service Paris can still reach. `majority` doesn't help at two either — `down * 2 > total`
+needs both, making it identical to `all`. Two regions is a straight choice between noisy
+and "both must fail"; a third is what makes majority a real 2-of-3 vote.
 
 ## Why Fly and not Railway
 

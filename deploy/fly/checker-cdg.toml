@@ -1,29 +1,24 @@
-# Paris probe location. Generated from checker.fly.toml — see
-# deploy/fly/README.md for the create-location-then-deploy order, which
-# matters: `primary_region` only says where the machine runs, while results
-# are attributed to the region on the PROBE_TOKEN.
+# fly.toml app configuration file generated for openmonitor-checker-cdg on 2026-09-14T20:41:51+06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "openmonitor-checker-cdg"
-primary_region = "cdg"
+app = 'openmonitor-checker-cdg'
+primary_region = 'cdg'
 
 [build]
-  dockerfile = "../docker/checker.Dockerfile"
+  dockerfile = '../docker/checker.Dockerfile'
 
 [env]
-  API_URL = "https://api.openmonitor.app"
-  CHECKER_DEFAULT_TIMEOUT_MS = "10000"
-  # Deliberately no DATABASE_URL. Probes reach the database only through the
-  # API, so a remote region never holds database credentials — and the checker
-  # falls back to polling for its monitor list, which is the only mode that
-  # works away from the primary region anyway.
+  API_URL = 'https://api.openmonitor.app'
+  CHECKER_DEFAULT_TIMEOUT_MS = '10000'
+
+[[restart]]
+  policy = 'always'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  cpu_kind = 'shared'
   cpus = 1
-
-# No [http_service]: the checker dials out and serves nothing. Without one, Fly
-# has no traffic to autostop on, so pin the machine up — a stopped checker is a
-# region that silently reports nothing.
-[[restart]]
-  policy = "always"
+  memory_mb = 256

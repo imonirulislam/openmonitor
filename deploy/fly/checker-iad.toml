@@ -1,0 +1,23 @@
+# Ashburn probe location. Same shape as checker-cdg.toml, which `fly launch`
+# generated — see deploy/fly/README.md before deploying: the region here only
+# says where the machine runs, attribution comes from the PROBE_TOKEN.
+
+app = 'openmonitor-checker-iad'
+primary_region = 'iad'
+
+[build]
+  dockerfile = '../docker/checker.Dockerfile'
+
+[env]
+  API_URL = 'https://api.openmonitor.app'
+  CHECKER_DEFAULT_TIMEOUT_MS = '10000'
+
+[[restart]]
+  policy = 'always'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
