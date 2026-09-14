@@ -15,6 +15,7 @@ import { withToastRedirect } from "@openmonitor/ui";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { logAudit } from "~/lib/audit";
 import { isOperator } from "~/lib/operator";
 import { requireAdmin, requireEditor } from "~/lib/workspace";
 import { parseOrFlash } from "~/lib/zod-flash";
@@ -50,6 +51,9 @@ const locationSchema = z.object({
  *
  * `admin` alone is not sufficient for the shared case — it comes from
  * workspace_members, so anyone who creates a workspace is an admin of it.
+ *
+ * Audit rows for these land in the operator's current workspace, so a tenant
+ * relying on a shared location can't see it change from their own log.
  */
 async function requireMutableLocation(id: string) {
   const ws = await requireEditor();
@@ -106,13 +110,20 @@ export async function createProbeLocation(formData: FormData) {
     .returning({ id: schema.probeLocations.id });
   if (!created) throw new Error("failed to create probe location");
 
+  await logAudit({
+    action: "probe_location.created",
+    targetType: "probe_location",
+    targetId: created.id,
+    targetLabel: parsed.region,
+    metadata: { shared: wantsShared },
+  });
   revalidatePath(PATH);
   redirect(`${PATH}?created=${created.id}&token=${encodeURIComponent(token)}`);
 }
 
 /** Invalidates the old token immediately; any checker still using it gets 401. */
 export async function rotateProbeLocationToken(id: string) {
-  await requireMutableLocation(id);
+  const { location } = await requireMutableLocation(id);
   const token = generateProbeToken();
 
   const [updated] = await db()
@@ -122,16 +133,28 @@ export async function rotateProbeLocationToken(id: string) {
     .returning({ id: schema.probeLocations.id });
   if (!updated) throw new Error("probe location not found");
 
+  await logAudit({
+    action: "probe_location.token_rotated",
+    targetType: "probe_location",
+    targetId: id,
+    targetLabel: location.region,
+  });
   revalidatePath(PATH);
   redirect(`${PATH}?created=${updated.id}&token=${encodeURIComponent(token)}&rotated=1`);
 }
 
 export async function setProbeLocationEnabled(id: string, enabled: boolean) {
-  await requireMutableLocation(id);
+  const { location } = await requireMutableLocation(id);
   await db()
     .update(schema.probeLocations)
     .set({ enabled, updatedAt: new Date() })
     .where(eq(schema.probeLocations.id, id));
+  await logAudit({
+    action: enabled ? "probe_location.enabled" : "probe_location.disabled",
+    targetType: "probe_location",
+    targetId: id,
+    targetLabel: location.region,
+  });
   revalidatePath(PATH);
   redirect(withToastRedirect(PATH, enabled ? "Location enabled" : "Location disabled", "info"));
 }
@@ -193,6 +216,12 @@ export async function deleteProbeLocation(id: string) {
       );
   });
 
+  await logAudit({
+    action: "probe_location.deleted",
+    targetType: "probe_location",
+    targetId: id,
+    targetLabel: location.region,
+  });
   revalidatePath(PATH);
   redirect(withToastRedirect(PATH, "Location deleted", "info"));
 }
@@ -211,7 +240,7 @@ export async function setProbeLocationMonitors(id: string, monitorIds: string[])
   const ws = await requireEditor();
 
   const [location] = await db()
-    .select({ id: schema.probeLocations.id })
+    .select({ id: schema.probeLocations.id, region: schema.probeLocations.region })
     .from(schema.probeLocations)
     .where(and(eq(schema.probeLocations.id, id), visibleTo(ws.workspaceId)))
     .limit(1);
@@ -248,6 +277,13 @@ export async function setProbeLocationMonitors(id: string, monitorIds: string[])
     }
   });
 
+  await logAudit({
+    action: "probe_location.monitors_updated",
+    targetType: "probe_location",
+    targetId: id,
+    targetLabel: location.region,
+    metadata: { assigned: toAssign.length },
+  });
   revalidatePath(PATH);
   redirect(withToastRedirect(PATH, `Assigned ${toAssign.length} monitor(s)`));
 }

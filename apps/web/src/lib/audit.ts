@@ -1,7 +1,13 @@
 import { db, schema } from "@openmonitor/db";
 import { auth } from "~/auth";
 
-export type AuditTarget = "monitor" | "incident" | "maintenance" | "channel" | "user";
+export type AuditTarget =
+  | "monitor"
+  | "incident"
+  | "maintenance"
+  | "channel"
+  | "user"
+  | "probe_location";
 
 /**
  * logAudit — write a row to audit_logs from a server action.
