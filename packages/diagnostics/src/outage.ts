@@ -110,8 +110,9 @@ export function classifyOutage(facts: OutageFacts): OutageVerdict | null {
   if (worst.topStatusCode > 0) evidence.push(`HTTP ${worst.topStatusCode}`);
   else evidence.push("no HTTP response");
   if (worst.topError) evidence.push(worst.topError);
+  const failedChecks = failing.reduce((n, r) => n + r.failed, 0);
   evidence.push(
-    `${failing.reduce((n, r) => n + r.failed, 0)} failed checks in the last ${facts.windowMinutes}m`,
+    `${failedChecks} failed check${failedChecks === 1 ? "" : "s"} in the last ${facts.windowMinutes}m`,
   );
 
   return { spread, cause, evidence };

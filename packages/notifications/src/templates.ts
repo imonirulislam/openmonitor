@@ -155,7 +155,9 @@ function monitorDown(p: MonitorDownPayload): SlackMessage {
             : []),
           // Reads before the raw fields do: what's failing and why, with the
           // evidence beside it so the claim can be checked at a glance.
-          ...(p.triage
+          // Slack rejects a section with empty text, and the verdict is absent
+          // when probe history is unavailable but a config change isn't.
+          ...(p.triage && [p.triage.spread, p.triage.cause].filter(Boolean).length > 0
             ? [
                 {
                   type: "section" as const,
@@ -164,6 +166,10 @@ function monitorDown(p: MonitorDownPayload): SlackMessage {
                     text: [p.triage.spread, p.triage.cause].filter(Boolean).join(" "),
                   },
                 },
+              ]
+            : []),
+          ...(p.triage && p.triage.evidence.length > 0
+            ? [
                 {
                   type: "context" as const,
                   elements: [{ type: "mrkdwn" as const, text: p.triage.evidence.join("  ·  ") }],

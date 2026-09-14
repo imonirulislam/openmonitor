@@ -1,30 +1,86 @@
 import { outageFacts } from "@openmonitor/clickhouse";
-import { and, db, eq, inArray, rows, schema, sql } from "@openmonitor/db";
-import { classifyOutage } from "@openmonitor/diagnostics";
+import { and, db, desc, eq, gte, inArray, lte, rows, schema, sql } from "@openmonitor/db";
+import { classifyOutage, describeRecentChanges } from "@openmonitor/diagnostics";
 import { renderSlackMessage, sendSlack } from "@openmonitor/notifications";
 
 const MAX_ATTEMPTS = 6;
 const BATCH_SIZE = 25;
 
+/** Config edits to this monitor in the hour before an alert, newest first. */
+async function recentMonitorChanges(monitorId: string, workspaceId: string, before: Date) {
+  const since = new Date(before.getTime() - 60 * 60 * 1000);
+  return db()
+    .select({
+      action: schema.auditLogs.action,
+      actorEmail: schema.auditLogs.actorEmail,
+      createdAt: schema.auditLogs.createdAt,
+    })
+    .from(schema.auditLogs)
+    .where(
+      and(
+        eq(schema.auditLogs.workspaceId, workspaceId),
+        eq(schema.auditLogs.targetType, "monitor"),
+        eq(schema.auditLogs.targetId, monitorId),
+        gte(schema.auditLogs.createdAt, since),
+        lte(schema.auditLogs.createdAt, before),
+      ),
+    )
+    .orderBy(desc(schema.auditLogs.createdAt))
+    .limit(10);
+}
+
 /**
- * Adds the region/cause verdict to a `monitor.down` payload. Returns the
- * payload untouched for every other event type, and on any failure — the
- * alert matters more than the annotation.
+ * Annotates a `monitor.down` payload with where it's failing and whether we
+ * changed anything first. Every other event type passes through untouched.
+ *
+ * Both annotations are best-effort and independent: a failing audit query must
+ * not cost the triage line, and neither may cost the alert.
  */
 async function withTriage(
   type: string,
   payload: Record<string, unknown>,
+  workspaceId: string,
 ): Promise<Record<string, unknown>> {
   if (type !== "monitor.down") return payload;
   const monitorId = (payload.monitor as { id?: string } | undefined)?.id;
   if (!monitorId) return payload;
+
+  let verdict: ReturnType<typeof classifyOutage> = null;
   try {
-    const verdict = classifyOutage(await outageFacts(monitorId));
-    return verdict ? { ...payload, triage: verdict } : payload;
+    verdict = classifyOutage(await outageFacts(monitorId));
   } catch (err) {
     console.error("triage failed:", err);
-    return payload;
   }
+
+  let changed: string | null = null;
+  const checkedAt = typeof payload.checkedAt === "string" ? payload.checkedAt : null;
+  if (checkedAt) {
+    try {
+      const rowsOut = await recentMonitorChanges(monitorId, workspaceId, new Date(checkedAt));
+      changed = describeRecentChanges(
+        rowsOut.map((r) => ({
+          action: r.action,
+          actorEmail: r.actorEmail,
+          at: r.createdAt.toISOString(),
+        })),
+        checkedAt,
+      );
+    } catch (err) {
+      console.error("recent-changes lookup failed:", err);
+    }
+  }
+
+  if (!verdict && !changed) return payload;
+  // The change line is evidence, not a second verdict — it rides in the same
+  // context row rather than adding another block to the message.
+  return {
+    ...payload,
+    triage: {
+      spread: verdict?.spread ?? "",
+      cause: verdict?.cause ?? null,
+      evidence: [...(verdict?.evidence ?? []), ...(changed ? [changed] : [])],
+    },
+  };
 }
 
 // Exponential backoff in seconds, capped at 10 minutes.
@@ -55,6 +111,8 @@ export async function processBatch(): Promise<{ processed: number; failed: numbe
 
   const claimedRows = rows<{
     id: string;
+    // snake_case: this is `returning *` from raw SQL, not a Drizzle projection.
+    workspace_id: string;
     type: string;
     payload: Record<string, unknown>;
     attempts: number;
@@ -101,7 +159,7 @@ export async function processBatch(): Promise<{ processed: number; failed: numbe
     // A down alert carries what the other regions saw. Best-effort: probe
     // history lives in ClickHouse, and an alert that doesn't send because
     // ClickHouse is slow is worse than one without a triage line.
-    const enriched = await withTriage(event.type, payload);
+    const enriched = await withTriage(event.type, payload, event.workspace_id);
 
     const channels = await conn
       .select()

@@ -19,6 +19,11 @@ const down = (name: string, over: Partial<RegionFacts> = {}) =>
   region({ region: name, failed: 10, healthy: 0, lastStatus: "down", ...over });
 
 describe("classifyOutage", () => {
+  it("counts one failed check without an s", () => {
+    const v = classifyOutage(facts([down("fra", { failed: 1 })]));
+    expect(v?.evidence).toContain("1 failed check in the last 15m");
+  });
+
   it("says nothing when no region is failing", () => {
     expect(classifyOutage(facts([region({ region: "fra" })]))).toBeNull();
   });
