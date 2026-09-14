@@ -1,6 +1,7 @@
-# Ashburn probe location. Same shape as checker-cdg.toml, which `fly launch`
-# generated — see deploy/fly/README.md before deploying: the region here only
-# says where the machine runs, attribution comes from the PROBE_TOKEN.
+# fly.toml app configuration file generated for openmonitor-checker-iad on 2026-09-14T20:46:35+06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
 app = 'openmonitor-checker-iad'
 primary_region = 'iad'
