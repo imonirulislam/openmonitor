@@ -3,17 +3,18 @@
 One Fly app per probe location. The checker dials out and serves nothing, so each app is a
 single always-on 256mb machine with no public address.
 
-`checker.fly.toml` is the template. `checker-cdg.toml` (Paris) and `checker-iad.toml`
-(Ashburn) are the live locations — `fly launch` rewrote the first into its own format, so
-keep new ones in that shape.
+`checker.fly.toml` is the template; `checker-iad.toml` (Ashburn) is the live location. Keep
+new ones in the shape `fly launch` generates rather than hand-writing them.
 
 ## Region policy
 
-Monitors default to `regionPolicy: "any"`, which reads as *one region down ⇒ monitor down*.
-With two locations that doubles the false-alarm surface: a blip in Ashburn alerts on a
-service Paris can still reach. `majority` doesn't help at two either — `down * 2 > total`
-needs both, making it identical to `all`. Two regions is a straight choice between noisy
-and "both must fail"; a third is what makes majority a real 2-of-3 vote.
+`majority` is `down * 2 > total`, so it only becomes a real vote at three or more
+locations. At two it needs both regions down, which is identical to `all`, and at one every
+policy agrees. Below three, the choice is between `any` (a single blip alerts) and
+"both must fail" (a single-region outage doesn't).
+
+Regions that have gone quiet for more than 3x a monitor's interval stop counting, so
+retiring a location degrades the vote on its own — check the policy still fits afterwards.
 
 ## Why Fly and not Railway
 
@@ -38,7 +39,7 @@ and "both must fail"; a third is what makes majority a real 2-of-3 vote.
 
 Order matters. The region shown on results comes from the **probe location row**, not from
 `primary_region` — that only says where the machine runs. Set them to the same code or
-Paris machines will report as somewhere else.
+Ashburn machines will report as somewhere else.
 
 Adding Amsterdam, as a worked example:
 
@@ -92,7 +93,7 @@ against an API that hasn't.
 ## Checking it works
 
 ```
-fly logs --config deploy/fly/checker-cdg.toml
+fly logs --config deploy/fly/checker-iad.toml
 ```
 
 Then Settings → Probe locations, or `GET /v1/system/checker`, for freshness per region. A
